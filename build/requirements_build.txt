@@ -1,0 +1,16 @@
+# Build-time dependencies — install these into your DEVELOPER environment only.
+# Do NOT add these to the app's requirements.txt.
+#
+# Minimum required:
+pyinstaller>=6.0
+#
+# Optional — for bytecode encryption (USE_PYARMOR = True in build_config.py):
+# pyarmor>=8.0
+#
+# Optional — for native-code compilation (USE_NUITKA = True in build_config.py):
+# nuitka>=2.0
+# ordered-set      # Nuitka dependency
+# zstandard        # Nuitka dependency
+#
+# Inno Setup 6 must be installed separately (not a Python package):
+# https://jrsoftware.org/isdl.php

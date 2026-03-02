@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% block title %}{% if is_archived_view %}Archived Jobs{% else %}Job Listings{% endif %} — Job Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mt-3 mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <h2 class="fw-bold mb-0">
+      {% if is_archived_view %}
+        <i class="bi bi-archive me-2 text-secondary"></i>Archived Jobs
+      {% else %}
+        <i class="bi bi-search me-2 text-primary"></i>Job Listings
+      {% endif %}
+    </h2>
+    {% if not is_archived_view %}
+    <a href="{{ url_for('archived_jobs') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-archive me-1"></i>Archived Jobs
+    </a>
+    {% else %}
+    <a href="{{ url_for('jobs') }}" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-search me-1"></i>Job Listings
+    </a>
+    {% endif %}
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleDescBtn">
+      <i class="bi bi-text-paragraph me-1"></i>Show Descriptions
+    </button>
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    {% set t1 = score_t1|int %}
+    {% set t2 = score_t2|int %}
+    {% set n_neon = jobs|selectattr('match_score','ge',score_t2)|list|length %}
+    {% set n_blue = jobs|selectattr('match_score','ge',score_t1)|selectattr('match_score','lt',score_t2)|list|length %}
+    {% set n_grey = jobs|selectattr('match_score','lt',score_t1)|list|length %}
+    {% if n_neon %}<span class="badge score-badge score-neon"
+      data-bs-toggle="tooltip" data-bs-placement="top"
+      data-bs-title="High match — score {{ t2 + 1 }}–100">{{ n_neon }}</span>{% endif %}
+    {% if n_blue %}<span class="badge score-badge score-blue"
+      data-bs-toggle="tooltip" data-bs-placement="top"
+      data-bs-title="Mid match — score {{ t1 + 1 }}–{{ t2 }}">{{ n_blue }}</span>{% endif %}
+    {% if n_grey %}<span class="badge score-badge score-grey"
+      data-bs-toggle="tooltip" data-bs-placement="top"
+      data-bs-title="Low match — score {{ score_min }}–{{ t1 }}">{{ n_grey }}</span>{% endif %}
+    <span class="badge bg-primary fs-6">{{ jobs|length }} results</span>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body py-3 jobs-filter-body">
+    <div class="app-hint text-info mb-2" style="font-size:.75rem;font-style:italic;">
+      <i class="bi bi-info-circle me-1"></i>Use the filters below to narrow job listings. Click <strong>Filter</strong> to apply, <strong>✕</strong> to reset all filters.
+    </div>
+    <form method="GET" action="{{ url_for('archived_jobs') if is_archived_view else url_for('jobs') }}" class="row g-2 align-items-end">
+      <div class="col-sm-6 col-md-2" style="position:relative;">
+        <label class="form-label small fw-semibold">Category</label>
+        <select name="category" class="form-select form-select-sm">
+          <option value="">All</option>
+          <option value="software" {% if filters.category == 'software' %}selected{% endif %}>Software Dev</option>
+          <option value="customer_service" {% if filters.category == 'customer_service' %}selected{% endif %}>Customer Service</option>
+          <option value="it" {% if filters.category == 'it' %}selected{% endif %}>IT / Sysadmin</option>
+          <option value="general" {% if filters.category == 'general' %}selected{% endif %}>General</option>
+        </select>
+        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Role type assigned when scraped</div>
+      </div>
+      <div class="col-sm-6 col-md-2" style="position:relative;">
+        <label class="form-label small fw-semibold">Source</label>
+        <select name="source" class="form-select form-select-sm">
+          <option value="">All Sources</option>
+          {% for s in sources %}
+          <option value="{{ s }}" {% if filters.source == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Which job board the listing came from</div>
+      </div>
+      {% if not is_archived_view %}
+      <div class="col-sm-6 col-md-2" style="position:relative;">
+        <label class="form-label small fw-semibold">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All Statuses</option>
+          <option value="new" {% if filters.status == 'new' %}selected{% endif %}>New</option>
+          <option value="saved" {% if filters.status == 'saved' %}selected{% endif %}>Saved</option>
+          <option value="viewed" {% if filters.status == 'viewed' %}selected{% endif %}>Viewed</option>
+          <option value="applied" {% if filters.status == 'applied' %}selected{% endif %}>Applied</option>
+        </select>
+        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Current stage in your job workflow</div>
+      </div>
+      {% endif %}
+      <div class="col-sm-6 col-md-2" style="position:relative;">
+        <label class="form-label small fw-semibold">Min Score</label>
+        <input type="number" name="min_score" class="form-control form-control-sm"
+               value="{{ filters.min_score }}" min="0" max="100" placeholder="0">
+        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Only show jobs scoring at least this % skill match (0–100)</div>
+      </div>
+      <div class="col-sm-6 col-md-2" style="position:relative;">
+        <label class="form-label small fw-semibold">Duration</label>
+        <select name="duration" class="form-select form-select-sm">
+          <option value="">All Types</option>
+          {% for dur in ['Full Time', 'Part Time', 'Contract', 'Internship', 'Temporary', 'Seasonal', 'Freelance', 'Per Diem'] %}
+          <option value="{{ dur }}" {% if filters.duration == dur %}selected{% endif %}>{{ dur }}</option>
+          {% endfor %}
+        </select>
+        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Employment type listed in the posting</div>
+      </div>
+      <div class="col-sm-6 col-md-2" style="position:relative;">
+        <label class="form-label small fw-semibold">Sort By</label>
+        <select name="sort" class="form-select form-select-sm">
+          <option value="score" {% if filters.sort == 'score' %}selected{% endif %}>Score</option>
+          <option value="date" {% if filters.sort == 'date' %}selected{% endif %}>Date Found</option>
+          <option value="company" {% if filters.sort == 'company' %}selected{% endif %}>Company</option>
+        </select>
+        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Order results by skill match %, discovery date, or company name</div>
+      </div>
+      <div class="col-sm-6 col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+          <i class="bi bi-funnel me-1"></i>Filter
+        </button>
+        <a href="{{ url_for('archived_jobs') if is_archived_view else url_for('jobs') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-x-lg"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Job Cards -->
+{% if jobs %}
+<div class="row g-3">
+  {% for job in jobs %}
+  <div class="col-12">
+    <div class="card border-0 shadow-sm job-card {% if job.status == 'archived' and not is_archived_view %}opacity-50{% endif %}">
+      <div class="card-body">
+        <div class="d-flex align-items-start gap-3">
+
+          <!-- Score badge -->
+          <div class="score-circle score-{{ job.score_badge() }} flex-shrink-0">
+            {{ job.match_score }}
+          </div>
+
+          <!-- Job info -->
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+              <a href="{{ url_for('job_detail', job_id=job.id) }}"
+                 class="h6 mb-0 text-decoration-none fw-bold text-white">
+                {{ job.title }}
+              </a>
+              <span class="badge bg-{{ job.status_badge() }}">{{ job.status }}</span>
+              {% if job.job_category != 'general' %}
+                <span class="badge bg-dark text-secondary">{{ job.job_category.replace('_',' ') }}</span>
+              {% endif %}
+              <div class="d-flex gap-1 ms-auto flex-shrink-0">
+                <a href="{{ url_for('job_detail', job_id=job.id) }}" class="btn btn-xs btn-outline-primary">
+                  <i class="bi bi-eye me-1"></i>View
+                </a>
+                {% if job.status == 'new' %}
+                <form method="POST" action="{{ url_for('save_job', job_id=job.id) }}">
+                  <button class="btn btn-xs btn-outline-info"><i class="bi bi-bookmark me-1"></i>Save</button>
+                </form>
+                {% endif %}
+                {% if job.status in ('new', 'saved', 'viewed') and not job.application %}
+                <button type="button"
+                        class="btn btn-xs btn-success apply-trigger-btn"
+                        data-job-id="{{ job.id }}"
+                        data-job-url="{{ job.url | e }}"
+                        data-job-title="{{ job.title | e }}">
+                  <i class="bi bi-send me-1"></i>Apply
+                </button>
+                {% elif job.application %}
+                <a href="{{ url_for('application_detail', app_id=job.application.id) }}"
+                   class="btn btn-xs btn-outline-warning">
+                  <i class="bi bi-file-earmark-text me-1"></i>App
+                </a>
+                {% endif %}
+                {% if is_archived_view %}
+                <form method="POST" action="{{ url_for('unarchive_job', job_id=job.id) }}">
+                  <button class="btn btn-xs btn-outline-warning">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Unarchive
+                  </button>
+                </form>
+                {% elif job.status != 'archived' %}
+                <form method="POST" action="{{ url_for('archive_job', job_id=job.id) }}">
+                  <button class="btn btn-xs btn-outline-secondary">
+                    <i class="bi bi-archive me-1"></i>Archive
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="text-muted small mb-2">
+              <i class="bi bi-building me-1"></i>{{ job.company or '—' }}
+              <span class="mx-2">|</span>
+              <i class="bi bi-geo-alt me-1"></i>{{ job.location or 'Remote' }}
+              {% if job.job_duration %}
+                <span class="mx-2">|</span>
+                <i class="bi bi-briefcase me-1"></i>{{ job.job_duration }}
+              {% endif %}
+              {% if job.salary_range %}
+                <span class="mx-2">|</span>
+                <i class="bi bi-currency-dollar me-1"></i>{{ job.salary_range }}
+              {% endif %}
+              {% if job.posted_date %}
+                <span class="mx-2">|</span>
+                <i class="bi bi-calendar-event me-1"></i><span data-posted-date="{{ job.posted_date.strftime('%Y-%m-%d') }}">Posted {{ job.posted_date.strftime('%b %d, %Y') }}</span>
+              {% endif %}
+              <span class="mx-2">|</span>
+              <i class="bi bi-database me-1"></i>{{ job.source }}
+              <span class="mx-2">|</span>
+              <i class="bi bi-clock me-1"></i>Found {{ job.found_date.strftime('%b %d') if job.found_date else '?' }}
+            </div>
+
+            <!-- Matched skills -->
+            {% set skills = job.get_matched_skills() %}
+            {% if skills %}
+            <div class="d-flex flex-wrap gap-1">
+              {% for skill in skills[:8] %}
+              <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25 small">
+                {{ skill }}
+              </span>
+              {% endfor %}
+              {% if skills|length > 8 %}
+                <span class="badge bg-secondary small">+{{ skills|length - 8 }} more</span>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Job description (shown when toggle is on) -->
+            {% if job.description %}
+            <div class="job-description mt-2 pt-2 small text-muted" style="display:none;line-height:1.6;border-top:1px solid rgba(255,255,255,.08);">{{ job.description | striptags | truncate(600, True, '…') }}</div>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-{{ 'archive' if is_archived_view else 'inbox' }} fs-1 d-block mb-3 opacity-25"></i>
+  {% if is_archived_view %}
+  <h5>No archived jobs match your filters</h5>
+  <p class="small">Try loosening the filters, or <a href="{{ url_for('archived_jobs') }}">clear all filters</a>.</p>
+  {% else %}
+  <h5>No jobs match your filters</h5>
+  <p class="small">Try loosening the filters or run a new scan.</p>
+  <form method="POST" action="{{ url_for('manual_scan') }}" class="d-inline">
+    <button class="btn btn-primary"><i class="bi bi-arrow-clockwise me-2"></i>Run Scan Now</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+body.hints-on .jobs-filter-body { padding-bottom: 2.4rem !important; }
+</style>
+<script>
+(function () {
+  var btn = document.getElementById('toggleDescBtn');
+  var KEY = 'job-show-descriptions';
+
+  function applyState(show) {
+    document.querySelectorAll('.job-description').forEach(function (el) {
+      el.style.display = show ? '' : 'none';
+    });
+    if (!btn) return;
+    if (show) {
+      btn.className = 'btn btn-sm btn-info';
+      btn.innerHTML = '<i class="bi bi-text-paragraph me-1"></i>Hide Descriptions';
+    } else {
+      btn.className = 'btn btn-sm btn-outline-secondary';
+      btn.innerHTML = '<i class="bi bi-text-paragraph me-1"></i>Show Descriptions';
+    }
+  }
+
+  var on = localStorage.getItem(KEY) === 'on';
+  applyState(on);
+
+  if (btn) {
+    btn.addEventListener('click', function () {
+      on = !on;
+      localStorage.setItem(KEY, on ? 'on' : 'off');
+      applyState(on);
+    });
+  }
+}());
+</script>
+{% endblock %}

@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Analytics — Job Tracker{% endblock %}
+
+{% block content %}
+<div class="mt-3 mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Analytics</h2>
+</div>
+
+<!-- Key metrics -->
+<div class="row g-3 mb-4">
+  {% set metric_cards = [
+    ('Total Jobs Found', metrics.total_jobs, 'briefcase-fill', 'primary'),
+    ('Applications Sent', metrics.total_applications, 'send-fill', 'warning'),
+    ('Interviews', metrics.interviews, 'camera-video-fill', 'info'),
+    ('Offers', metrics.offers, 'trophy-fill', 'success'),
+    ('Rejected', metrics.rejected, 'x-circle-fill', 'danger'),
+    ('Response Rate', metrics.response_rate|string + '%', 'graph-up-arrow', 'primary'),
+    ('Offer Rate', metrics.offer_rate|string + '%', 'star-fill', 'success'),
+  ] %}
+  {% for label, value, icon, color in metric_cards %}
+  <div class="col-6 col-md-4 col-xl-3">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body d-flex align-items-center gap-3 py-3">
+        <i class="bi bi-{{ icon }} text-{{ color }} fs-4"></i>
+        <div>
+          <div class="fw-bold fs-5">{{ value }}</div>
+          <div class="text-muted small">{{ label }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Charts row 1 -->
+<div class="row g-4 mb-4">
+
+  <!-- Application Funnel -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-funnel me-2 text-primary"></i>Application Pipeline</h6>
+        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;margin-top:2px;">How many applications are at each stage of the hiring process</div>
+      </div>
+      <div class="card-body">
+        <canvas id="pipelineChart" height="260"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jobs by Source -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2 text-info"></i>Jobs by Source</h6>
+        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;margin-top:2px;">Which job boards have provided the most listings in your database</div>
+      </div>
+      <div class="card-body">
+        <canvas id="sourceChart" height="260"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts row 2 -->
+<div class="row g-4 mb-4">
+
+  <!-- Weekly Activity -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-success"></i>Weekly Activity (8 weeks)</h6>
+        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;margin-top:2px;">Applications submitted and new jobs found each week over the past 8 weeks</div>
+      </div>
+      <div class="card-body">
+        <canvas id="weeklyChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category distribution -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-layers me-2 text-warning"></i>Jobs by Category</h6>
+        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;margin-top:2px;">Breakdown of all found jobs by role type (software, IT, customer service, general)</div>
+      </div>
+      <div class="card-body">
+        <canvas id="categoryChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Score distribution -->
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart me-2 text-secondary"></i>Match Score Distribution</h6>
+        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;margin-top:2px;">How many jobs fall into each score band (0–100%). Higher scores = more of your skills matched in the posting</div>
+      </div>
+      <div class="card-body">
+        <canvas id="scoreChart" height="140"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const PIPELINE   = {{ pipeline_json|safe }};
+const BY_SOURCE  = {{ by_source_json|safe }};
+const BY_CAT     = {{ by_category_json|safe }};
+const WEEKLY     = {{ weekly_json|safe }};
+const SCORES     = {{ scores_json|safe }};
+
+const PALETTE = ['#0d6efd','#6ea8fe','#0dcaf0','#ffc107','#198754','#dc3545','#6c757d','#d63384'];
+
+// ---- Pipeline bar chart ----
+new Chart(document.getElementById('pipelineChart'), {
+  type: 'bar',
+  data: {
+    labels: Object.keys(PIPELINE).map(k => k.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase())),
+    datasets: [{
+      label: 'Applications',
+      data: Object.values(PIPELINE),
+      backgroundColor: PALETTE,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#333' } },
+      x: { grid: { color: '#333' } }
+    }
+  }
+});
+
+// ---- Source doughnut ----
+new Chart(document.getElementById('sourceChart'), {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(BY_SOURCE),
+    datasets: [{
+      data: Object.values(BY_SOURCE),
+      backgroundColor: PALETTE,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'bottom' } }
+  }
+});
+
+// ---- Weekly line chart ----
+new Chart(document.getElementById('weeklyChart'), {
+  type: 'line',
+  data: {
+    labels: WEEKLY.labels,
+    datasets: [
+      {
+        label: 'Jobs Found',
+        data: WEEKLY.jobs_found,
+        borderColor: '#0d6efd',
+        backgroundColor: 'rgba(13,110,253,0.15)',
+        fill: true,
+        tension: 0.4,
+      },
+      {
+        label: 'Applications',
+        data: WEEKLY.applications,
+        borderColor: '#ffc107',
+        backgroundColor: 'rgba(255,193,7,0.15)',
+        fill: true,
+        tension: 0.4,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#333' } },
+      x: { grid: { color: '#333' } }
+    }
+  }
+});
+
+// ---- Category doughnut ----
+new Chart(document.getElementById('categoryChart'), {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(BY_CAT).map(k => k.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase())),
+    datasets: [{
+      data: Object.values(BY_CAT),
+      backgroundColor: PALETTE,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'bottom' } }
+  }
+});
+
+// ---- Score histogram ----
+new Chart(document.getElementById('scoreChart'), {
+  type: 'bar',
+  data: {
+    labels: Object.keys(SCORES),
+    datasets: [{
+      label: 'Jobs',
+      data: Object.values(SCORES),
+      backgroundColor: '#0d6efd80',
+      borderColor: '#0d6efd',
+      borderWidth: 1,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#333' } },
+      x: { grid: { color: '#333' } }
+    }
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Applications — Job Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mt-3 mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-file-earmark-text me-2 text-primary"></i>Applications</h2>
+  <span class="badge bg-primary fs-6">{{ apps|length }}</span>
+</div>
+
+<!-- Status filter pills -->
+<div class="app-hint text-info mb-2" style="font-size:.75rem;font-style:italic;">
+  <i class="bi bi-info-circle me-1"></i>Filter by application stage. <strong>Draft</strong> = not yet submitted · <strong>Submitted</strong> = waiting for response · <strong>Phone Screen / Interview</strong> = in process · <strong>Offer</strong> = received an offer · <strong>Rejected</strong> = declined by employer.
+</div>
+<div class="mb-4 d-flex flex-wrap gap-2">
+  <a href="{{ url_for('applications') }}"
+     class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">All</a>
+  {% for key, color, label in [
+      ('draft','secondary','Draft'),
+      ('submitted','primary','Submitted'),
+      ('phone_screen','info','Phone Screen'),
+      ('interview','warning','Interview'),
+      ('offer','success','Offer'),
+      ('rejected','danger','Rejected'),
+  ] %}
+  <a href="{{ url_for('applications', status=key) }}"
+     class="btn btn-sm {% if status_filter == key %}btn-{{ color }}{% else %}btn-outline-{{ color }}{% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{% if apps %}
+<div class="row g-3">
+  {% for app in apps %}
+  <div class="col-12">
+    <div class="card border-0 shadow-sm border-start border-4 border-{{ app.status_color() }}">
+      <div class="card-body">
+        <div class="d-flex align-items-start gap-3">
+          <div class="flex-grow-1">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+              <a href="{{ url_for('application_detail', app_id=app.id) }}"
+                 class="fw-bold text-white text-decoration-none h6 mb-0">
+                {{ app.job.title }}
+              </a>
+              <span class="badge bg-{{ app.status_color() }}">{{ app.status_label() }}</span>
+              {% if app.is_overdue_followup() %}
+                <span class="badge bg-danger"><i class="bi bi-exclamation-triangle me-1"></i>Follow-up overdue!</span>
+              {% endif %}
+            </div>
+            <div class="text-muted small mb-2">
+              <i class="bi bi-building me-1"></i>{{ app.job.company }}
+              {% if app.job.posted_date %}
+                <span class="mx-2">·</span>
+                <i class="bi bi-calendar-event me-1"></i><span data-posted-date="{{ app.job.posted_date.strftime('%Y-%m-%d') }}">Posted {{ app.job.posted_date.strftime('%b %d, %Y') }}</span>
+              {% endif %}
+              {% if app.applied_date %}
+                <span class="mx-2">·</span>
+                <i class="bi bi-calendar me-1"></i>Applied {{ app.applied_date.strftime('%b %d, %Y') }}
+              {% endif %}
+              {% if app.next_follow_up %}
+                <span class="mx-2">·</span>
+                <i class="bi bi-clock me-1"></i>Follow-up {{ app.next_follow_up.strftime('%b %d') }}
+              {% endif %}
+              {% if app.interview_date %}
+                <span class="mx-2">·</span>
+                <i class="bi bi-camera-video me-1"></i>Interview {{ app.interview_date.strftime('%b %d %I:%M %p') }}
+              {% endif %}
+            </div>
+            {% if app.notes %}
+            <p class="text-muted small mb-0 fst-italic">{{ app.notes|truncate(100) }}</p>
+            {% endif %}
+          </div>
+          <div class="flex-shrink-0 d-flex flex-column gap-1">
+            <a href="{{ url_for('application_detail', app_id=app.id) }}"
+               class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            {% if app.interview_date %}
+            <a href="{{ url_for('download_interview_ics', app_id=app.id) }}"
+               class="btn btn-sm btn-outline-info" title="Add interview to calendar">
+              <i class="bi bi-calendar-plus"></i>
+            </a>
+            {% endif %}
+            <a href="{{ url_for('job_detail', job_id=app.job_id) }}"
+               class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-briefcase"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-file-earmark-x fs-1 d-block mb-3 opacity-25"></i>
+  <h5>No applications yet</h5>
+  <p class="small">Browse jobs and click "Start Application" to begin tracking.</p>
+  <a href="{{ url_for('jobs') }}" class="btn btn-primary">
+    <i class="bi bi-search me-2"></i>Browse Jobs
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}

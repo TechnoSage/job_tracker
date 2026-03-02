@@ -1,0 +1,25 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+APScheduler==3.10.4
+requests==2.31.0
+beautifulsoup4==4.12.3
+feedparser==6.0.11
+python-dotenv==1.0.1
+# lxml is optional (faster HTML parsing). Remove if it fails to build on your system.
+# lxml==5.2.2
+icalendar==5.0.13
+pytz==2024.1
+Werkzeug==3.0.3
+SQLAlchemy==2.0.30
+# Resume parsing (required for "Use Resume" feature on Settings page)
+pypdf>=4.0.0
+python-docx>=1.1.0
+# Calendar OAuth integration (Google Calendar + Outlook / Microsoft Graph)
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.132.0
+msal>=1.28.0
+# Excel export for unemployment weekly reports
+openpyxl>=3.1.0
+# Background daemon system tray icon (optional — auto-installed on first use)
+# pystray>=0.19.5
+# Pillow>=10.0.0

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Notifications — Job Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mt-3 mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-primary"></i>Notifications</h2>
+  <form method="POST" action="{{ url_for('mark_notifications_read') }}">
+    <button class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-check-all me-1"></i>Mark All Read
+    </button>
+  </form>
+</div>
+
+{% if notifications %}
+<div class="d-flex flex-column gap-3">
+  {% for notif in notifications %}
+  <div class="card border-0 shadow-sm {% if not notif.is_read %}border-start border-3 border-{{ notif.color() }}{% endif %}">
+    <div class="card-body d-flex align-items-start gap-3">
+      <div class="flex-shrink-0 mt-1">
+        <i class="bi {{ notif.icon() }} text-{{ notif.color() }} fs-5"></i>
+      </div>
+      <div class="flex-grow-1">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="fw-semibold {% if not notif.is_read %}text-white{% else %}text-muted{% endif %}">
+            {{ notif.title }}
+          </span>
+          {% if not notif.is_read %}
+            <span class="badge bg-{{ notif.color() }} small">New</span>
+          {% endif %}
+          {% if notif.job and notif.job.match_score is not none %}
+            <span class="badge score-badge
+              {% if notif.job.match_score >= score_t2 %}score-neon
+              {% elif notif.job.match_score >= score_t1 %}score-blue
+              {% else %}score-grey{% endif %}">
+              {{ notif.job.match_score }}
+            </span>
+          {% endif %}
+        </div>
+        {% if notif.job %}
+        <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+          <span class="small text-baby-blue fw-semibold">{{ notif.job.company }}</span>
+          {% if notif.job.job_duration %}
+            <span class="badge bg-secondary small">{{ notif.job.job_duration }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
+        <div class="small mt-1 text-warning d-flex align-items-center gap-2 flex-wrap">
+          <span><i class="bi bi-clock me-1"></i>{{ notif.created_at.strftime('%b %d, %Y %H:%M') }}</span>
+          {% if notif.job and notif.job.posted_date %}
+            {% set days_ago = (today - notif.job.posted_date.date()).days %}
+            <span class="text-secondary">·</span>
+            <span class="text-white">Job Posted - <span class="fw-bold text-warning">{{ days_ago }}</span> day{{ 's' if days_ago != 1 else '' }} ago</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="flex-shrink-0 d-flex gap-2">
+        {% if notif.job_id %}
+        <a href="{{ url_for('job_detail', job_id=notif.job_id) }}"
+           class="btn btn-sm btn-outline-primary">View Job</a>
+        {% endif %}
+        {% if notif.application_id %}
+        <a href="{{ url_for('application_detail', app_id=notif.application_id) }}"
+           class="btn btn-sm btn-outline-info">View App</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center text-muted py-5">
+  <i class="bi bi-bell-slash fs-1 d-block mb-3 opacity-25"></i>
+  <h5>No notifications yet</h5>
+  <p class="small">Notifications appear here when new matching jobs are found.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,482 @@
+{% extends "base.html" %}
+{% block title %}{{ app.job.title }} Application — Job Tracker{% endblock %}
+
+{% block content %}
+<div class="mt-3 mb-4">
+  <a href="{{ url_for('applications') }}" class="text-muted text-decoration-none small">
+    <i class="bi bi-arrow-left me-1"></i>Back to Applications
+  </a>
+</div>
+
+<div class="row g-4">
+  <!-- Left: Edit form -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0">
+        <div class="d-flex align-items-start justify-content-between gap-3">
+          <div>
+            <h5 class="fw-bold mb-0">{{ app.job.title }}</h5>
+            <div class="text-muted small">
+              <i class="bi bi-building me-1"></i>{{ app.job.company }}
+              <span class="ms-2 badge bg-{{ app.status_color() }}">{{ app.status_label() }}</span>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-info flex-shrink-0" id="autofillBtn">
+            <i class="bi bi-stars me-1"></i>Auto-fill from Job
+          </button>
+        </div>
+        <div id="autofillAlert" class="mt-2" style="display:none"></div>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('update_application', app_id=app.id) }}">
+
+          <div class="row g-3 mb-4">
+            <!-- Status -->
+            <div class="col-sm-4">
+              <label class="form-label fw-semibold">Status</label>
+              <select name="status" class="form-select">
+                {% for key, (label, color) in app.STATUS_LABELS.items() %}
+                <option value="{{ key }}" {% if app.status == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <!-- Applied Date -->
+            <div class="col-sm-4">
+              <label class="form-label fw-semibold">Applied Date</label>
+              <input type="date" name="applied_date" class="form-control"
+                     value="{{ app.applied_date.strftime('%Y-%m-%d') if app.applied_date else '' }}">
+            </div>
+            <!-- Resume version -->
+            <div class="col-sm-4">
+              <label class="form-label fw-semibold">Resume Version</label>
+              <input type="text" name="resume_version" class="form-control"
+                     value="{{ app.resume_version or resume_default }}"
+                     placeholder="e.g. v3-software">
+              {% if not app.resume_version and resume_default %}
+              <div class="form-text text-info">
+                <i class="bi bi-info-circle me-1"></i>Defaulted from Settings resume path
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- Contact name -->
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Contact Name</label>
+              <input type="text" name="contact_name" class="form-control"
+                     value="{{ app.contact_name or '' }}" placeholder="Recruiter / Hiring Manager">
+            </div>
+            <!-- Contact email -->
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Contact Email</label>
+              <input type="text" name="contact_email" class="form-control"
+                     value="{{ app.contact_email or '' }}" placeholder="recruiter@company.com">
+            </div>
+
+            <!-- Interview date -->
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Interview Date & Time</label>
+              <input type="datetime-local" name="interview_date" class="form-control"
+                     value="{{ app.interview_date.strftime('%Y-%m-%dT%H:%M') if app.interview_date else '' }}">
+            </div>
+            <!-- Interview type -->
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Interview Type</label>
+              <select name="interview_type" class="form-select">
+                <option value="">— Select —</option>
+                <option value="phone" {% if app.interview_type == 'phone' %}selected{% endif %}>Phone Screen</option>
+                <option value="video" {% if app.interview_type == 'video' %}selected{% endif %}>Video Call</option>
+                <option value="technical" {% if app.interview_type == 'technical' %}selected{% endif %}>Technical Round</option>
+                <option value="in_person" {% if app.interview_type == 'in_person' %}selected{% endif %}>In-Person</option>
+              </select>
+            </div>
+
+            <!-- Next follow-up -->
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Next Follow-up Date</label>
+              <input type="date" name="next_follow_up" class="form-control"
+                     value="{{ app.next_follow_up.strftime('%Y-%m-%d') if app.next_follow_up else '' }}">
+            </div>
+            <!-- Salary offered -->
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Salary Offered ($)</label>
+              <input type="number" name="salary_offered" class="form-control"
+                     value="{{ app.salary_offered or '' }}" placeholder="85000">
+            </div>
+
+            <!-- Notes -->
+            <div class="col-12">
+              <label class="form-label fw-semibold">Notes</label>
+              <textarea name="notes" class="form-control" rows="4"
+                        placeholder="Interview notes, recruiter feedback, things to mention...">{{ app.notes or '' }}</textarea>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="saveChangesBtn">
+            <i class="bi bi-save me-2"></i>Save Changes
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Cover Letter -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-file-earmark-richtext me-2 text-primary"></i>Cover Letter</h6>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" id="regenerateBtn"
+                  data-job-id="{{ app.job_id }}">
+            <i class="bi bi-arrow-clockwise me-1"></i>Regenerate
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="copyLetter()">
+            <i class="bi bi-clipboard me-1"></i>Copy
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('update_application', app_id=app.id) }}">
+          <textarea name="cover_letter" id="coverLetterText" class="form-control"
+                    rows="22" style="font-family:Georgia,serif;font-size:0.85rem">{{ app.cover_letter or '' }}</textarea>
+          <div class="mt-3 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-outline-success">
+              <i class="bi bi-save me-1"></i>Save Letter
+            </button>
+            <form method="POST" action="{{ url_for('send_application_email', job_id=app.job_id) }}"
+                  class="d-inline" id="sendForm">
+              <input type="hidden" name="cover_letter" id="coverLetterHidden">
+              <button type="submit" class="btn btn-sm btn-primary" onclick="setSendValue()">
+                <i class="bi bi-envelope me-1"></i>Email to Me
+              </button>
+            </form>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Sidebar -->
+  <div class="col-lg-4">
+
+    <!-- Calendar -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-calendar3 me-2 text-info"></i>Calendar</h6>
+      </div>
+      <div class="card-body">
+
+        {# ── Events summary ──────────────────────────────────────────── #}
+        <div class="small text-muted mb-2">
+          {% if app.interview_date %}
+          <div><i class="bi bi-mic me-1 text-info"></i><strong>Interview</strong>
+            — {{ app.interview_date.strftime('%b %d, %Y %H:%M') }}</div>
+          {% endif %}
+          {% if app.next_follow_up %}
+          <div><i class="bi bi-bell me-1 text-warning"></i><strong>Follow-up</strong>
+            — {{ app.next_follow_up.strftime('%b %d, %Y') }}</div>
+          {% endif %}
+          {% if not app.interview_date and not app.next_follow_up %}
+          <div class="text-muted fst-italic">Set a date above to add calendar events.</div>
+          {% endif %}
+        </div>
+
+        {# ── Download all events — single .ics with both ─────────────── #}
+        {% if app.interview_date or app.next_follow_up %}
+        <div class="d-grid mb-2">
+          <a href="{{ url_for('download_combined_ics', app_id=app.id) }}"
+             class="btn btn-sm btn-info text-white">
+            <i class="bi bi-download me-1"></i>Download All Events (.ics)
+          </a>
+        </div>
+        <p class="text-muted mb-2" style="font-size:0.7rem">
+          One click imports <em>all</em> events for this application (interview + follow-up)
+          into Google Calendar, Outlook, or Apple Calendar.
+        </p>
+        {% endif %}
+
+        {# ── Or add individually via web deep-link ───────────────────── #}
+        {% if app.interview_date or app.next_follow_up %}
+        <div class="text-muted small fw-semibold mb-1" style="font-size:0.72rem">
+          Or open in your browser to add individually:
+        </div>
+        <div class="d-grid gap-1">
+          {% if app.interview_date %}
+          <a href="{{ interview_links.google }}" target="_blank" rel="noopener"
+             class="btn btn-sm btn-outline-danger">
+            <img src="https://www.gstatic.com/images/branding/product/1x/calendar_2020q4_16dp.png"
+                 width="13" height="13" class="me-1" alt="">Google — Interview
+          </a>
+          <a href="{{ interview_links.outlook }}" target="_blank" rel="noopener"
+             class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-microsoft me-1"></i>Outlook — Interview
+          </a>
+          {% endif %}
+          <a href="{{ followup_links.google }}" id="followupGoogleBtn" target="_blank" rel="noopener"
+             class="btn btn-sm btn-outline-danger">
+            <img src="https://www.gstatic.com/images/branding/product/1x/calendar_2020q4_16dp.png"
+                 width="13" height="13" class="me-1" alt="">Google — Follow-up
+          </a>
+          <a href="{{ followup_links.outlook }}" id="followupOutlookBtn" target="_blank" rel="noopener"
+             class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-microsoft me-1"></i>Outlook — Follow-up
+          </a>
+        </div>
+        {% endif %}
+
+        <div class="small text-muted mt-2 px-1" style="font-size:0.7rem">
+          <i class="bi bi-info-circle me-1"></i>
+          <a href="{{ url_for('settings') }}#section-calendar" class="text-info">Subscribe to the feed</a>
+          to keep all events in sync automatically.
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Job summary -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-briefcase me-2"></i>Job Summary</h6>
+      </div>
+      <div class="card-body small">
+        <div class="mb-1"><strong>Score:</strong>
+          <span class="badge bg-{{ app.job.score_badge() }}">{{ app.job.match_score }}/100</span>
+        </div>
+        <div class="mb-1"><strong>Source:</strong> {{ app.job.source }}</div>
+        <div class="mb-1"><strong>Category:</strong> {{ app.job.job_category.replace('_',' ').title() }}</div>
+        {% if app.job.salary_range %}
+        <div class="mb-1"><strong>Salary:</strong> {{ app.job.salary_range }}</div>
+        {% endif %}
+        <div class="mt-3">
+          <a href="{{ url_for('job_detail', job_id=app.job_id) }}"
+             class="btn btn-sm btn-outline-secondary w-100">
+            <i class="bi bi-eye me-1"></i>View Full Job
+          </a>
+          <a href="{{ app.job.url }}" target="_blank" rel="noopener"
+             class="btn btn-sm btn-outline-primary w-100 mt-2">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Original Posting
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>Timeline</h6>
+      </div>
+      <div class="card-body small">
+        <div class="timeline">
+          <div class="timeline-item">
+            <span class="timeline-dot bg-secondary"></span>
+            <span class="text-muted">Found </span>
+            {{ app.job.found_date.strftime('%b %d, %Y') if app.job.found_date else '?' }}
+          </div>
+          {% if app.applied_date %}
+          <div class="timeline-item">
+            <span class="timeline-dot bg-primary"></span>
+            <span class="text-muted">Applied </span>
+            {{ app.applied_date.strftime('%b %d, %Y') }}
+          </div>
+          {% endif %}
+          {% if app.next_follow_up %}
+          <div class="timeline-item">
+            <span class="timeline-dot bg-warning"></span>
+            <span class="text-muted">Follow-up </span>
+            {{ app.next_follow_up.strftime('%b %d, %Y') }}
+          </div>
+          {% endif %}
+          {% if app.interview_date %}
+          <div class="timeline-item">
+            <span class="timeline-dot bg-info"></span>
+            <span class="text-muted">Interview </span>
+            {{ app.interview_date.strftime('%b %d, %Y') }}
+          </div>
+          {% endif %}
+          {% if app.status == 'offer' %}
+          <div class="timeline-item">
+            <span class="timeline-dot bg-success"></span>
+            <span class="text-success fw-bold">Offer received</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Add to Calendar modal ──────────────────────────────────────────── -->
+<div class="modal fade" id="calendarModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-calendar-check me-2 text-info"></i>Add to Calendar
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3" id="calModalEventTitle"></p>
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('download_combined_ics', app_id=app.id) }}"
+             class="btn btn-info text-white"
+             onclick="bootstrap.Modal.getInstance(document.getElementById('calendarModal')).hide()">
+            <i class="bi bi-download me-2"></i>Download All Events (.ics)
+          </a>
+          <div class="text-center text-muted small">— or open follow-up directly —</div>
+          <a id="calGoogleBtn" href="#" target="_blank" rel="noopener"
+             class="btn btn-outline-danger" onclick="bootstrap.Modal.getInstance(document.getElementById('calendarModal')).hide()">
+            <img src="https://www.gstatic.com/images/branding/product/1x/calendar_2020q4_16dp.png"
+                 width="16" height="16" class="me-2" alt="">Google Calendar
+          </a>
+          <a id="calOutlookBtn" href="#" target="_blank" rel="noopener"
+             class="btn btn-outline-primary" onclick="bootstrap.Modal.getInstance(document.getElementById('calendarModal')).hide()">
+            <i class="bi bi-microsoft me-2"></i>Outlook Calendar
+          </a>
+        </div>
+        <p class="text-muted small mt-3 mb-0">
+          <i class="bi bi-info-circle me-1"></i>
+          <strong>Download All Events</strong> imports both interview and follow-up in one click.
+          The web buttons open in a new tab — sign in if prompted, then save.
+        </p>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Skip</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function regenerateCoverLetter() {
+  const btn = document.getElementById('regenerateBtn');
+  const jobId = btn.dataset.jobId;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Regenerating...';
+  try {
+    const resp = await fetch(`/jobs/${jobId}/cover-letter`);
+    const data = await resp.json();
+    document.getElementById('coverLetterText').value = data.cover_letter;
+    btn.innerHTML = '<i class="bi bi-check me-1"></i>Done';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Regenerate';
+    }, 2000);
+  } catch (e) {
+    btn.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Error';
+    btn.disabled = false;
+  }
+}
+document.getElementById('regenerateBtn').addEventListener('click', regenerateCoverLetter);
+
+function copyLetter() {
+  const text = document.getElementById('coverLetterText').value;
+  navigator.clipboard.writeText(text).then(() => alert('Copied!'));
+}
+function setSendValue() {
+  document.getElementById('coverLetterHidden').value = document.getElementById('coverLetterText').value;
+}
+
+// ── Auto-fill from job posting ──────────────────────────────────────────────
+const APP_ID = {{ app.id }};
+
+function _qs(name) { return document.querySelector(`[name="${name}"]`); }
+
+function _fillField(name, value, filledList, label) {
+  const el = _qs(name);
+  if (!el || el.value.trim()) return;   // skip if already has content
+  el.value = value;
+  el.classList.add('border-success');
+  filledList.push(label);
+}
+
+function showAutofillAlert(msg, type) {
+  const div = document.getElementById('autofillAlert');
+  div.className = `alert alert-${type} alert-dismissible fade show`;
+  div.innerHTML = `${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+  div.style.display = 'block';
+}
+
+document.getElementById('autofillBtn').addEventListener('click', async function () {
+  const btn = this;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Filling...';
+
+  try {
+    const resp = await fetch(`/api/applications/${APP_ID}/autofill`);
+    const data = await resp.json();
+    const filled = [];
+
+    _fillField('resume_version', data.resume_version, filled, 'Resume Version');
+    _fillField('contact_name',   data.contact_name,   filled, 'Contact Name');
+    _fillField('contact_email',  data.contact_email,  filled, 'Contact Email');
+    _fillField('salary_offered', data.salary_offered, filled, 'Salary Offered');
+    _fillField('next_follow_up', data.next_follow_up, filled, 'Follow-up Date');
+    _fillField('notes',          data.notes,          filled, 'Notes');
+
+    if (filled.length > 0) {
+      showAutofillAlert(
+        `<i class="bi bi-check-circle me-1"></i>Auto-filled: <strong>${filled.join(', ')}</strong>. Review and save when ready.`,
+        'success'
+      );
+    } else {
+      showAutofillAlert(
+        '<i class="bi bi-info-circle me-1"></i>All fields already have values — clear any field to let auto-fill populate it.',
+        'info'
+      );
+    }
+  } catch (e) {
+    showAutofillAlert('<i class="bi bi-exclamation-triangle me-1"></i>Auto-fill failed. Please fill in fields manually.', 'danger');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-stars me-1"></i>Auto-fill from Job';
+});
+
+// ── AJAX Save ─────────────────────────────────────────────────────────────────
+const _mainForm = document.querySelector('form[action*="update"]');
+_mainForm.addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const btn = document.getElementById('saveChangesBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+  try {
+    const resp = await fetch(this.action, {
+      method: 'POST',
+      body: new FormData(this),
+      headers: {'X-Requested-With': 'XMLHttpRequest'},
+    });
+    const data = await resp.json();
+
+    btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Saved';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-save me-2"></i>Save Changes';
+    }, 2000);
+
+    if (data.followup_changed) {
+      // Feed updates automatically — just notify the user
+      showAutofillAlert(
+        '<i class="bi bi-calendar-check me-1"></i>' +
+        '<strong>Calendar feed updated.</strong> Changes will appear in your subscribed ' +
+        'Job Tracker calendar shortly. To sync now: right-click the calendar in Google → ' +
+        '<strong>Refresh</strong>.',
+        'success'
+      );
+    } else if (data.interview_changed) {
+      showAutofillAlert(
+        '<i class="bi bi-calendar-check me-1"></i>' +
+        '<strong>Calendar feed updated.</strong> Your interview event will appear in your ' +
+        'subscribed Job Tracker calendar shortly.',
+        'success'
+      );
+    }
+  } catch (e) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-save me-2"></i>Save Changes';
+    showAutofillAlert('<i class="bi bi-exclamation-triangle me-1"></i>Save failed. Please try again.', 'danger');
+  }
+});
+</script>
+{% endblock %}

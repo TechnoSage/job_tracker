@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} — Job Tracker{% endblock %}
+
+{% block content %}
+<div class="mt-3 mb-4">
+  <a href="{{ url_for('jobs') }}" class="text-muted text-decoration-none small">
+    <i class="bi bi-arrow-left me-1"></i>Back to Jobs
+  </a>
+</div>
+
+<div class="row g-4">
+
+  <!-- Left: Job Details -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <!-- Header -->
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <div class="score-circle score-{{ job.score_badge() }} flex-shrink-0">{{ job.match_score }}</div>
+          <div>
+            <h3 class="fw-bold mb-1">{{ job.title }}</h3>
+            <div class="text-muted">
+              <i class="bi bi-building me-1"></i><strong>{{ job.company or 'Unknown' }}</strong>
+              <span class="mx-2">·</span>
+              <i class="bi bi-geo-alt me-1"></i>{{ job.location or 'Remote' }}
+              {% if job.salary_range %}
+                <span class="mx-2">·</span>
+                <i class="bi bi-currency-dollar me-1"></i>{{ job.salary_range }}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Badges row -->
+        <div class="d-flex flex-wrap gap-2 mb-4">
+          <span class="badge bg-{{ job.status_badge() }} fs-6">{{ job.status }}</span>
+          <span class="badge bg-dark">{{ job.source }}</span>
+          <span class="badge bg-secondary">{{ job.job_category.replace('_',' ') }}</span>
+          {% if job.job_duration %}
+            <span class="badge bg-info bg-opacity-75">{{ job.job_duration }}</span>
+          {% endif %}
+          {% if job.is_remote %}
+            <span class="badge bg-success bg-opacity-50">Remote</span>
+          {% endif %}
+          <span class="badge bg-secondary">Found {{ job.found_date.strftime('%b %d, %Y') if job.found_date else '?' }}</span>
+          {% if job.posted_date %}
+            <span class="badge bg-dark border border-secondary" data-posted-date="{{ job.posted_date.strftime('%Y-%m-%d') }}">
+              <i class="bi bi-calendar-event me-1"></i>Posted {{ job.posted_date.strftime('%b %d, %Y') }}
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- Matched skills -->
+        {% set skills = job.get_matched_skills() %}
+        {% if skills %}
+        <div class="mb-4">
+          <h6 class="fw-semibold mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Matched Skills</h6>
+          <div class="d-flex flex-wrap gap-2">
+            {% for skill in skills %}
+            <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25">
+              <i class="bi bi-check me-1"></i>{{ skill }}
+            </span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Tags -->
+        {% set tags = job.get_tags() %}
+        {% if tags %}
+        <div class="mb-4">
+          <h6 class="fw-semibold mb-2"><i class="bi bi-tags me-2"></i>Tags</h6>
+          <div class="d-flex flex-wrap gap-1">
+            {% for tag in tags %}
+            <span class="badge bg-dark border border-secondary">{{ tag }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Job description -->
+        <div>
+          <h6 class="fw-semibold mb-2"><i class="bi bi-file-text me-2"></i>Description</h6>
+          <div class="job-description">{{ job.description or 'No description available.' }}</div>
+        </div>
+
+        <!-- External link -->
+        <div class="mt-4">
+          <a href="{{ job.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary">
+            <i class="bi bi-box-arrow-up-right me-2"></i>View on {{ job.source }}
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cover Letter -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-file-earmark-richtext me-2 text-primary"></i>Cover Letter</h6>
+        <button class="btn btn-sm btn-outline-secondary" id="generateCoverLetter"
+                data-job-id="{{ job.id }}">
+          <i class="bi bi-magic me-1"></i>Generate
+        </button>
+      </div>
+      <div class="card-body">
+        <textarea id="coverLetterText" class="form-control font-monospace small"
+                  rows="18" style="font-family: Georgia, serif; font-size: 0.85rem;">{% if job.application and job.application.cover_letter %}{{ job.application.cover_letter }}{% endif %}</textarea>
+        <div class="mt-3 d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard()">
+            <i class="bi bi-clipboard me-1"></i>Copy
+          </button>
+          {% if job.application %}
+          <form method="POST" action="{{ url_for('send_application_email', job_id=job.id) }}" id="sendForm">
+            <input type="hidden" name="cover_letter" id="coverLetterHidden">
+            <button type="submit" class="btn btn-sm btn-primary" onclick="submitCoverLetter(event)">
+              <i class="bi bi-envelope me-1"></i>Send to My Email
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Actions -->
+  <div class="col-lg-4">
+
+    <!-- Status Actions -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-lightning-fill me-2 text-warning"></i>Actions</h6>
+      </div>
+      <div class="card-body d-grid gap-2">
+        {% if job.status == 'new' %}
+        <form method="POST" action="{{ url_for('save_job', job_id=job.id) }}">
+          <button class="btn btn-info w-100"><i class="bi bi-bookmark-fill me-2"></i>Save Job</button>
+        </form>
+        {% endif %}
+
+        {% if not job.application %}
+        <button type="button"
+                class="btn btn-success w-100 apply-trigger-btn"
+                data-job-id="{{ job.id }}"
+                data-job-url="{{ job.url | e }}"
+                data-job-title="{{ job.title | e }}">
+          <i class="bi bi-send-fill me-2"></i>Start Application
+        </button>
+        {% else %}
+        <a href="{{ url_for('application_detail', app_id=job.application.id) }}"
+           class="btn btn-outline-warning">
+          <i class="bi bi-file-earmark-text me-2"></i>View Application
+        </a>
+        {% endif %}
+
+        {% if job.status != 'archived' %}
+        <form method="POST" action="{{ url_for('archive_job', job_id=job.id) }}">
+          <button class="btn btn-outline-secondary"><i class="bi bi-archive me-2"></i>Archive</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Application status (if exists) -->
+    {% if job.application %}
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-clipboard-check me-2 text-success"></i>Application Status</h6>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <span class="badge bg-{{ job.application.status_color() }} fs-6">
+            {{ job.application.status_label() }}
+          </span>
+        </div>
+        {% if job.application.applied_date %}
+        <div class="small text-muted mb-1">
+          <i class="bi bi-calendar-check me-1"></i>
+          Applied: {{ job.application.applied_date.strftime('%b %d, %Y') }}
+        </div>
+        {% endif %}
+        {% if job.application.next_follow_up %}
+        <div class="small text-muted mb-1">
+          <i class="bi bi-clock me-1"></i>
+          Follow-up: {{ job.application.next_follow_up.strftime('%b %d, %Y') }}
+        </div>
+        {% endif %}
+        {% if job.application.interview_date %}
+        <div class="small text-muted mb-1">
+          <i class="bi bi-camera-video me-1"></i>
+          Interview: {{ job.application.interview_date.strftime('%b %d, %Y %I:%M %p') }}
+        </div>
+        <a href="{{ url_for('download_interview_ics', app_id=job.application.id) }}"
+           class="btn btn-sm btn-outline-info mt-2 w-100">
+          <i class="bi bi-calendar-plus me-1"></i>Add to Calendar
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Job metadata -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-info-circle me-2"></i>Details</h6>
+      </div>
+      <div class="card-body small text-muted">
+        <div class="mb-1"><strong>Source:</strong> {{ job.source }}</div>
+        <div class="mb-1"><strong>Category:</strong> {{ job.job_category.replace('_',' ').title() }}</div>
+        {% if job.job_duration %}
+        <div class="mb-1"><strong>Duration:</strong> {{ job.job_duration }}</div>
+        {% endif %}
+        <div class="mb-1"><strong>Match Score:</strong> {{ job.match_score }}/100</div>
+        <div class="mb-1"><strong>Found:</strong> {{ job.found_date.strftime('%Y-%m-%d %H:%M') if job.found_date else '?' }}</div>
+        {% if job.posted_date %}
+        <div class="mb-1"><strong>Posted:</strong> {{ job.posted_date.strftime('%Y-%m-%d') }}</div>
+        {% endif %}
+        <div class="mt-3">
+          <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary w-100">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Original Posting
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function fetchCoverLetter() {
+  const btn = document.getElementById('generateCoverLetter');
+  const jobId = btn.dataset.jobId;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating...';
+  try {
+    const resp = await fetch(`/jobs/${jobId}/cover-letter`);
+    const data = await resp.json();
+    document.getElementById('coverLetterText').value = data.cover_letter;
+    btn.innerHTML = '<i class="bi bi-check me-1"></i>Done';
+  } catch (e) {
+    btn.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Error';
+  }
+}
+
+document.getElementById('generateCoverLetter').addEventListener('click', fetchCoverLetter);
+
+function copyToClipboard() {
+  const text = document.getElementById('coverLetterText').value;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Copied to clipboard!');
+  });
+}
+
+function submitCoverLetter(e) {
+  document.getElementById('coverLetterHidden').value =
+    document.getElementById('coverLetterText').value;
+}
+</script>
+{% endblock %}

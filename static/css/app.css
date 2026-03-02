@@ -1,0 +1,338 @@
+/* ============================================================
+   Job Tracker — Custom Styles
+   ============================================================ */
+
+/* ---- Layout ---- */
+html, body { height: 100%; overflow: hidden; }
+
+#wrapper {
+  height: 100vh;
+}
+
+#sidebar {
+  width: 230px;
+  min-width: 230px;
+  height: 100vh;
+  overflow-y: auto;
+  transition: width 0.25s ease;
+  flex-shrink: 0;
+}
+
+#sidebar.collapsed {
+  width: 60px;
+  min-width: 60px;
+}
+
+#sidebar.collapsed .sidebar-brand span,
+#sidebar.collapsed .nav-link span,
+#sidebar.collapsed .nav-link .badge {
+  display: none;
+}
+
+#sidebar.collapsed .nav-link {
+  justify-content: center;
+  padding: 0.6rem;
+}
+
+#sidebar.collapsed .nav-link i {
+  margin-right: 0 !important;
+  font-size: 1.2rem;
+}
+
+#sidebar.collapsed .sidebar-brand {
+  justify-content: center;
+}
+
+#page-content {
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.topbar {
+  z-index: 100;
+}
+
+/* ---- Sidebar nav ---- */
+#sidebar .nav-link {
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+#sidebar .nav-link:hover {
+  background: rgba(255,255,255,0.07);
+}
+#sidebar .nav-link.active {
+  background: #0d6efd;
+  color: #fff !important;
+}
+
+.sidebar-brand {
+  padding: 0.25rem 0;
+}
+
+/* ---- Metric cards ---- */
+.metric-card {
+  border-radius: 16px;
+  background-color: #2b3035;
+  box-shadow:
+    0 2px 2px  rgba(0, 0, 0, .50),
+    0 6px 10px  rgba(0, 0, 0, .45),
+    0 16px 36px rgba(0, 0, 0, .40),
+    0 28px 52px rgba(0, 0, 0, .25),
+    inset 0 1px 0 rgba(255, 255, 255, .10);
+  transition: transform 0.28s cubic-bezier(.22, 1, .36, 1),
+              box-shadow 0.28s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}
+
+.metric-card:hover {
+  transform: translateY(-10px);
+  box-shadow:
+    0 4px 4px   rgba(0, 0, 0, .50),
+    0 10px 18px rgba(0, 0, 0, .50),
+    0 26px 52px rgba(0, 0, 0, .45),
+    0 44px 72px rgba(0, 0, 0, .30),
+    inset 0 1px 0 rgba(255, 255, 255, .13);
+}
+
+.metric-icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+/* ---- Score circle ---- */
+.score-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.score-success  { background: rgba(25,135,84,0.25); color: #198754; border: 2px solid #198754; }
+.score-warning  { background: rgba(255,193,7,0.25); color: #ffc107; border: 2px solid #ffc107; }
+.score-secondary{ background: rgba(108,117,125,0.2); color: #adb5bd; border: 2px solid #495057; }
+
+/* ---- Score badge in table ---- */
+.score-badge {
+  min-width: 36px;
+  font-size: 0.8rem;
+}
+
+/* Tiered score colours (grey → light-blue → neon-green) */
+.score-grey {
+  background-color: #6c757d;
+  color: #fff;
+}
+.score-blue {
+  background-color: #5bc0de;
+  color: #fff;
+}
+.score-neon {
+  background-color: #39ff14;
+  color: #111;
+  box-shadow: 0 0 7px rgba(57, 255, 20, 0.60);
+}
+
+/* ---- Job cards ---- */
+.job-card {
+  border-radius: 10px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.job-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35) !important;
+}
+
+/* ---- Button xs ---- */
+.btn-xs {
+  padding: 0.1rem 0.45rem;
+  font-size: 0.75rem;
+}
+
+/* ---- Job description formatting ---- */
+.job-description {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: #cdd3da;
+  max-height: 500px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---- Timeline ---- */
+.timeline {
+  position: relative;
+  padding-left: 20px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #333;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+}
+
+.timeline-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  position: absolute;
+  left: -20px;
+  top: 3px;
+}
+
+/* ---- Cards ---- */
+.card {
+  border-radius: 10px;
+  background-color: #2b3035;
+  box-shadow:
+    0 2px 2px  rgba(0, 0, 0, .45),
+    0 5px 10px  rgba(0, 0, 0, .38),
+    0 12px 28px rgba(0, 0, 0, .28),
+    inset 0 1px 0 rgba(255, 255, 255, .07);
+  transition: transform 0.28s cubic-bezier(.22, 1, .36, 1),
+              box-shadow 0.28s cubic-bezier(.22, 1, .36, 1);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 4px 4px   rgba(0, 0, 0, .48),
+    0 8px 16px  rgba(0, 0, 0, .42),
+    0 20px 40px rgba(0, 0, 0, .32),
+    inset 0 1px 0 rgba(255, 255, 255, .09);
+}
+
+/* ---- Table headers inside cards ---- */
+/* Bootstrap table-dark forces #212529; override to match the card surface */
+.card .table thead th {
+  --bs-table-bg: #23272b;
+  background-color: #23272b;
+  border-bottom: 1px solid #373b3e;
+}
+
+/* Scrollable table wrapper — handles both axes so position:sticky works correctly.
+   A nested overflow element (e.g. table-responsive) would break sticky headers,
+   so the table sits directly inside this container. */
+.table-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+/* Sticky header — must be a direct descendant of the scroll container */
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  /* Re-apply the dark header background so the sticky cells fully opaque on scroll */
+  background-color: #23272b;
+}
+
+/* Most-recent scan row — yellow text on all data cells except the Status badge cell */
+.scan-latest td:not(.scan-status-col) {
+  color: #ffc107;
+  font-weight: 500;
+}
+
+/* ---- Baby blue company text ---- */
+.text-baby-blue {
+  color: #89cff0;
+}
+
+/* ---- Speech-bubble tooltips ---- */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  background: #3a3f47;
+  color: #e9ecef;
+  padding: 7px 13px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.45;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  box-shadow: 0 6px 22px rgba(0,0,0,.60), 0 2px 6px rgba(0,0,0,.40);
+  border: 1px solid rgba(255,255,255,.13);
+  z-index: 1050;
+}
+
+/* Arrow tail pointing down toward the card */
+[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  border: 6px solid transparent;
+  border-top-color: #3a3f47;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  z-index: 1051;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Global toggle — button adds this class to <body> */
+body.tooltips-off [data-tooltip]::after,
+body.tooltips-off [data-tooltip]::before {
+  display: none !important;
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #1a1a2e; }
+::-webkit-scrollbar-thumb { background: #495057; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #6c757d; }
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  #sidebar {
+    position: fixed;
+    z-index: 200;
+    height: 100%;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+  #sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  #page-content {
+    width: 100%;
+  }
+}

@@ -1,0 +1,209 @@
+#Requires -Version 5.0
+<#
+.SYNOPSIS
+    Job Tracker Build Dashboard - Windows Launcher
+
+.DESCRIPTION
+    1. Checks whether the Build Dashboard is already running on port 5001.
+    2. If not, locates Python and starts start_builder.py in a minimised window.
+    3. Polls until the server is ready (up to 30 seconds).
+    4. Opens the dashboard in Google Chrome, or the default browser.
+
+.NOTES
+    Called by the desktop shortcut created with create_builder_shortcut.ps1.
+    Do NOT move this file without re-running create_builder_shortcut.ps1.
+#>
+
+$AppDir = $PSScriptRoot
+$AppUrl = "http://127.0.0.1:5001"
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+function Show-Error($Msg) {
+    Add-Type -AssemblyName PresentationFramework | Out-Null
+    [System.Windows.MessageBox]::Show(
+        $Msg,
+        "Build Dashboard",
+        [System.Windows.MessageBoxButton]::OK,
+        [System.Windows.MessageBoxImage]::Error
+    ) | Out-Null
+}
+
+# Win32 API for focusing an existing window
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32Builder {
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
+    [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
+}
+"@ -ErrorAction SilentlyContinue
+
+function Open-Or-Focus-Browser($Url) {
+    # Look for any Chrome window whose title contains "Build Dashboard"
+    $existing = Get-Process -Name "chrome" -ErrorAction SilentlyContinue |
+        Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero -and
+                       $_.MainWindowTitle -like "*Build Dashboard*" } |
+        Select-Object -First 1
+
+    if ($existing) {
+        $hwnd = $existing.MainWindowHandle
+        if ([Win32Builder]::IsIconic($hwnd)) { [Win32Builder]::ShowWindow($hwnd, 9) }  # SW_RESTORE
+        [Win32Builder]::SetForegroundWindow($hwnd)
+        return
+    }
+
+    # No existing window found — open a fresh one
+    $chromePaths = @(
+        "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+        "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+        "$env:LocalAppData\Google\Chrome\Application\chrome.exe"
+    )
+    foreach ($cp in $chromePaths) {
+        if (Test-Path $cp) {
+            Start-Process -FilePath $cp -ArgumentList "--new-window", $Url
+            return
+        }
+    }
+    # Fall back to whatever the system default browser is
+    Start-Process $Url
+}
+
+function Test-PortListening($Port) {
+    $hits = netstat -an 2>$null | Select-String "127\.0\.0\.1:$Port\s.*LISTENING"
+    return ($null -ne $hits -and @($hits).Count -gt 0)
+}
+
+function Find-Python {
+    # WindowsApps\python.exe is an App Execution Alias stub that only works
+    # interactively (it can open the Microsoft Store instead of running Python).
+    # Skip it and find the real executable.
+    $waRoot = [System.IO.Path]::Combine($env:LOCALAPPDATA, 'Microsoft', 'WindowsApps')
+
+    # Step 1: Standard installer locations (Program Files / LocalAppData Programs)
+    foreach ($root in @(
+        "$env:LOCALAPPDATA\Programs\Python",
+        "$env:ProgramFiles\Python",
+        "C:\Python313", "C:\Python312", "C:\Python311", "C:\Python310", "C:\Python39"
+    )) {
+        if (Test-Path $root) {
+            $exe = Get-ChildItem $root -Filter "python.exe" -Recurse -ErrorAction SilentlyContinue |
+                   Where-Object { $_.FullName -notmatch "\\Scripts\\" } |
+                   Select-Object -First 1
+            if ($exe) { return $exe.FullName }
+        }
+    }
+
+    # Step 2: Search PATH entries, but skip the WindowsApps root-level stub
+    foreach ($cmd in @("python3", "python")) {
+        $found = Get-Command $cmd -ErrorAction SilentlyContinue
+        if ($found) {
+            $src = $found.Source
+            if ([System.IO.Path]::GetDirectoryName($src) -ieq $waRoot) { continue }
+            return $src
+        }
+    }
+
+    # Step 3: Microsoft Store Python - locate the App Execution Alias via package metadata.
+    #         pkg.InstallLocation is C:\Program Files\WindowsApps (ACL-blocked, can't execute).
+    #         pkg.PackageFamilyName gives the AEA subdirectory under $waRoot instead.
+    try {
+        $pkg = Get-AppxPackage -Name "PythonSoftwareFoundation.Python*" -ErrorAction SilentlyContinue |
+               Sort-Object Version -Descending | Select-Object -First 1
+        if ($pkg) {
+            $exe = Join-Path $waRoot (Join-Path $pkg.PackageFamilyName "python.exe")
+            if (Test-Path $exe) { return $exe }
+        }
+    } catch {}
+
+    # Step 4: Direct (non-recursive) scan of WindowsApps package subdirectories.
+    #         Get-ChildItem -Recurse fails here due to filesystem virtualisation.
+    if (Test-Path $waRoot) {
+        $subDirs = Get-ChildItem $waRoot -Directory -ErrorAction SilentlyContinue |
+                   Where-Object { $_.Name -like "PythonSoftwareFoundation*" } |
+                   Sort-Object LastWriteTime -Descending
+        foreach ($dir in $subDirs) {
+            $exe = Join-Path $dir.FullName "python.exe"
+            if (Test-Path $exe) { return $exe }
+        }
+    }
+
+    return $null
+}
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+# Guard against double-click: acquire a named system mutex so only one
+# instance of this launcher runs at a time.  A second click within the
+# same moment will find the mutex already held and exit immediately.
+$mutex = [System.Threading.Mutex]::new($false, "Global\BuildDashboardLauncher")
+if (-not $mutex.WaitOne(0)) {
+    # Another instance is already running — silently do nothing.
+    $mutex.Dispose()
+    exit 0
+}
+
+try {
+    # 1. Already running?
+    if (Test-PortListening 5001) {
+        Open-Or-Focus-Browser $AppUrl
+        Start-Sleep -Seconds 2   # hold mutex so a concurrent double-click exits early
+        exit 0
+    }
+
+    # 2. Locate Python executable
+    $pythonExe = Find-Python
+    if (-not $pythonExe) {
+        Show-Error (
+            "Python was not found in your PATH." + [Environment]::NewLine + [Environment]::NewLine +
+            "Please install Python from https://www.python.org" + [Environment]::NewLine +
+            "and check 'Add Python to PATH' during installation."
+        )
+        exit 1
+    }
+
+    # 3. Verify start_builder.py exists
+    $startPy = Join-Path $AppDir "start_builder.py"
+    if (-not (Test-Path $startPy)) {
+        Show-Error (
+            "Cannot find start_builder.py in:" + [Environment]::NewLine + $AppDir + [Environment]::NewLine +
+            [Environment]::NewLine +
+            "Please ensure the shortcut points to the job_tracker folder."
+        )
+        exit 1
+    }
+
+    # 4. Launch the Python server.
+    #    Start-Process uses ShellExecuteEx which correctly resolves Microsoft Store
+    #    Python App Execution Aliases.  The & call operator and CMD batch files both
+    #    use CreateProcess and fail with "Access is denied" on AEA executables.
+    Start-Process -FilePath $pythonExe `
+                  -ArgumentList "`"$startPy`"" `
+                  -WorkingDirectory $AppDir `
+                  -WindowStyle Minimized
+
+    # 5. Poll port 5001 until the server is ready (max 30 seconds).
+    $maxSeconds = 30
+    for ($i = 0; $i -lt $maxSeconds; $i++) {
+        Start-Sleep -Seconds 1
+        if (Test-PortListening 5001) { break }
+    }
+
+    # Even if the poll timed out, try opening the browser.
+    # The server may still be initialising.
+    Open-Or-Focus-Browser $AppUrl
+    Start-Sleep -Seconds 2   # hold mutex so a concurrent double-click exits early
+    exit 0
+
+} finally {
+    # Always release the mutex so a legitimate later launch can proceed.
+    try { $mutex.ReleaseMutex() } catch {}
+    $mutex.Dispose()
+}

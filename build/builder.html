@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Tracker — Build Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+body { font-size: 0.875rem; background: #1a1d20; }
+
+/* ── 3-D raised cards (match main app) ───────────────────────────────────── */
+.card {
+  border: none;
+  border-radius: 10px;
+  background-color: #2b3035;
+  box-shadow:
+    0 2px 2px  rgba(0,0,0,.45),
+    0 5px 10px rgba(0,0,0,.38),
+    0 12px 28px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.07);
+  transition: transform .28s cubic-bezier(.22,1,.36,1),
+              box-shadow .28s cubic-bezier(.22,1,.36,1);
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 4px 4px  rgba(0,0,0,.48),
+    0 8px 16px rgba(0,0,0,.42),
+    0 20px 40px rgba(0,0,0,.32),
+    inset 0 1px 0 rgba(255,255,255,.09);
+}
+.card-header {
+  background: rgba(255,255,255,.04);
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  font-weight: 600;
+  border-radius: 10px 10px 0 0 !important;
+}
+
+/* ── Version spinner ─────────────────────────────────────────────────────── */
+.ver-block { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.ver-num {
+  font-size: 1rem; font-weight: 700;
+  min-width: 2rem; text-align: center;
+  background: rgba(255,255,255,.06);
+  border-radius: 4px; padding: 2px 6px;
+  line-height: 1.4;
+}
+.ver-btn {
+  padding: 0 0.45rem; font-size: 0.72rem; line-height: 1.4;
+  border-color: rgba(255,255,255,.2);
+}
+.ver-dot { align-self: center; color: #6c757d; font-weight: 700; padding: 0 2px; }
+
+/* ── Build log terminal ──────────────────────────────────────────────────── */
+#log {
+  font-family: 'Consolas','Courier New',monospace;
+  font-size: 0.75rem; line-height: 1.45;
+  height: 300px; overflow-y: auto;
+  background: #0a0a0a; padding: 0.6rem 0.9rem;
+  border-radius: 0 0 10px 10px;
+}
+.log-error { color: #f87171; }
+.log-warn  { color: #fbbf24; }
+.log-ok    { color: #4ade80; }
+.log-sep   { color: #1e293b; }
+.log-line  { color: #cbd5e1; }
+
+/* ── Dep-check alert ─────────────────────────────────────────────────────── */
+#depPrompt { font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
+<nav class="navbar border-bottom border-secondary sticky-top" style="background:#212529">
+  <div class="container-fluid">
+    <span class="navbar-brand fw-semibold mb-0">
+      <i class="bi bi-tools me-2 text-info"></i>Build Dashboard
+    </span>
+    <span id="badge" class="badge bg-secondary" style="font-size:.8rem">Idle</span>
+  </div>
+</nav>
+
+<div class="container-fluid p-3">
+<div class="row g-3">
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     LEFT: Build Configuration
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="col-xl-7 col-lg-6">
+<div class="card">
+  <div class="card-header"><i class="bi bi-gear me-1 text-secondary"></i>Build Configuration</div>
+  <div class="card-body" style="max-height:600px;overflow-y:auto">
+
+    <!-- App Identity -->
+    <p class="text-uppercase text-muted small fw-semibold mb-2" style="letter-spacing:.06em;font-size:.7rem">App Identity</p>
+    <div class="row g-2 mb-3">
+
+      <!-- App Name (col-8) + Version spinner (col-4) -->
+      <div class="col-8">
+        <label class="form-label mb-1 text-muted small" for="APP_NAME">App Name</label>
+        <input id="APP_NAME" class="form-control form-control-sm">
+      </div>
+      <div class="col-4">
+        <label class="form-label mb-1 text-muted small d-block">Version</label>
+        <div class="d-flex align-items-center gap-1">
+          <!-- Major -->
+          <div class="ver-block">
+            <button class="btn btn-outline-secondary ver-btn" onclick="incVer('major')" title="Increment Major (resets Minor + Patch)">+</button>
+            <span id="ver_major" class="ver-num">1</span>
+            <button class="btn btn-outline-secondary ver-btn" onclick="decVer('major')">-</button>
+          </div>
+          <span class="ver-dot">.</span>
+          <!-- Minor -->
+          <div class="ver-block">
+            <button class="btn btn-outline-secondary ver-btn" onclick="incVer('minor')" title="Increment Minor (resets Patch)">+</button>
+            <span id="ver_minor" class="ver-num">0</span>
+            <button class="btn btn-outline-secondary ver-btn" onclick="decVer('minor')">-</button>
+          </div>
+          <span class="ver-dot">.</span>
+          <!-- Patch -->
+          <div class="ver-block">
+            <button class="btn btn-outline-secondary ver-btn" onclick="incVer('patch')" title="Increment Patch">+</button>
+            <span id="ver_patch" class="ver-num">0</span>
+            <button class="btn btn-outline-secondary ver-btn" onclick="decVer('patch')">-</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label mb-1 text-muted small" for="APP_DESCRIPTION">Description</label>
+        <input id="APP_DESCRIPTION" class="form-control form-control-sm">
+      </div>
+      <div class="col-12">
+        <label class="form-label mb-1 text-muted small" for="APP_PUBLISHER">Publisher</label>
+        <input id="APP_PUBLISHER" class="form-control form-control-sm">
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-1 text-muted small" for="APP_URL">App URL</label>
+        <input id="APP_URL" class="form-control form-control-sm">
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-1 text-muted small" for="APP_SUPPORT_URL">Support URL</label>
+        <input id="APP_SUPPORT_URL" class="form-control form-control-sm">
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-1 text-muted small" for="APP_EXE_NAME">Exe Name <span class="text-secondary">(no .exe)</span></label>
+        <input id="APP_EXE_NAME" class="form-control form-control-sm">
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-1 text-muted small" for="OUTPUT_DIR">Output Folder</label>
+        <input id="OUTPUT_DIR" class="form-control form-control-sm">
+      </div>
+    </div>
+
+    <hr class="border-secondary my-2">
+
+    <!-- Installer Options -->
+    <p class="text-uppercase text-muted small fw-semibold mb-2" style="letter-spacing:.06em;font-size:.7rem">Installer Options</p>
+    <div class="row g-2 mb-3">
+      <div class="col-12">
+        <label class="form-label mb-1 text-muted small" for="DEFAULT_INSTALL_DIR">
+          Default Install Directory <span class="text-secondary">({autopf} = Program Files)</span>
+        </label>
+        <input id="DEFAULT_INSTALL_DIR" class="form-control form-control-sm">
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-1 text-muted small" for="ICON_FILE">Icon File <span class="text-secondary">(.ico, optional)</span></label>
+        <input id="ICON_FILE" class="form-control form-control-sm" placeholder="icons/app.ico">
+      </div>
+      <!-- License File + Open button -->
+      <div class="col-6">
+        <label class="form-label mb-1 text-muted small" for="LICENSE_FILE">License File <span class="text-secondary">(optional)</span></label>
+        <div class="input-group input-group-sm">
+          <input id="LICENSE_FILE" class="form-control form-control-sm" placeholder="LICENSE.txt">
+          <button class="btn btn-outline-secondary" id="btnOpenLicense" onclick="openLicenseFile()"
+                  title="Open in Notepad++ (or system default text editor)">
+            <i class="bi bi-file-text"></i>
+          </button>
+        </div>
+      </div>
+      <div class="col-6 mt-1">
+        <div class="form-check">
+          <input id="REQUIRE_ADMIN" class="form-check-input" type="checkbox">
+          <label class="form-check-label small" for="REQUIRE_ADMIN">Require Admin rights</label>
+        </div>
+        <div class="form-check">
+          <input id="DESKTOP_ICON" class="form-check-input" type="checkbox">
+          <label class="form-check-label small" for="DESKTOP_ICON">Desktop shortcut</label>
+        </div>
+      </div>
+      <div class="col-6 mt-1">
+        <div class="form-check">
+          <input id="START_MENU_ICON" class="form-check-input" type="checkbox">
+          <label class="form-check-label small" for="START_MENU_ICON">Start Menu entry</label>
+        </div>
+        <div class="form-check">
+          <input id="ADD_TO_STARTUP" class="form-check-input" type="checkbox">
+          <label class="form-check-label small" for="ADD_TO_STARTUP">Auto-start with Windows</label>
+        </div>
+      </div>
+    </div>
+
+    <hr class="border-secondary my-2">
+
+    <!-- Code Protection -->
+    <p class="text-uppercase text-muted small fw-semibold mb-2" style="letter-spacing:.06em;font-size:.7rem">Code Protection</p>
+    <div class="d-flex flex-wrap gap-4 mb-1">
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="prot" id="prot_plain" value="plain">
+        <label class="form-check-label small" for="prot_plain">Plain PyInstaller</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="prot" id="prot_pyarmor" value="pyarmor">
+        <label class="form-check-label small" for="prot_pyarmor">
+          PyArmor <span class="text-secondary">(AES-256)</span>
+        </label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="prot" id="prot_nuitka" value="nuitka">
+        <label class="form-check-label small" for="prot_nuitka">
+          Nuitka <span class="text-secondary">(native code)</span>
+        </label>
+      </div>
+    </div>
+    <p id="protNote" class="text-secondary small mb-1" style="min-height:1.2em"></p>
+
+    <!-- Dep check feedback -->
+    <div id="depStatus" class="text-info small mb-1" style="display:none">
+      <span class="spinner-border spinner-border-sm me-1"></span><span id="depStatusMsg"></span>
+    </div>
+    <div id="depPrompt" class="alert alert-warning py-2 px-3 mb-0" style="display:none;font-size:.8rem">
+      <span id="depPromptMsg"></span>
+      <div class="mt-2 d-flex gap-2">
+        <button class="btn btn-sm btn-warning" onclick="installDepConfirm()">
+          <i class="bi bi-download me-1"></i>Install Now
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="cancelDepInstall()">Cancel</button>
+      </div>
+    </div>
+
+  </div><!-- /card-body -->
+</div>
+</div><!-- /col -->
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     RIGHT: Git Panel
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="col-xl-5 col-lg-6">
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-git me-1 text-secondary"></i>Git</span>
+    <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="refreshGit()" title="Refresh git status">
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
+  </div>
+  <div class="card-body">
+
+    <!-- Repository root (persisted) -->
+    <div class="mb-3">
+      <label class="form-label mb-1 text-muted small" for="gitRepoDir">Working Tree Path</label>
+      <div class="input-group input-group-sm">
+        <input id="gitRepoDir" class="form-control form-control-sm font-monospace"
+               placeholder="(leave blank to use project root)">
+        <button class="btn btn-outline-info btn-sm" onclick="applyGitDir()" title="Save path and refresh">
+          <i class="bi bi-arrow-right-circle"></i>
+        </button>
+      </div>
+      <div class="form-text mt-1" id="gitCwdNote" style="font-size:.72rem"></div>
+    </div>
+
+    <!-- Branch + dirty -->
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <span class="text-muted small">Branch:</span>
+      <span id="gitBranch" class="badge bg-primary">-</span>
+      <span id="gitDirty" class="badge bg-warning text-dark" style="display:none">uncommitted changes</span>
+    </div>
+
+    <!-- Working tree status -->
+    <div class="text-muted small mb-1">Status:</div>
+    <pre id="gitStatus" class="small rounded p-2 mb-3"
+         style="background:#0d0d0d;max-height:80px;overflow-y:auto;color:#94a3b8;margin:0;font-size:.72rem">-</pre>
+
+    <!-- Git Remote Configuration -->
+    <div class="mb-2">
+      <label class="form-label mb-1 text-muted small" for="GIT_REMOTE_URL">GitHub Remote URL</label>
+      <input id="GIT_REMOTE_URL" class="form-control form-control-sm font-monospace"
+             placeholder="https://github.com/yourname/repo.git">
+    </div>
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <label class="form-label mb-1 text-muted small" for="GIT_DEV_BRANCH">Dev Branch</label>
+        <input id="GIT_DEV_BRANCH" class="form-control form-control-sm" value="development">
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-1 text-muted small" for="GIT_MAIN_BRANCH">Main Branch</label>
+        <input id="GIT_MAIN_BRANCH" class="form-control form-control-sm" value="main">
+      </div>
+    </div>
+    <button class="btn btn-sm btn-outline-info w-100 mb-2" onclick="doGitSetup()">
+      <i class="bi bi-git me-1"></i>Setup Repo
+    </button>
+    <div class="input-group input-group-sm mb-3">
+      <input id="gitCommitMsg" class="form-control form-control-sm"
+             placeholder="Commit message...">
+      <button class="btn btn-outline-success" onclick="doCommitPush()"
+              title="Commit all changes and push to dev branch">
+        <i class="bi bi-cloud-upload me-1"></i>Commit &amp; Push Dev
+      </button>
+    </div>
+
+    <!-- Merge controls -->
+    <div class="row g-2 mb-2">
+      <div class="col-5">
+        <label class="form-label mb-1 text-muted small" for="mergeSource">From (source)</label>
+        <input id="mergeSource" class="form-control form-control-sm" value="dev">
+      </div>
+      <div class="col-2 d-flex align-items-end justify-content-center pb-1">
+        <i class="bi bi-arrow-right text-muted"></i>
+      </div>
+      <div class="col-5">
+        <label class="form-label mb-1 text-muted small" for="mergeTarget">Into (target)</label>
+        <input id="mergeTarget" class="form-control form-control-sm" value="main">
+      </div>
+    </div>
+    <button id="btnMerge" class="btn btn-sm btn-warning w-100 mb-2" onclick="doMerge()">
+      <i class="bi bi-diagram-3 me-1"></i>Merge Branch
+    </button>
+    <div id="mergeMsg" class="small rounded p-2 mb-3" style="display:none"></div>
+
+    <!-- Recent commits -->
+    <div class="text-muted small mb-1">Recent commits:</div>
+    <pre id="gitLog" class="small rounded p-2 mb-0"
+         style="background:#0d0d0d;max-height:100px;overflow-y:auto;color:#475569;margin:0;font-size:.72rem">-</pre>
+
+  </div>
+</div>
+</div><!-- /col -->
+
+</div><!-- /row -->
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     Build Actions
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="row mt-3">
+  <div class="col-12">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <button class="btn btn-secondary btn-sm" onclick="saveSettings()">
+        <i class="bi bi-floppy me-1"></i>Save Settings
+      </button>
+      <div class="vr mx-1"></div>
+      <button id="btnClean" class="btn btn-outline-warning btn-sm" onclick="doBuild('clean')">
+        <i class="bi bi-trash3 me-1"></i>Clean Outputs
+      </button>
+      <button id="btnBundle" class="btn btn-outline-info btn-sm" onclick="doBuild('bundle-only')">
+        <i class="bi bi-box-seam me-1"></i>Bundle Only
+      </button>
+      <button id="btnFull" class="btn btn-success btn-sm" onclick="doBuild('full')">
+        <i class="bi bi-rocket-takeoff me-1"></i>Full Build
+      </button>
+      <div id="spinner" class="spinner-border spinner-border-sm text-info ms-1" role="status" style="display:none">
+        <span class="visually-hidden">Working...</span>
+      </div>
+      <span id="buildMsg" class="text-muted small ms-1"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     Build Log
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="row mt-3 mb-3">
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center px-1 mb-0"
+         style="background:#1e293b;border-radius:10px 10px 0 0;padding:.4rem .8rem">
+      <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.06em;font-size:.7rem">Build Log</span>
+      <button class="btn btn-sm btn-link text-secondary p-0" onclick="clearLog()">Clear</button>
+    </div>
+    <div id="log" class="border border-secondary border-top-0">
+      <div class="log-line">Ready. Press a build button above to start.</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container-fluid -->
+
+<!-- ── Main-app running warning modal ──────────────────────────────────────── -->
+<div class="modal fade" id="mainAppModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0"
+         style="background:#2b3035;box-shadow:0 24px 64px rgba(0,0,0,.8)">
+      <div class="modal-header border-secondary py-2">
+        <h6 class="modal-title mb-0 small">
+          <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Job Tracker is Currently Running
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-secondary small">
+        The <strong class="text-light">Job Tracker</strong> app is running on port&nbsp;5000.
+        <br><br>
+        For best results, close the <strong class="text-light">Job Tracker Server</strong> window
+        in your taskbar before building to avoid file conflicts, then click Build again.
+        <br><br>
+        Or choose <strong class="text-warning">Build Anyway</strong> if you are certain there
+        are no conflicts.
+      </div>
+      <div class="modal-footer border-secondary py-2">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-warning btn-sm" onclick="buildAnyway()">Build Anyway</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ────────────────────────────────────────────────────────────────── -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1100">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toastBody"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ── State ─────────────────────────────────────────────────────────────────── */
+var logOffset  = 0;
+var pollTimer  = null;
+var autoScroll = true;
+
+var verMajor = 1, verMinor = 0, verPatch = 0;
+var _pendingDepTool = null;
+
+var PROT_NOTES = {
+  plain:   'PyInstaller bundles .pyc bytecode. Tools like uncompyle6 can recover readable source. Good for internal tools.',
+  pyarmor: 'PyArmor AES-256 encrypts the bytecode and injects a native guard that must validate before any module runs.',
+  nuitka:  'Nuitka compiles Python to C then to native machine code. No Python bytecode exists. Requires MSVC or MinGW-w64.'
+};
+
+/* ── Init ──────────────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function () {
+  loadSettings();
+  refreshGit();
+
+  document.querySelectorAll('input[name="prot"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+      var val = this.value;
+      document.getElementById('protNote').textContent = PROT_NOTES[val] || '';
+      document.getElementById('depPrompt').style.display = 'none';
+      document.getElementById('depStatus').style.display = 'none';
+      if (val !== 'plain') checkDep(val);
+    });
+  });
+
+  document.getElementById('log').addEventListener('scroll', function () {
+    autoScroll = (this.scrollTop + this.clientHeight >= this.scrollHeight - 20);
+  });
+
+  document.getElementById('LICENSE_FILE').addEventListener('input', updateOpenLicenseBtn);
+});
+
+/* ── Version spinner ───────────────────────────────────────────────────────── */
+function parseVersion(v) {
+  var parts = (v || '1.0.0').split('.').map(function (x) { return parseInt(x, 10) || 0; });
+  verMajor = parts[0] !== undefined ? parts[0] : 0;
+  verMinor = parts[1] !== undefined ? parts[1] : 0;
+  verPatch = parts[2] !== undefined ? parts[2] : 0;
+  updateVerDisplay();
+}
+
+function updateVerDisplay() {
+  document.getElementById('ver_major').textContent = verMajor;
+  document.getElementById('ver_minor').textContent = verMinor;
+  document.getElementById('ver_patch').textContent = verPatch;
+}
+
+function incVer(field) {
+  if      (field === 'major') { verMajor++; verMinor = 0; verPatch = 0; }
+  else if (field === 'minor') { verMinor++; verPatch = 0; }
+  else                        { verPatch++; }
+  updateVerDisplay();
+}
+
+function decVer(field) {
+  if      (field === 'major') verMajor = Math.max(0, verMajor - 1);
+  else if (field === 'minor') verMinor = Math.max(0, verMinor - 1);
+  else                        verPatch = Math.max(0, verPatch - 1);
+  updateVerDisplay();
+}
+
+function getVersion() {
+  return verMajor + '.' + verMinor + '.' + verPatch;
+}
+
+/* ── Settings ──────────────────────────────────────────────────────────────── */
+function loadSettings() {
+  fetch('/api/settings')
+    .then(function (r) { return r.json(); })
+    .then(function (s) {
+      var textFields = [
+        'APP_NAME', 'APP_DESCRIPTION', 'APP_PUBLISHER',
+        'APP_URL', 'APP_SUPPORT_URL', 'APP_EXE_NAME', 'OUTPUT_DIR',
+        'DEFAULT_INSTALL_DIR', 'ICON_FILE', 'LICENSE_FILE'
+      ];
+      textFields.forEach(function (k) {
+        var el = document.getElementById(k);
+        if (el) el.value = (s[k] != null) ? s[k] : '';
+      });
+
+      parseVersion(s.APP_VERSION || '1.0.0');
+
+      ['REQUIRE_ADMIN', 'DESKTOP_ICON', 'START_MENU_ICON', 'ADD_TO_STARTUP'].forEach(function (k) {
+        var el = document.getElementById(k);
+        if (el) el.checked = !!s[k];
+      });
+
+      var prot = s.USE_NUITKA ? 'nuitka' : s.USE_PYARMOR ? 'pyarmor' : 'plain';
+      var rb   = document.getElementById('prot_' + prot);
+      if (rb) { rb.checked = true; document.getElementById('protNote').textContent = PROT_NOTES[prot] || ''; }
+
+      // Git repo dir
+      var gitEl = document.getElementById('gitRepoDir');
+      if (gitEl) gitEl.value = s.GIT_REPO_DIR || '';
+
+      // Git remote / branch settings
+      var gitRemoteEl = document.getElementById('GIT_REMOTE_URL');
+      if (gitRemoteEl) gitRemoteEl.value = s.GIT_REMOTE_URL || '';
+      var gitDevEl = document.getElementById('GIT_DEV_BRANCH');
+      if (gitDevEl) gitDevEl.value = s.GIT_DEV_BRANCH || 'development';
+      var gitMainEl = document.getElementById('GIT_MAIN_BRANCH');
+      if (gitMainEl) gitMainEl.value = s.GIT_MAIN_BRANCH || 'main';
+
+      updateOpenLicenseBtn();
+    })
+    .catch(function (e) { showToast('Failed to load settings: ' + e, 'danger'); });
+}
+
+function collectSettings() {
+  var prot    = document.querySelector('input[name="prot"]:checked');
+  var protVal = prot ? prot.value : 'plain';
+  return {
+    APP_NAME:            document.getElementById('APP_NAME').value,
+    APP_VERSION:         getVersion(),
+    APP_DESCRIPTION:     document.getElementById('APP_DESCRIPTION').value,
+    APP_PUBLISHER:       document.getElementById('APP_PUBLISHER').value,
+    APP_URL:             document.getElementById('APP_URL').value,
+    APP_SUPPORT_URL:     document.getElementById('APP_SUPPORT_URL').value,
+    APP_EXE_NAME:        document.getElementById('APP_EXE_NAME').value,
+    OUTPUT_DIR:          document.getElementById('OUTPUT_DIR').value,
+    DEFAULT_INSTALL_DIR: document.getElementById('DEFAULT_INSTALL_DIR').value,
+    ICON_FILE:           document.getElementById('ICON_FILE').value,
+    LICENSE_FILE:        document.getElementById('LICENSE_FILE').value,
+    REQUIRE_ADMIN:       document.getElementById('REQUIRE_ADMIN').checked,
+    DESKTOP_ICON:        document.getElementById('DESKTOP_ICON').checked,
+    START_MENU_ICON:     document.getElementById('START_MENU_ICON').checked,
+    ADD_TO_STARTUP:      document.getElementById('ADD_TO_STARTUP').checked,
+    USE_PYARMOR:         protVal === 'pyarmor',
+    USE_NUITKA:          protVal === 'nuitka',
+    GIT_REPO_DIR:        document.getElementById('gitRepoDir').value.trim(),
+    GIT_REMOTE_URL:      (document.getElementById('GIT_REMOTE_URL')  || {value: ''}).value.trim(),
+    GIT_DEV_BRANCH:      (document.getElementById('GIT_DEV_BRANCH')  || {value: 'development'}).value.trim() || 'development',
+    GIT_MAIN_BRANCH:     (document.getElementById('GIT_MAIN_BRANCH') || {value: 'main'}).value.trim() || 'main'
+  };
+}
+
+function saveSettings() {
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(collectSettings())
+  })
+  .then(function () { showToast('Settings saved.', 'success'); })
+  .catch(function (e) { showToast('Save failed: ' + e, 'danger'); });
+}
+
+/* ── License file opener ───────────────────────────────────────────────────── */
+function updateOpenLicenseBtn() {
+  var el  = document.getElementById('LICENSE_FILE');
+  var btn = document.getElementById('btnOpenLicense');
+  if (btn) btn.disabled = !el || !el.value.trim();
+}
+
+function openLicenseFile() {
+  var path = document.getElementById('LICENSE_FILE').value.trim();
+  if (!path) return;
+  fetch('/api/open-file', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path: path})
+  })
+  .then(function (r) { return r.json(); })
+  .then(function (d) {
+    if (!d.ok) showToast('Could not open file: ' + d.error, 'danger');
+  })
+  .catch(function (e) { showToast('Error: ' + e, 'danger'); });
+}
+
+/* ── Git ───────────────────────────────────────────────────────────────────── */
+function applyGitDir() {
+  // Save current GIT_REPO_DIR immediately, then refresh
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(collectSettings())
+  })
+  .then(function () { refreshGit(); showToast('Git path saved.', 'success'); })
+  .catch(function (e) { showToast('Save failed: ' + e, 'danger'); });
+}
+
+function refreshGit() {
+  fetch('/api/git/status')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      document.getElementById('gitBranch').textContent = d.current_branch || '(unknown)';
+      document.getElementById('gitStatus').textContent = d.status        || '(clean)';
+      document.getElementById('gitLog').textContent    = d.recent_log    || '(no commits)';
+      var dirty = d.status && d.status.trim() !== '';
+      document.getElementById('gitDirty').style.display = dirty ? '' : 'none';
+      var note = document.getElementById('gitCwdNote');
+      if (note && d.cwd) note.textContent = 'Using: ' + d.cwd;
+    })
+    .catch(function () {
+      document.getElementById('gitBranch').textContent = 'git unavailable';
+    });
+}
+
+function doMerge() {
+  var source = document.getElementById('mergeSource').value.trim();
+  var target = document.getElementById('mergeTarget').value.trim();
+  if (!source || !target) { showToast('Enter source and target branch names.', 'danger'); return; }
+
+  var btn = document.getElementById('btnMerge');
+  btn.disabled = true;
+  var msg = document.getElementById('mergeMsg');
+  msg.style.display = '';
+  msg.className = 'small rounded p-2 mb-3';
+  msg.style.background = 'rgba(56,189,248,.08)';
+  msg.style.color = '#7dd3fc';
+  msg.textContent = 'Merging ' + source + ' into ' + target + '...';
+
+  fetch('/api/git/merge', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({source: source, target: target})
+  })
+  .then(function (r) { return r.json(); })
+  .then(function (d) {
+    btn.disabled = false;
+    if (d.ok) {
+      msg.style.background = 'rgba(74,222,128,.08)';
+      msg.style.color = '#4ade80';
+      msg.textContent = 'Merged successfully.\n' + (d.output || '');
+    } else {
+      msg.style.background = 'rgba(248,113,113,.08)';
+      msg.style.color = '#f87171';
+      msg.textContent = 'Merge failed:\n' + (d.error || 'unknown error');
+    }
+    refreshGit();
+  })
+  .catch(function (e) {
+    btn.disabled = false;
+    msg.style.background = 'rgba(248,113,113,.08)';
+    msg.style.color = '#f87171';
+    msg.textContent = 'Request error: ' + e;
+  });
+}
+
+/* ── Git setup / commit-push ───────────────────────────────────────────── */
+function doGitSetup() {
+  // Save settings first so backend uses latest Remote URL / branch names
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(collectSettings())
+  })
+  .then(function () {
+    setBuildBtns(true);
+    logOffset  = 0;
+    autoScroll = true;
+    document.getElementById('log').innerHTML = '';
+    document.getElementById('buildMsg').textContent = 'Setting up git repo...';
+    updateBadge('running');
+    return fetch('/api/git/setup', {method: 'POST'});
+  })
+  .then(function (r) { return r.json(); })
+  .then(function (d) {
+    if (!d.ok) {
+      setBuildBtns(false);
+      updateBadge('error');
+      document.getElementById('buildMsg').textContent = d.error || 'Setup failed.';
+      return;
+    }
+    pollLog(function (status) {
+      setBuildBtns(false);
+      updateBadge(status);
+      document.getElementById('buildMsg').textContent =
+        status === 'done' ? 'Git setup complete.' : 'Git setup finished with errors.';
+      refreshGit();
+    });
+  })
+  .catch(function (e) {
+    setBuildBtns(false);
+    updateBadge('error');
+    document.getElementById('buildMsg').textContent = 'Request error: ' + e;
+  });
+}
+
+function doCommitPush() {
+  var msg = (document.getElementById('gitCommitMsg').value || '').trim();
+  if (!msg) { showToast('Enter a commit message first.', 'danger'); return; }
+
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(collectSettings())
+  })
+  .then(function () {
+    setBuildBtns(true);
+    logOffset  = 0;
+    autoScroll = true;
+    document.getElementById('log').innerHTML = '';
+    document.getElementById('buildMsg').textContent = 'Committing & pushing...';
+    updateBadge('running');
+    return fetch('/api/git/commit-push', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+  })
+  .then(function (r) { return r.json(); })
+  .then(function (d) {
+    if (!d.ok) {
+      setBuildBtns(false);
+      updateBadge('error');
+      document.getElementById('buildMsg').textContent = d.error || 'Failed.';
+      return;
+    }
+    pollLog(function (status) {
+      setBuildBtns(false);
+      updateBadge(status);
+      if (status === 'done') {
+        document.getElementById('buildMsg').textContent = 'Committed & pushed to dev.';
+        document.getElementById('gitCommitMsg').value = '';
+      } else {
+        document.getElementById('buildMsg').textContent = 'Push finished with errors — check log.';
+      }
+      refreshGit();
+    });
+  })
+  .catch(function (e) {
+    setBuildBtns(false);
+    updateBadge('error');
+    document.getElementById('buildMsg').textContent = 'Request error: ' + e;
+  });
+}
+
+/* ── Dependency check / install ────────────────────────────────────────────── */
+function checkDep(tool) {
+  _pendingDepTool = tool;
+  var statusEl = document.getElementById('depStatus');
+  var msgEl    = document.getElementById('depStatusMsg');
+  statusEl.style.display = '';
+  msgEl.textContent = 'Checking for ' + tool + '...';
+  document.getElementById('depPrompt').style.display = 'none';
+
+  fetch('/api/deps/check?tool=' + tool)
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.installed) {
+        msgEl.textContent = tool + ' v' + d.version + ' is ready.';
+        setTimeout(function () { statusEl.style.display = 'none'; }, 4000);
+      } else {
+        statusEl.style.display = 'none';
+        var pkg = (tool === 'pyarmor') ? 'pyarmor>=8.0' : 'nuitka>=2.0';
+        document.getElementById('depPromptMsg').textContent =
+          tool + ' is not installed. Install it now? (pip install ' + pkg + ')';
+        document.getElementById('depPrompt').style.display = '';
+      }
+    })
+    .catch(function () {
+      msgEl.textContent = 'Could not check ' + tool + '. Verify it manually.';
+      setTimeout(function () { statusEl.style.display = 'none'; }, 5000);
+    });
+}
+
+function installDepConfirm() {
+  document.getElementById('depPrompt').style.display = 'none';
+  if (!_pendingDepTool) return;
+
+  setBuildBtns(true);
+  logOffset  = 0;
+  autoScroll = true;
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('buildMsg').textContent = 'Installing ' + _pendingDepTool + '...';
+  updateBadge('running');
+
+  fetch('/api/deps/install', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({tool: _pendingDepTool})
+  })
+  .then(function (r) { return r.json(); })
+  .then(function (d) {
+    if (!d.ok) {
+      setBuildBtns(false);
+      updateBadge('error');
+      document.getElementById('buildMsg').textContent = d.error || 'Install failed.';
+      // Revert to plain if install could not start
+      document.getElementById('prot_plain').checked = true;
+      document.getElementById('protNote').textContent = PROT_NOTES['plain'];
+      return;
+    }
+    // Poll log; when done, re-check dep
+    pollLog(function (finalStatus) {
+      setBuildBtns(false);
+      updateBadge(finalStatus);
+      if (finalStatus === 'done') {
+        document.getElementById('buildMsg').textContent = _pendingDepTool + ' installed successfully.';
+        // Re-check to confirm
+        checkDep(_pendingDepTool);
+      } else {
+        document.getElementById('buildMsg').textContent = 'Install failed - check log above.';
+        document.getElementById('prot_plain').checked = true;
+        document.getElementById('protNote').textContent = PROT_NOTES['plain'];
+      }
+    });
+  })
+  .catch(function (e) {
+    setBuildBtns(false);
+    updateBadge('error');
+    document.getElementById('buildMsg').textContent = 'Request error: ' + e;
+  });
+}
+
+function cancelDepInstall() {
+  document.getElementById('depPrompt').style.display = 'none';
+  document.getElementById('prot_plain').checked = true;
+  document.getElementById('protNote').textContent = PROT_NOTES['plain'];
+}
+
+/* ── Build ─────────────────────────────────────────────────────────────────── */
+var _pendingBuildMode = null;
+
+function doBuild(mode) {
+  // Clean output doesn't touch running-app files, so skip the check for it.
+  if (mode === 'clean') { _startBuild('clean'); return; }
+
+  // For bundle/full builds, warn if the main app is running.
+  _pendingBuildMode = mode;
+  fetch('/api/check-mainapp')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.running) {
+        new bootstrap.Modal(document.getElementById('mainAppModal')).show();
+      } else {
+        _startBuild(mode);
+      }
+    })
+    .catch(function () { _startBuild(mode); }); // if check fails, proceed
+}
+
+function buildAnyway() {
+  var modal = bootstrap.Modal.getInstance(document.getElementById('mainAppModal'));
+  if (modal) modal.hide();
+  _startBuild(_pendingBuildMode);
+}
+
+function _startBuild(mode) {
+  setBuildBtns(true);
+  autoScroll = true;
+  logOffset  = 0;
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('buildMsg').textContent = '';
+  updateBadge('running');
+
+  var endpoint = (mode === 'clean') ? '/api/build/clean' : '/api/build/start';
+  var body     = (mode === 'clean') ? {} : {mode: mode, settings: collectSettings()};
+
+  fetch(endpoint, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  })
+  .then(function (r) { return r.json(); })
+  .then(function (d) {
+    if (!d.ok) {
+      setBuildBtns(false);
+      updateBadge('error');
+      document.getElementById('buildMsg').textContent = d.error || 'Failed to start.';
+      return;
+    }
+    pollLog(function (status) {
+      setBuildBtns(false);
+      updateBadge(status);
+      document.getElementById('buildMsg').textContent =
+        status === 'done' ? 'Build complete.' : 'Build finished with errors.';
+    });
+  })
+  .catch(function (e) {
+    setBuildBtns(false);
+    updateBadge('error');
+    document.getElementById('buildMsg').textContent = 'Request error: ' + e;
+  });
+}
+
+function pollLog(onFinish) {
+  if (pollTimer) clearTimeout(pollTimer);
+  fetch('/api/build/log?offset=' + logOffset)
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      appendLines(d.lines || []);
+      logOffset += (d.lines || []).length;
+      if (d.status === 'running') {
+        pollTimer = setTimeout(function () { pollLog(onFinish); }, 1500);
+      } else if (onFinish) {
+        onFinish(d.status);
+      }
+    })
+    .catch(function () {
+      pollTimer = setTimeout(function () { pollLog(onFinish); }, 3000);
+    });
+}
+
+function appendLines(lines) {
+  var log = document.getElementById('log');
+  lines.forEach(function (line) {
+    var div = document.createElement('div');
+    var cls = 'log-line';
+    if (/\[error\]|\[exception\]/i.test(line))                   cls = 'log-error';
+    else if (/\[warning\]|warning:/i.test(line))                 cls = 'log-warn';
+    else if (/complete\.|exit code: 0/i.test(line))              cls = 'log-ok';
+    else if (/^[-=]{3,}$/.test(line.trim()))                     cls = 'log-sep';
+    div.className = cls;
+    div.textContent = line;
+    log.appendChild(div);
+  });
+  if (autoScroll) log.scrollTop = log.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('log').innerHTML = '';
+  logOffset = 0;
+}
+
+/* ── UI helpers ────────────────────────────────────────────────────────────── */
+function setBuildBtns(disabled) {
+  ['btnClean', 'btnBundle', 'btnFull'].forEach(function (id) {
+    document.getElementById(id).disabled = disabled;
+  });
+  document.getElementById('spinner').style.display = disabled ? '' : 'none';
+}
+
+function updateBadge(status) {
+  var el     = document.getElementById('badge');
+  var colors = {idle:'bg-secondary', running:'bg-info', done:'bg-success', error:'bg-danger'};
+  var labels = {idle:'Idle', running:'Working...', done:'Done', error:'Error'};
+  el.className = 'badge ' + (colors[status] || 'bg-secondary');
+  el.style.fontSize = '.8rem';
+  el.textContent = labels[status] || status;
+}
+
+function showToast(msg, type) {
+  var toast = document.getElementById('toast');
+  var body  = document.getElementById('toastBody');
+  toast.className = 'toast align-items-center text-white border-0 bg-' + (type || 'secondary');
+  body.textContent = msg;
+  new bootstrap.Toast(toast, {delay: 3000}).show();
+}
+</script>
+</body>
+</html>

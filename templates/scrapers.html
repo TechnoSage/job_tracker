@@ -1,0 +1,1097 @@
+{% extends "base.html" %}
+{% block title %}Sources — Job Tracker{% endblock %}
+
+{% block content %}
+<style>
+/* ── Source card 3-D rounded rectangle ─────────────────────────────── */
+.source-card {
+  border-radius: 0.9rem;
+  background: #1c1f24;
+  box-shadow:
+    0 6px 18px rgba(0,0,0,.55),
+    0 2px 6px  rgba(0,0,0,.35),
+    0 1px 0    rgba(255,255,255,.045) inset,
+    0 -2px 4px rgba(0,0,0,.3) inset;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  border: 1px solid rgba(255,255,255,.06);
+}
+.source-card:hover {
+  box-shadow:
+    0 10px 28px rgba(0,0,0,.65),
+    0 4px 10px  rgba(0,0,0,.4),
+    0 1px 0     rgba(255,255,255,.06) inset,
+    0 -2px 4px  rgba(0,0,0,.3) inset;
+  transform: translateY(-2px);
+}
+.source-card.opacity-50 { opacity: 0.45 !important; }
+
+/* ── Inline rename ──────────────────────────────────────────────────── */
+.source-title       { cursor: default; line-height: 1.3; }
+.rename-btn         { opacity: 0; transition: opacity 0.15s; cursor: pointer;
+                      font-size: 0.72rem; vertical-align: middle; color: #6c757d; }
+.source-card:hover .rename-btn { opacity: 1; }
+.rename-btn:hover   { color: #adb5bd; }
+.source-title-input { display: none; font-size: 1rem; font-weight: 600;
+                      padding: 0.15rem 0.4rem; border-radius: 0.35rem; }
+
+/* ── URL line ───────────────────────────────────────────────────────── */
+.source-url {
+  font-family: var(--bs-font-monospace);
+  font-size: 0.68rem;
+  color: #5a6270;
+  word-break: break-all;
+  line-height: 1.35;
+}
+
+/* ── Card footer divider ────────────────────────────────────────────── */
+.card-footer-line { border-top: 1px solid rgba(255,255,255,.07); }
+
+/* ── Tiny buttons ───────────────────────────────────────────────────── */
+.btn-xs { padding: 0.2rem 0.45rem; font-size: 0.75rem; line-height: 1.4; }
+</style>
+
+<div class="d-flex align-items-center justify-content-between mt-3 mb-4 flex-wrap gap-2">
+  <div>
+    <h2 class="fw-bold mb-0">
+      <i class="bi bi-cloud-download me-2 text-primary"></i>Job Sources
+    </h2>
+    <div class="app-hint text-info" style="font-size:.75rem;font-style:italic;margin-top:3px;">
+      <i class="bi bi-info-circle me-1"></i>Enable or disable job boards used during scans. Disabled sources are skipped entirely.
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="d-flex gap-2 flex-wrap">
+
+    <!-- Check All Sources -->
+    <button class="btn btn-outline-warning" id="healthCheckBtn">
+      <i class="bi bi-heart-pulse me-1"></i>Check All Sources
+      <small class="app-hint ms-1 text-warning fst-italic" style="font-size:.7rem;">— tests each enabled source URL</small>
+    </button>
+
+    <!-- Find Job Boards -->
+    <button class="btn btn-outline-info" id="discoverBoardsBtn">
+      <i class="bi bi-radar me-1"></i>Find Job Boards
+      <small class="app-hint ms-1 text-info fst-italic" style="font-size:.7rem;">— search for new RSS/JSON job boards to add</small>
+    </button>
+
+    <!-- Add Source split button -->
+    <div class="btn-group">
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSourceModal">
+        <i class="bi bi-plus-lg me-1"></i>Add Custom
+      </button>
+      <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+              data-bs-toggle="dropdown" aria-expanded="false">
+        <span class="visually-hidden">Toggle Dropdown</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li>
+          <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addSourceModal">
+            <i class="bi bi-plus-circle me-2"></i>Custom (manual setup)
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addAutoModal">
+            <i class="bi bi-magic me-2"></i>Automatic (auto-discover)
+          </a>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Source Cards Grid ─────────────────────────────────────────────── -->
+<div class="row g-3" id="sourceCardsGrid">
+  {% for src in sources %}
+  <div class="col-md-6 col-xl-4 source-col" id="col-{{ src.name }}">
+    <div class="source-card card border-0 h-100 {% if not src.is_enabled %}opacity-50{% endif %}"
+         id="card-{{ src.name }}" data-name="{{ src.name }}">
+      <div class="card-body p-3 d-flex flex-column">
+
+        <!-- ── Row 1: Toggle + Badges ─────────────────────────────── -->
+        <div class="d-flex align-items-start justify-content-between mb-2">
+          <div class="d-flex flex-wrap gap-1 align-items-center">
+            {% if src.is_builtin %}
+              <span class="badge bg-secondary" style="font-size:0.68rem">built-in</span>
+            {% else %}
+              <span class="badge bg-info text-dark" style="font-size:0.68rem">custom</span>
+            {% endif %}
+            {% set type_colors = {'builtin':'secondary','rss':'info','json_api':'warning'} %}
+            <span class="badge bg-{{ type_colors.get(src.source_type, 'secondary') }}" style="font-size:0.68rem">
+              {{ src.source_type.replace('_',' ') }}
+            </span>
+          </div>
+          <!-- Toggle switch -->
+          <div class="form-check form-switch mb-0 ms-2 flex-shrink-0 d-flex align-items-center gap-2">
+            <small class="app-hint text-info fst-italic" style="font-size:.68rem;">include in scans</small>
+            <input class="form-check-input" type="checkbox" role="switch"
+                   id="toggle-{{ src.name }}"
+                   {% if src.is_enabled %}checked{% endif %}
+                   onchange="toggleSource(this, '{{ src.name }}')">
+          </div>
+        </div>
+
+        <!-- ── Row 2: Title (inline rename) ──────────────────────── -->
+        <div class="mb-1">
+          <span class="source-title fw-bold fs-6" id="title-{{ src.name }}">{{ src.display_name }}</span>
+          <i class="bi bi-pencil rename-btn ms-1"
+             id="renameBtn-{{ src.name }}"
+             title="Rename"
+             onclick="startRename('{{ src.name }}')"></i>
+          <input type="text"
+                 class="form-control source-title-input"
+                 id="renameInput-{{ src.name }}"
+                 value="{{ src.display_name }}"
+                 onblur="saveRename('{{ src.name }}')"
+                 onkeydown="handleRenameKey(event, '{{ src.name }}')">
+        </div>
+
+        <!-- ── Row 3: Description (yellow) ──────────────────────── -->
+        {% if src.description %}
+        <div class="text-warning small mb-1">{{ src.description }}</div>
+        {% endif %}
+
+        <!-- ── Row 4: URL (light grey monospace) ─────────────────── -->
+        {% if src.url_template %}
+        <div class="source-url mb-2">
+          {{ src.url_template[:90] }}{% if src.url_template|length > 90 %}…{% endif %}
+        </div>
+        {% endif %}
+
+        <!-- ── Spacer ─────────────────────────────────────────────── -->
+        <div class="flex-grow-1"></div>
+
+        <!-- ── Row 5: Stats ──────────────────────────────────────── -->
+        <div class="d-flex flex-wrap gap-3 small text-muted mb-2 card-footer-line pt-2 mt-1">
+          <span>
+            <i class="bi bi-clock me-1"></i>
+            {{ src.last_run.strftime('%b %d %H:%M') if src.last_run else 'Never run' }}
+          </span>
+          <span>
+            <i class="bi bi-briefcase me-1"></i>
+            {{ src.last_jobs_found if src.last_jobs_found is not none else '0' }} jobs
+          </span>
+        </div>
+
+        <!-- ── Row 6: Health + Scrape Status ─────────────────────── -->
+        <div class="mb-2">
+          <div class="d-flex flex-wrap gap-2 align-items-center"
+               id="health-{{ src.name }}">
+            {% if src.health_status == 'current' %}
+              <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Current</span>
+            {% elif src.health_status == 'broken' %}
+              <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Broken</span>
+            {% else %}
+              <span class="badge bg-secondary">Not checked</span>
+            {% endif %}
+            {% if src.health_checked_at %}
+              <span class="text-muted" style="font-size:0.68rem">
+                {{ src.health_checked_at.strftime('%b %d %H:%M') }}
+              </span>
+            {% endif %}
+            {% if src.last_status %}
+              <span class="badge bg-{{ src.status_color() }}">{{ src.last_status }}</span>
+            {% endif %}
+          </div>
+          {# Error detail box — shown when there is a failure reason #}
+          <div id="errbox-{{ src.name }}"
+               class="mt-2 p-2 rounded small"
+               style="background:rgba(220,53,69,.13); border:1px solid rgba(220,53,69,.3);
+                      color:#f8d7da; line-height:1.5; word-break:break-word;
+                      {% if not src.last_error %}display:none{% endif %}">
+            <i class="bi bi-exclamation-circle me-1"></i><span
+              id="errtext-{{ src.name }}">{{ src.last_error | e if src.last_error }}</span>
+          </div>
+        </div>
+
+        <!-- ── Row 7: Action Buttons ─────────────────────────────── -->
+        <div class="d-flex gap-1 flex-wrap card-footer-line pt-2">
+          <!-- Run now -->
+          <button class="btn btn-xs btn-outline-primary"
+                  id="runBtn-{{ src.name }}"
+                  onclick="runSource(this, '{{ src.name }}')"
+                  title="Run now">
+            <i class="bi bi-play-fill"></i>
+          </button>
+
+          {% if not src.is_builtin %}
+          <!-- Edit (custom only) -->
+          <button class="btn btn-xs btn-outline-secondary"
+                  data-bs-toggle="modal"
+                  data-bs-target="#editModal-{{ src.name }}"
+                  title="Edit URL / Search Terms">
+            <i class="bi bi-sliders me-1"></i>Edit
+          </button>
+          <!-- Delete (custom only) -->
+          <button class="btn btn-xs btn-outline-danger"
+                  onclick="deleteSource(this, '{{ src.name }}', '{{ src.display_name | e }}')"
+                  title="Delete">
+            <i class="bi bi-trash"></i>
+          </button>
+          {% endif %}
+        </div>
+
+      </div><!-- /card-body -->
+    </div><!-- /source-card -->
+  </div><!-- /col -->
+  {% else %}
+  <div class="col-12">
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-cloud-slash fs-1 d-block mb-3"></i>
+      No sources configured yet. Add one using the buttons above.
+    </div>
+  </div>
+  {% endfor %}
+</div><!-- /row -->
+
+
+<!-- ══════════════════════════════════════
+     Add Custom Source Modal
+══════════════════════════════════════════ -->
+<div class="modal fade" id="addSourceModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark">
+      <form id="addSourceForm" method="POST" action="{{ url_for('add_scraper') }}">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title"><i class="bi bi-plus-lg me-2"></i>Add Custom Source</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="addSourceError" class="alert alert-danger py-2 small" style="display:none"></div>
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Slug Name <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control" required
+                     placeholder="my_custom_site" pattern="[a-zA-Z0-9_]+">
+              <div class="form-text">Lowercase letters, numbers, underscores only.</div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Display Name</label>
+              <input type="text" name="display_name" class="form-control" placeholder="My Custom Site">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Type <span class="text-danger">*</span></label>
+              <select name="source_type" class="form-select" id="addTypeSelect">
+                <option value="rss">RSS Feed</option>
+                <option value="json_api">JSON API</option>
+              </select>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Description</label>
+              <input type="text" name="description" class="form-control" placeholder="Optional description">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">
+                URL Template <span class="text-danger">*</span>
+                <span class="text-muted fw-normal small ms-1">— use <code>{query}</code> where the search term goes</span>
+              </label>
+              <input type="url" name="url_template" class="form-control font-monospace" required
+                     placeholder="https://example.com/jobs.rss?q={query}&remote=true">
+              <div class="form-text" id="addTypeHint">
+                RSS: the URL of an RSS/Atom feed. JSON API: a URL that returns a JSON array or object with a jobs/results key.
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">
+                Search Terms
+                <span class="text-muted fw-normal small ms-1">— one per line or comma-separated</span>
+              </label>
+              <textarea name="search_terms" class="form-control font-monospace" rows="4"
+                        placeholder="C# developer&#10;.NET developer&#10;Oracle developer remote"></textarea>
+              <div class="form-text">
+                Leave blank to fetch the URL once without substitution.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="addSourceSubmitBtn">
+            <i class="bi bi-plus-lg me-1"></i>Add Source
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     Automatic Add Modal
+══════════════════════════════════════════ -->
+<div class="modal fade" id="addAutoModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title"><i class="bi bi-magic me-2 text-info"></i>Auto-Discover Sources</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" id="closeAutoModal"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- URL input -->
+        <div id="autoInputSection">
+          <p class="text-warning small mb-3">
+            Enter one or more job board URLs (one per line). The app will automatically test each URL
+            to find its RSS feed, JSON API, or other compatible data source.
+          </p>
+          <label class="form-label fw-semibold">Job Board URLs</label>
+          <textarea id="autoUrlInput" class="form-control font-monospace" rows="6"
+                    placeholder="https://example.com/jobs&#10;https://another-board.io&#10;remoteok.com"></textarea>
+          <div class="form-text">
+            Include <code>https://</code> or just the domain — the app will try both.
+          </div>
+        </div>
+
+        <!-- Progress section -->
+        <div id="autoProgressSection" style="display:none">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fw-semibold small" id="autoProgressLabel">Discovering…</span>
+            <span class="small text-muted" id="autoProgressCount">0 / 0</span>
+          </div>
+          <div class="progress mb-3" style="height:8px">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                 id="autoProgressBar" role="progressbar" style="width:0%"></div>
+          </div>
+          <div id="autoLog"
+               class="bg-black rounded p-2 font-monospace small"
+               style="max-height:180px;overflow-y:auto;color:#aaa;white-space:pre-wrap"></div>
+        </div>
+
+        <!-- Results table -->
+        <div id="autoResultsSection" style="display:none;margin-top:1rem">
+          <hr class="border-secondary">
+          <h6 class="fw-semibold mb-2">Discovery Results</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-dark align-middle mb-0" id="autoResultsTable">
+              <thead class="table-secondary text-dark small">
+                <tr>
+                  <th>URL</th>
+                  <th>Found As</th>
+                  <th>Feed URL</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="autoResultsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-info" id="autoDiscoverBtn">
+          <i class="bi bi-search me-1"></i>Start Discovery
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     Board Discovery Progress Modal
+══════════════════════════════════════════ -->
+<div class="modal fade" id="boardDiscoveryModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">
+          <i class="bi bi-radar me-2 text-info"></i>Finding Job Boards
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                id="closeBdModal" disabled></button>
+      </div>
+      <div class="modal-body">
+        <!-- Stats row -->
+        <div class="d-flex gap-4 mb-2 flex-wrap small">
+          <span>Tested: <strong id="bdTested">0</strong> / <strong id="bdTotal">—</strong></span>
+          <span class="text-success">Found working: <strong id="bdFound">0</strong></span>
+          <span class="text-info">Added to sources: <strong id="bdAdded">0</strong></span>
+          <span class="text-warning">Broken (timeout): <strong id="bdBroken">0</strong></span>
+        </div>
+        <!-- Progress bar -->
+        <div class="progress mb-3" style="height:10px">
+          <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+               id="bdProgressBar" role="progressbar" style="width:0%"></div>
+        </div>
+        <!-- Log -->
+        <div id="bdLog"
+             class="bg-black rounded p-2 font-monospace small"
+             style="max-height:280px;overflow-y:auto;color:#aaa;white-space:pre-wrap"></div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"
+                id="bdDoneBtn" style="display:none">
+          <i class="bi bi-arrow-clockwise me-1"></i>Done — reload page
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     Health Check Progress Modal
+══════════════════════════════════════════ -->
+<div class="modal fade" id="healthCheckModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title"><i class="bi bi-heart-pulse me-2 text-warning"></i>Checking All Sources</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                id="closeHealthModal" disabled></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="fw-semibold small" id="hcProgressLabel">Starting…</span>
+          <span class="small text-muted" id="hcProgressCount">0 / 0</span>
+        </div>
+        <div class="progress mb-3" style="height:10px">
+          <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+               id="hcProgressBar" role="progressbar" style="width:0%"></div>
+        </div>
+        <div id="hcLog"
+             class="bg-black rounded p-2 font-monospace small"
+             style="max-height:220px;overflow-y:auto;color:#aaa;white-space:pre-wrap"></div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"
+                id="hcDoneBtn" style="display:none">
+          <i class="bi bi-check-lg me-1"></i>Done
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     Edit Modals (one per custom source)
+══════════════════════════════════════════ -->
+{% for src in sources %}
+{% if not src.is_builtin %}
+<div class="modal fade" id="editModal-{{ src.name }}" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark">
+      <form class="edit-source-form" method="POST" action="{{ url_for('edit_scraper', name=src.name) }}"
+            data-name="{{ src.name }}">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title">
+            <i class="bi bi-sliders me-2"></i>Edit: <span id="editModalTitle-{{ src.name }}">{{ src.display_name }}</span>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="editSourceError-{{ src.name }}" class="alert alert-danger py-2 small" style="display:none"></div>
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Display Name</label>
+              <input type="text" name="display_name" class="form-control"
+                     value="{{ src.display_name }}">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Description</label>
+              <input type="text" name="description" class="form-control"
+                     value="{{ src.description or '' }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">URL Template</label>
+              <input type="url" name="url_template" class="form-control font-monospace"
+                     value="{{ src.url_template or '' }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Search Terms (one per line)</label>
+              <textarea name="search_terms" class="form-control font-monospace" rows="4">{{ src.get_search_terms()|join('\n') }}</textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary edit-save-btn">
+            <i class="bi bi-save me-1"></i>Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── XHR helper ────────────────────────────────────────────────────────────────
+var XHR = { 'X-Requested-With': 'XMLHttpRequest' };
+
+// ── Toggle source ─────────────────────────────────────────────────────────────
+function toggleSource(cb, name) {
+  fetch('/scrapers/' + name + '/toggle', { method: 'POST', headers: XHR })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        var card = document.getElementById('card-' + name);
+        if (d.is_enabled) {
+          card.classList.remove('opacity-50');
+        } else {
+          card.classList.add('opacity-50');
+        }
+      } else {
+        cb.checked = !cb.checked; // revert
+      }
+    })
+    .catch(function() { cb.checked = !cb.checked; });
+}
+
+// ── Run source ────────────────────────────────────────────────────────────────
+function runSource(btn, name) {
+  btn.disabled = true;
+  var orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+  fetch('/scrapers/' + name + '/run', { method: 'POST', headers: XHR })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+      setTimeout(function() { btn.innerHTML = orig; btn.disabled = false; }, 2500);
+    })
+    .catch(function() { btn.innerHTML = orig; btn.disabled = false; });
+}
+
+// ── Delete source ─────────────────────────────────────────────────────────────
+function deleteSource(btn, name, displayName) {
+  if (!confirm('Delete "' + displayName + '"?\nThis cannot be undone.')) return;
+  btn.disabled = true;
+  fetch('/scrapers/' + name + '/delete', { method: 'POST', headers: XHR })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        var col = document.getElementById('col-' + name);
+        col.style.transition = 'opacity 0.28s, transform 0.28s';
+        col.style.opacity = '0';
+        col.style.transform = 'scale(0.92)';
+        setTimeout(function() { col.remove(); }, 300);
+      } else {
+        btn.disabled = false;
+        alert(d.error || 'Delete failed.');
+      }
+    })
+    .catch(function() { btn.disabled = false; });
+}
+
+// ── Inline rename ─────────────────────────────────────────────────────────────
+function startRename(name) {
+  document.getElementById('title-' + name).style.display = 'none';
+  document.getElementById('renameBtn-' + name).style.display = 'none';
+  var inp = document.getElementById('renameInput-' + name);
+  inp.style.display = 'inline-block';
+  inp.focus();
+  inp.select();
+}
+
+function saveRename(name) {
+  var inp   = document.getElementById('renameInput-' + name);
+  var title = document.getElementById('title-' + name);
+  var newVal = inp.value.trim();
+  if (!newVal || newVal === title.textContent.trim()) {
+    cancelRename(name);
+    return;
+  }
+  inp.disabled = true;
+  fetch('/api/scrapers/' + name + '/rename', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ display_name: newVal }),
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        title.textContent = d.display_name;
+        // Update edit modal title if present
+        var et = document.getElementById('editModalTitle-' + name);
+        if (et) et.textContent = d.display_name;
+        // Update edit modal input if present
+        var editInp = document.querySelector('#editModal-' + name + ' input[name="display_name"]');
+        if (editInp) editInp.value = d.display_name;
+      }
+      inp.disabled = false;
+      cancelRename(name);
+    })
+    .catch(function() { inp.disabled = false; cancelRename(name); });
+}
+
+function cancelRename(name) {
+  var title = document.getElementById('title-' + name);
+  document.getElementById('renameInput-' + name).style.display = 'none';
+  title.style.display = '';
+  document.getElementById('renameBtn-' + name).style.display = '';
+}
+
+function handleRenameKey(e, name) {
+  if (e.key === 'Enter')  { e.preventDefault(); saveRename(name); }
+  if (e.key === 'Escape') { cancelRename(name); }
+}
+
+// ── Add Custom Source (AJAX) ──────────────────────────────────────────────────
+(function () {
+  var form    = document.getElementById('addSourceForm');
+  var errEl   = document.getElementById('addSourceError');
+  var submitBtn = document.getElementById('addSourceSubmitBtn');
+  var modal   = bootstrap.Modal.getOrCreateInstance(document.getElementById('addSourceModal'));
+
+  document.getElementById('addTypeSelect').addEventListener('change', function () {
+    document.getElementById('addTypeHint').textContent = this.value === 'json_api'
+      ? 'JSON API: must return a JSON array or an object with a "jobs", "results", or "data" key.'
+      : 'RSS: the URL of an RSS/Atom feed. Use {query} to insert the search term.';
+  });
+
+  // Reset error when modal opens
+  document.getElementById('addSourceModal').addEventListener('show.bs.modal', function () {
+    errEl.style.display = 'none';
+    errEl.textContent = '';
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Add Source';
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    errEl.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Adding…';
+
+    fetch(form.action, {
+      method: 'POST',
+      headers: XHR,
+      body: new FormData(form),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok) {
+          modal.hide();
+          location.reload();
+        } else {
+          errEl.textContent = d.error || 'An error occurred.';
+          errEl.style.display = '';
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Add Source';
+        }
+      })
+      .catch(function () {
+        errEl.textContent = 'Request failed. Please try again.';
+        errEl.style.display = '';
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Add Source';
+      });
+  });
+}());
+
+// ── Edit Source (AJAX) ────────────────────────────────────────────────────────
+(function () {
+  document.querySelectorAll('.edit-source-form').forEach(function (form) {
+    var name    = form.dataset.name;
+    var errEl   = document.getElementById('editSourceError-' + name);
+    var saveBtn = form.querySelector('.edit-save-btn');
+    var modal   = bootstrap.Modal.getOrCreateInstance(
+      document.getElementById('editModal-' + name));
+
+    // Reset error when modal opens
+    document.getElementById('editModal-' + name)
+      .addEventListener('show.bs.modal', function () {
+        if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="bi bi-save me-1"></i>Save Changes';
+      });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (errEl) errEl.style.display = 'none';
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
+
+      fetch(form.action, {
+        method: 'POST',
+        headers: XHR,
+        body: new FormData(form),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d.ok) {
+            modal.hide();
+            location.reload();
+          } else {
+            if (errEl) {
+              errEl.textContent = d.error || 'Save failed.';
+              errEl.style.display = '';
+            }
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="bi bi-save me-1"></i>Save Changes';
+          }
+        })
+        .catch(function () {
+          if (errEl) {
+            errEl.textContent = 'Request failed.';
+            errEl.style.display = '';
+          }
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i class="bi bi-save me-1"></i>Save Changes';
+        });
+    });
+  });
+}());
+
+// ── Health Check ──────────────────────────────────────────────────────────────
+(function () {
+  var btn        = document.getElementById('healthCheckBtn');
+  var modal      = new bootstrap.Modal(document.getElementById('healthCheckModal'));
+  var bar        = document.getElementById('hcProgressBar');
+  var label      = document.getElementById('hcProgressLabel');
+  var countEl    = document.getElementById('hcProgressCount');
+  var logEl      = document.getElementById('hcLog');
+  var doneBtn    = document.getElementById('hcDoneBtn');
+  var closeBtn   = document.getElementById('closeHealthModal');
+  var pollTimer  = null;
+  var lastLogLen = 0;
+
+  btn.addEventListener('click', function () {
+    bar.style.width = '0%';
+    bar.classList.add('progress-bar-animated');
+    label.textContent = 'Starting…';
+    countEl.textContent = '0 / 0';
+    logEl.textContent = '';
+    doneBtn.style.display = 'none';
+    closeBtn.disabled = true;
+    lastLogLen = 0;
+    modal.show();
+
+    fetch('/api/scrapers/health-check/start', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) { logEl.textContent = 'Error: ' + (d.error || 'unknown'); return; }
+        pollTimer = setInterval(pollHealth, 800);
+      })
+      .catch(function (e) { logEl.textContent = 'Request failed: ' + e; });
+  });
+
+  function pollHealth() {
+    fetch('/api/scrapers/health-check/progress')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var pct = d.total > 0 ? Math.round((d.done / d.total) * 100) : 0;
+        bar.style.width = pct + '%';
+        countEl.textContent = d.done + ' / ' + d.total;
+        label.textContent = d.running ? 'Checking sources…' : 'Complete';
+
+        var newLines = d.log.slice(lastLogLen);
+        if (newLines.length) {
+          logEl.textContent += newLines.join('\n') + '\n';
+          lastLogLen = d.log.length;
+          logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        if (!d.running) {
+          clearInterval(pollTimer);
+          bar.classList.remove('progress-bar-animated');
+          bar.style.width = '100%';
+          label.textContent = 'Health check complete';
+          doneBtn.style.display = '';
+          closeBtn.disabled = false;
+
+          // Update health badges + error boxes in cards
+          var now = new Date();
+          var ts  = now.toLocaleString('en-US', {
+            month: 'short', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hour12: false
+          });
+          Object.entries(d.results).forEach(function (kv) {
+            var name = kv[0], res = kv[1];
+            var badgesDiv = document.getElementById('health-' + name);
+            if (badgesDiv) {
+              var badge = res.status === 'current'
+                ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Current</span>'
+                : '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Broken</span>';
+              // Preserve the last scrape-status badge (last .badge child)
+              var existingBadges = badgesDiv.querySelectorAll('.badge');
+              var statusHtml = existingBadges.length > 1
+                ? existingBadges[existingBadges.length - 1].outerHTML : '';
+              badgesDiv.innerHTML = badge
+                + '<span class="text-muted" style="font-size:0.68rem">' + ts + '</span>'
+                + (statusHtml ? ' ' + statusHtml : '');
+            }
+            // Update error detail box
+            var errBox  = document.getElementById('errbox-' + name);
+            var errText = document.getElementById('errtext-' + name);
+            if (errBox && errText) {
+              if (res.status !== 'current') {
+                // Build reason: original error + repair failure note if present
+                var reason = res.message || '';
+                if (res.repair_message && res.repair_message !== 'No alternative endpoint found after trying all strategies') {
+                  reason = reason + (reason ? ' · ' : '') + 'Repair: ' + res.repair_message;
+                } else if (res.repair_message) {
+                  reason = reason + (reason ? ' · ' : '') + res.repair_message;
+                }
+                if (reason) {
+                  errText.textContent = reason;
+                  errBox.style.display = '';
+                }
+              } else {
+                // Source is healthy (or was repaired) — clear the error box
+                errBox.style.display = 'none';
+                errText.textContent  = '';
+              }
+            }
+          });
+        }
+      })
+      .catch(function () {});
+  }
+}());
+
+// ── Auto-Discovery ────────────────────────────────────────────────────────────
+(function () {
+  var discoverBtn     = document.getElementById('autoDiscoverBtn');
+  var urlInput        = document.getElementById('autoUrlInput');
+  var inputSection    = document.getElementById('autoInputSection');
+  var progressSection = document.getElementById('autoProgressSection');
+  var resultsSection  = document.getElementById('autoResultsSection');
+  var progressBar     = document.getElementById('autoProgressBar');
+  var progressLabel   = document.getElementById('autoProgressLabel');
+  var progressCount   = document.getElementById('autoProgressCount');
+  var logEl           = document.getElementById('autoLog');
+  var resultsBody     = document.getElementById('autoResultsBody');
+  var pollTimer       = null;
+  var lastLogLen      = 0;
+  var _anyAdded       = false;
+
+  // Reload page when modal closes if something was added
+  document.getElementById('addAutoModal').addEventListener('hidden.bs.modal', function () {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    if (_anyAdded) { location.reload(); return; }
+    // Reset UI
+    inputSection.style.display = '';
+    progressSection.style.display = 'none';
+    resultsSection.style.display = 'none';
+    urlInput.value = '';
+    logEl.textContent = '';
+    resultsBody.innerHTML = '';
+    discoverBtn.disabled = false;
+    discoverBtn.innerHTML = '<i class="bi bi-search me-1"></i>Start Discovery';
+    lastLogLen = 0;
+    _anyAdded = false;
+  });
+
+  discoverBtn.addEventListener('click', function () {
+    var urls = urlInput.value.trim();
+    if (!urls) { urlInput.focus(); return; }
+
+    discoverBtn.disabled = true;
+    discoverBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Discovering…';
+    inputSection.style.display = 'none';
+    progressSection.style.display = '';
+    resultsSection.style.display = 'none';
+    progressBar.style.width = '0%';
+    progressBar.classList.add('progress-bar-animated');
+    progressLabel.textContent = 'Starting…';
+    progressCount.textContent = '0 / 0';
+    logEl.textContent = '';
+    resultsBody.innerHTML = '';
+    lastLogLen = 0;
+
+    fetch('/api/scrapers/discover/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ urls: urls }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) {
+          logEl.textContent = 'Error: ' + (d.error || 'unknown');
+          discoverBtn.disabled = false;
+          discoverBtn.innerHTML = '<i class="bi bi-search me-1"></i>Start Discovery';
+          return;
+        }
+        pollTimer = setInterval(pollDiscovery, 700);
+      })
+      .catch(function (e) {
+        logEl.textContent = 'Request failed: ' + e;
+        discoverBtn.disabled = false;
+        discoverBtn.innerHTML = '<i class="bi bi-search me-1"></i>Start Discovery';
+      });
+  });
+
+  function pollDiscovery() {
+    fetch('/api/scrapers/discover/progress')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var pct = d.total > 0 ? Math.round((d.done / d.total) * 100) : 0;
+        progressBar.style.width = pct + '%';
+        progressCount.textContent = d.done + ' / ' + d.total;
+        progressLabel.textContent = d.running ? 'Discovering feeds…' : 'Complete';
+
+        var newLines = d.log.slice(lastLogLen);
+        if (newLines.length) {
+          logEl.textContent += newLines.join('\n') + '\n';
+          lastLogLen = d.log.length;
+          logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        if (!d.running) {
+          clearInterval(pollTimer);
+          progressBar.classList.remove('progress-bar-animated');
+          progressBar.style.width = '100%';
+          progressLabel.textContent = 'Discovery complete';
+          discoverBtn.disabled = false;
+          discoverBtn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Discover Again';
+          showResults(d.results);
+        }
+      })
+      .catch(function () {});
+  }
+
+  function showResults(results) {
+    resultsSection.style.display = '';
+    resultsBody.innerHTML = '';
+    results.forEach(function (r) {
+      var tr = document.createElement('tr');
+      var feedShort = r.url_template
+        ? (r.url_template.length > 45 ? r.url_template.slice(0, 45) + '…' : r.url_template)
+        : '—';
+      var typeBadge = r.found
+        ? '<span class="badge bg-' + (r.type === 'rss' ? 'info' : 'warning') + '">' + esc(r.type || '') + '</span>'
+        : '<span class="badge bg-secondary">not found</span>';
+      var addBtn = r.found
+        ? '<button class="btn btn-xs btn-success add-discovered-btn" data-result=\''
+          + JSON.stringify(r).replace(/'/g, '&#39;')
+          + '\'><i class="bi bi-plus me-1"></i>Add</button>'
+        : '';
+      tr.innerHTML = '<td class="small text-muted">' + esc(r.url) + '</td>'
+                   + '<td>' + typeBadge + '</td>'
+                   + '<td class="small font-monospace" title="' + esc(r.url_template || '') + '">'
+                   + esc(feedShort) + '</td>'
+                   + '<td>' + addBtn + '</td>';
+      resultsBody.appendChild(tr);
+    });
+
+    resultsBody.querySelectorAll('.add-discovered-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var result = JSON.parse(this.getAttribute('data-result'));
+        var self = this;
+        self.disabled = true;
+        self.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        fetch('/api/scrapers/discover/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(result),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (d.ok) {
+              _anyAdded = true;
+              self.classList.replace('btn-success', 'btn-secondary');
+              self.innerHTML = '<i class="bi bi-check me-1"></i>Added';
+            } else {
+              self.disabled = false;
+              self.innerHTML = '<i class="bi bi-x me-1"></i>Error';
+            }
+          });
+      });
+    });
+  }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+}());
+
+// ── Board Discovery ────────────────────────────────────────────────────────────
+(function () {
+  var btn        = document.getElementById('discoverBoardsBtn');
+  var modal      = new bootstrap.Modal(document.getElementById('boardDiscoveryModal'));
+  var bar        = document.getElementById('bdProgressBar');
+  var testedEl   = document.getElementById('bdTested');
+  var totalEl    = document.getElementById('bdTotal');
+  var foundEl    = document.getElementById('bdFound');
+  var addedEl    = document.getElementById('bdAdded');
+  var brokenEl   = document.getElementById('bdBroken');
+  var logEl      = document.getElementById('bdLog');
+  var doneBtn    = document.getElementById('bdDoneBtn');
+  var closeBtn   = document.getElementById('closeBdModal');
+  var pollTimer  = null;
+  var lastLogLen = 0;
+  var _added     = false;
+
+  // Reload page when modal closes if any sources were added
+  document.getElementById('boardDiscoveryModal').addEventListener('hidden.bs.modal', function () {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    if (_added) { location.reload(); }
+  });
+
+  btn.addEventListener('click', function () {
+    // Reset UI
+    bar.style.width = '0%';
+    bar.classList.add('progress-bar-animated');
+    testedEl.textContent  = '0';
+    totalEl.textContent   = '—';
+    foundEl.textContent   = '0';
+    addedEl.textContent   = '0';
+    brokenEl.textContent  = '0';
+    logEl.textContent    = '';
+    doneBtn.style.display = 'none';
+    closeBtn.disabled = true;
+    lastLogLen = 0;
+    _added = false;
+    modal.show();
+
+    fetch('/api/scrapers/discover-boards/start', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) {
+          logEl.textContent = 'Error: ' + (d.error || 'unknown');
+          closeBtn.disabled = false;
+          return;
+        }
+        pollTimer = setInterval(pollBd, 900);
+      })
+      .catch(function (e) {
+        logEl.textContent = 'Request failed: ' + e;
+        closeBtn.disabled = false;
+      });
+  });
+
+  function pollBd() {
+    fetch('/api/scrapers/discover-boards/progress')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var pct = d.total > 0 ? Math.round((d.tested / d.total) * 100) : 0;
+        bar.style.width   = pct + '%';
+        testedEl.textContent  = d.tested;
+        totalEl.textContent   = d.total || '—';
+        foundEl.textContent   = d.found;
+        addedEl.textContent   = d.added;
+        brokenEl.textContent  = d.broken || 0;
+        if (d.added > 0) _added = true;
+
+        var newLines = d.log.slice(lastLogLen);
+        if (newLines.length) {
+          logEl.textContent += newLines.join('\n') + '\n';
+          lastLogLen = d.log.length;
+          logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        if (!d.running) {
+          clearInterval(pollTimer);
+          bar.classList.remove('progress-bar-animated');
+          bar.style.width = '100%';
+          closeBtn.disabled = false;
+          doneBtn.style.display = '';
+          doneBtn.innerHTML = _added
+            ? '<i class="bi bi-arrow-clockwise me-1"></i>Done — reload to see ' + d.added + ' new source(s)'
+            : '<i class="bi bi-check-lg me-1"></i>Done — no new sources added';
+        }
+      })
+      .catch(function () {});
+  }
+}());
+</script>
+{% endblock %}

@@ -1,0 +1,3035 @@
+{% extends "base.html" %}
+{% block title %}Settings — Job Tracker{% endblock %}
+
+{% block content %}
+<div class="mt-3 mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-gear me-2 text-primary"></i>Settings</h2>
+</div>
+
+<form method="POST" action="{{ url_for('settings') }}">
+
+<!-- Layout mode toggle -->
+<div class="d-flex align-items-center justify-content-end mb-2 gap-2" id="layoutControls">
+  <span class="small text-muted">Sections:</span>
+  <div class="btn-group btn-group-sm" role="group" aria-label="Section layout mode">
+    <button type="button" class="btn btn-outline-secondary" id="layoutAutoBtn" title="Auto-balance columns by height">
+      <i class="bi bi-columns-gap me-1"></i>Auto
+    </button>
+    <button type="button" class="btn btn-outline-secondary" id="layoutManualBtn" title="Drag sections to reorder">
+      <i class="bi bi-grip-horizontal me-1"></i>Manual
+    </button>
+  </div>
+</div>
+
+<div class="row g-4" id="settingsRow">
+
+  <!-- Left column -->
+  <div class="col-lg-6 settings-col" id="settingsColLeft">
+
+    <!-- Applicant Profile -->
+    <div class="card border-0 shadow-sm mb-4" id="section-profile" data-section="profile">
+      <div class="card-header bg-transparent border-0 d-flex align-items-center">
+        <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
+        <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-person-fill me-2 text-primary"></i>Your Profile</h6>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Full Name <span class="text-warning small fw-normal">— as it appears on your resume</span></label>
+          <input type="text" name="applicant_name" class="form-control"
+                 value="{{ settings.get('applicant_name','') }}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Email Address <span class="text-warning small fw-normal">— used for cover letters and notifications</span></label>
+          <input type="email" name="applicant_email" class="form-control"
+                 value="{{ settings.get('applicant_email','') }}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Phone Number <span class="text-warning small fw-normal">— select country code then enter local number</span></label>
+          <div class="input-group">
+            <select class="form-select" id="phoneCountryCode" style="max-width:220px;">
+              <option value="+1">+1 — United States / Canada</option>
+              <option value="+44">+44 — United Kingdom</option>
+              <option value="+61">+61 — Australia</option>
+              <option value="+64">+64 — New Zealand</option>
+              <option disabled>──────────────</option>
+              <option value="+54">+54 — Argentina</option>
+              <option value="+43">+43 — Austria</option>
+              <option value="+32">+32 — Belgium</option>
+              <option value="+55">+55 — Brazil</option>
+              <option value="+56">+56 — Chile</option>
+              <option value="+86">+86 — China</option>
+              <option value="+57">+57 — Colombia</option>
+              <option value="+385">+385 — Croatia</option>
+              <option value="+420">+420 — Czech Republic</option>
+              <option value="+45">+45 — Denmark</option>
+              <option value="+20">+20 — Egypt</option>
+              <option value="+358">+358 — Finland</option>
+              <option value="+33">+33 — France</option>
+              <option value="+49">+49 — Germany</option>
+              <option value="+30">+30 — Greece</option>
+              <option value="+852">+852 — Hong Kong</option>
+              <option value="+36">+36 — Hungary</option>
+              <option value="+91">+91 — India</option>
+              <option value="+62">+62 — Indonesia</option>
+              <option value="+353">+353 — Ireland</option>
+              <option value="+972">+972 — Israel</option>
+              <option value="+39">+39 — Italy</option>
+              <option value="+81">+81 — Japan</option>
+              <option value="+254">+254 — Kenya</option>
+              <option value="+82">+82 — South Korea</option>
+              <option value="+60">+60 — Malaysia</option>
+              <option value="+52">+52 — Mexico</option>
+              <option value="+31">+31 — Netherlands</option>
+              <option value="+234">+234 — Nigeria</option>
+              <option value="+47">+47 — Norway</option>
+              <option value="+92">+92 — Pakistan</option>
+              <option value="+51">+51 — Peru</option>
+              <option value="+63">+63 — Philippines</option>
+              <option value="+48">+48 — Poland</option>
+              <option value="+351">+351 — Portugal</option>
+              <option value="+40">+40 — Romania</option>
+              <option value="+7">+7 — Russia</option>
+              <option value="+966">+966 — Saudi Arabia</option>
+              <option value="+65">+65 — Singapore</option>
+              <option value="+27">+27 — South Africa</option>
+              <option value="+34">+34 — Spain</option>
+              <option value="+46">+46 — Sweden</option>
+              <option value="+41">+41 — Switzerland</option>
+              <option value="+886">+886 — Taiwan</option>
+              <option value="+66">+66 — Thailand</option>
+              <option value="+90">+90 — Turkey</option>
+              <option value="+380">+380 — Ukraine</option>
+              <option value="+971">+971 — United Arab Emirates</option>
+              <option value="+58">+58 — Venezuela</option>
+              <option value="+84">+84 — Vietnam</option>
+            </select>
+            <input type="text" id="phoneLocal" class="form-control"
+                   placeholder="(402) 575-0410">
+            <input type="hidden" name="applicant_phone" id="applicantPhoneHidden"
+                   value="{{ settings.get('applicant_phone','') }}">
+          </div>
+          <div class="form-text text-muted">Select country code, then enter your local number.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Location <span class="text-warning small fw-normal">— Remote shows all jobs; pick a state to filter by area</span></label>
+          <div class="input-group">
+            <select class="form-select" id="applicantLocationState" name="applicant_location">
+              {% set cur_loc = settings.get('applicant_location','Remote') %}
+              <option value="Remote" {% if 'remote' in cur_loc.lower() %}selected{% endif %}>Remote — all jobs pass</option>
+              <option disabled>──────────────</option>
+              {% set states = [
+                ('AL','Alabama'),('AK','Alaska'),('AZ','Arizona'),('AR','Arkansas'),
+                ('CA','California'),('CO','Colorado'),('CT','Connecticut'),('DE','Delaware'),
+                ('FL','Florida'),('GA','Georgia'),('HI','Hawaii'),('ID','Idaho'),
+                ('IL','Illinois'),('IN','Indiana'),('IA','Iowa'),('KS','Kansas'),
+                ('KY','Kentucky'),('LA','Louisiana'),('ME','Maine'),('MD','Maryland'),
+                ('MA','Massachusetts'),('MI','Michigan'),('MN','Minnesota'),('MS','Mississippi'),
+                ('MO','Missouri'),('MT','Montana'),('NE','Nebraska'),('NV','Nevada'),
+                ('NH','New Hampshire'),('NJ','New Jersey'),('NM','New Mexico'),('NY','New York'),
+                ('NC','North Carolina'),('ND','North Dakota'),('OH','Ohio'),('OK','Oklahoma'),
+                ('OR','Oregon'),('PA','Pennsylvania'),('RI','Rhode Island'),('SC','South Carolina'),
+                ('SD','South Dakota'),('TN','Tennessee'),('TX','Texas'),('UT','Utah'),
+                ('VT','Vermont'),('VA','Virginia'),('WA','Washington'),('WV','West Virginia'),
+                ('WI','Wisconsin'),('WY','Wyoming'),('DC','Washington DC')
+              ] %}
+              {% for abbr, name in states %}
+              <option value="{{ abbr }}" {% if cur_loc.upper() == abbr %}selected{% endif %}>{{ abbr }} — {{ name }}</option>
+              {% endfor %}
+            </select>
+            <select class="form-select" id="locationMiles" name="applicant_location_miles" style="max-width:145px;">
+              {% set cur_miles = settings.get('applicant_location_miles','50') %}
+              {% for m in range(10, 110, 10) %}
+              <option value="{{ m }}" {% if cur_miles == m|string %}selected{% endif %}>{{ m }} miles</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-text text-muted">Miles radius is ignored when Remote is selected.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Years of Experience <span class="text-warning small fw-normal">— shown on cover letters and applications</span></label>
+          <input type="number" name="years_experience" class="form-control"
+                 value="{{ settings.get('years_experience','5') }}" min="0" max="50">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">LinkedIn URL <span class="text-warning small fw-normal">— included in applications and cover letters</span></label>
+          <input type="url" name="applicant_linkedin" class="form-control"
+                 value="{{ settings.get('applicant_linkedin','') }}" placeholder="https://linkedin.com/in/...">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">GitHub URL <span class="text-warning small fw-normal">— included in applications and cover letters</span></label>
+          <div class="input-group">
+            <input type="url" name="applicant_github" class="form-control" id="githubUrlInput"
+                   value="{{ settings.get('applicant_github','') }}" placeholder="https://github.com/...">
+            <button type="button" class="btn btn-outline-secondary" id="openGithubBtn" title="Open in browser">
+              <i class="bi bi-box-arrow-up-right"></i> Open
+            </button>
+          </div>
+          <div class="form-text text-muted">Paste your GitHub profile or repository URL, then click Open to verify.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Resume File Path <span class="text-warning small fw-normal">— full path to your PDF, used for email attachments</span></label>
+          <div class="input-group">
+            <input type="text" name="resume_path" class="form-control" id="resumePathInput"
+                   value="{{ settings.get('resume_path','') }}" placeholder="C:\Users\you\resume.pdf">
+            <button type="button" class="btn btn-outline-secondary" id="browseResumeBtn">
+              <i class="bi bi-folder2-open"></i> Browse…
+            </button>
+          </div>
+          <div class="form-text text-muted">Click Browse to pick a file from your computer.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Response Email Monitoring -->
+    <div class="card border-0 shadow-sm mb-4" id="section-response-emails" data-section="response-emails">
+      <div class="card-header bg-transparent border-0 d-flex align-items-center">
+        <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
+        <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-envelope-check me-2 text-success"></i>Response Email Monitoring</h6>
+        <button type="button" class="btn btn-sm btn-outline-success me-2" id="checkEmailsNowBtn" title="Check all inboxes now">
+          <i class="bi bi-arrow-repeat me-1"></i>Check Now
+        </button>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">
+          Configure Gmail and/or Outlook accounts below. The daemon checks them every hour for replies from
+          companies you've applied to, automatically detects declines and interview invitations, updates your
+          application status, and saves each email to <code>email_responses/</code> in the app directory.
+          Both accounts are checked simultaneously.
+        </p>
+
+        <!-- Configured account list -->
+        <div id="responseEmailList" class="mb-4"></div>
+
+        <!-- ── Gmail Setup ───────────────────────────────────────────── -->
+        <div class="card border border-secondary mb-3">
+          <div class="card-header bg-transparent border-secondary py-2 d-flex align-items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0;">
+              <path fill="#EA4335" d="M24 5.4c5 0 9.3 1.7 12.8 4.5l-5.2 5.2C29.7 13.3 27 12.2 24 12.2c-6.1 0-11.2 4-13 9.5l-6.2-4.8C7.9 9.8 15.4 5.4 24 5.4z"/>
+              <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.5 6.7l6.9 5.3c4-3.7 6.3-9.2 6.3-16z"/>
+              <path fill="#FBBC05" d="M11 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7L4.8 14.5C3 17.7 2 21.2 2 24s1 6.3 2.8 9.5l6.2-4.8z"/>
+              <path fill="#34A853" d="M24 42.6c-7 0-13-4.6-15.1-11l-6.2 4.8C6.6 43 14.7 48 24 48c8.4 0 15.5-4.3 19.5-10.7l-6.9-5.3C34.3 41 29.5 42.6 24 42.6z"/>
+            </svg>
+            <span class="fw-semibold small">Gmail</span>
+            <span class="badge bg-success ms-1" style="font-size:.65rem;">Recommended</span>
+            <span class="text-muted small ms-2">imap.gmail.com · Port 993 · SSL</span>
+          </div>
+          <div class="card-body py-3">
+            <div class="row g-2 align-items-end">
+              <div class="col-sm-5">
+                <label class="form-label small fw-semibold">Gmail Address</label>
+                <input type="text" id="gmailEmail" class="form-control form-control-sm bg-dark text-white border-secondary"
+                       placeholder="you@gmail.com">
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label small fw-semibold">App Password <span class="text-warning fw-normal">— required</span></label>
+                <input type="password" id="gmailPassword" class="form-control form-control-sm bg-dark text-white border-secondary"
+                       placeholder="xxxx xxxx xxxx xxxx">
+              </div>
+              <div class="col-sm-3 d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" id="testGmailBtn">
+                  <i class="bi bi-wifi me-1"></i>Test
+                </button>
+                <button type="button" class="btn btn-sm btn-success flex-fill" id="addGmailBtn">
+                  <i class="bi bi-plus me-1"></i>Add
+                </button>
+              </div>
+              <div class="col-12">
+                <div class="form-text text-muted">
+                  <i class="bi bi-info-circle me-1"></i>Requires a Google <strong>App Password</strong> — not your regular Gmail password.
+                  <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" class="text-info ms-1">
+                    Generate one here <i class="bi bi-box-arrow-up-right" style="font-size:.7rem;"></i>
+                  </a>
+                  (Google Account → Security → 2-Step Verification → App Passwords → Select app: Mail).
+                </div>
+                <div id="gmailTestResult" class="mt-1 small"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Outlook / Hotmail / Live Setup ────────────────────────── -->
+        <div class="card border border-secondary mb-3">
+          <div class="card-header bg-transparent border-secondary py-2 d-flex align-items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0;">
+              <path fill="#0078D4" d="M28 8H44a2 2 0 0 1 2 2v28a2 2 0 0 1-2 2H28V8z"/>
+              <path fill="#28A8E8" d="M4 8h24v32H4a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z"/>
+              <path fill="#fff" d="M10 17h12v14H10z" opacity=".9"/>
+              <path fill="#0078D4" d="M10 17h12v7H10z"/>
+            </svg>
+            <span class="fw-semibold small">Outlook / Hotmail / Live</span>
+            <span class="text-muted small ms-2">outlook.office365.com · Port 993 · SSL</span>
+          </div>
+          <div class="card-body py-3">
+            <div class="row g-2 align-items-end">
+              <div class="col-sm-5">
+                <label class="form-label small fw-semibold">Outlook / Hotmail / Live Address</label>
+                <input type="text" id="outlookEmail" class="form-control form-control-sm bg-dark text-white border-secondary"
+                       placeholder="you@hotmail.com">
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label small fw-semibold">App Password <span class="text-warning fw-normal">— required</span></label>
+                <input type="password" id="outlookPassword" class="form-control form-control-sm bg-dark text-white border-secondary"
+                       placeholder="Generated app password">
+              </div>
+              <div class="col-sm-3 d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" id="testOutlookBtn">
+                  <i class="bi bi-wifi me-1"></i>Test
+                </button>
+                <button type="button" class="btn btn-sm btn-primary flex-fill" id="addOutlookBtn">
+                  <i class="bi bi-plus me-1"></i>Add
+                </button>
+              </div>
+              <div class="col-12">
+                <div class="form-text text-muted">
+                  <i class="bi bi-exclamation-triangle me-1 text-warning"></i>
+                  Microsoft <strong>does not allow your regular password</strong> for IMAP — you must use an <strong>App Password</strong>.
+                  <ol class="mb-1 mt-2 ps-3 small" style="line-height:1.7;">
+                    <li>Enable two-step verification on your Microsoft account if it isn't already:
+                      <a href="https://account.microsoft.com/security" target="_blank" rel="noopener noreferrer" class="text-info">
+                        account.microsoft.com/security <i class="bi bi-box-arrow-up-right" style="font-size:.7rem;"></i>
+                      </a>
+                    </li>
+                    <li>Go to <strong>Advanced security options → App passwords</strong> and create a new one named <em>Mail</em>.</li>
+                    <li>Enable IMAP access: sign in to
+                      <a href="https://outlook.live.com/mail/" target="_blank" rel="noopener noreferrer" class="text-info">
+                        outlook.live.com <i class="bi bi-box-arrow-up-right" style="font-size:.7rem;"></i>
+                      </a>
+                      → Settings (gear) → View all Outlook settings → Mail → Sync email → enable <em>IMAP</em>.
+                    </li>
+                    <li>Paste the generated app password in the field above (not your account password).</li>
+                  </ol>
+                </div>
+                <div id="outlookTestResult" class="mt-1 small"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Custom IMAP (collapsed) ───────────────────────────────── -->
+        <div class="mb-3">
+          <button class="btn btn-sm btn-outline-secondary" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#customImapCollapse"
+                  aria-expanded="false" aria-controls="customImapCollapse">
+            <i class="bi bi-server me-1"></i>Add Custom IMAP Account
+          </button>
+          <div class="collapse mt-2" id="customImapCollapse">
+            <div class="card border border-secondary">
+              <div class="card-body py-3">
+                <div class="row g-2 align-items-end">
+                  <div class="col-sm-4">
+                    <label class="form-label small">Label</label>
+                    <input type="text" id="customLabel" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="e.g. Work Email">
+                  </div>
+                  <div class="col-sm-4">
+                    <label class="form-label small">Email Address</label>
+                    <input type="text" id="customEmail" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="you@company.com">
+                  </div>
+                  <div class="col-sm-4">
+                    <label class="form-label small">Password</label>
+                    <input type="password" id="customPassword" class="form-control form-control-sm bg-dark text-white border-secondary">
+                  </div>
+                  <div class="col-sm-5">
+                    <label class="form-label small">IMAP Host</label>
+                    <input type="text" id="customHost" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="imap.yourprovider.com">
+                  </div>
+                  <div class="col-sm-2">
+                    <label class="form-label small">Port</label>
+                    <input type="number" id="customPort" class="form-control form-control-sm bg-dark text-white border-secondary" value="993">
+                  </div>
+                  <div class="col-sm-2 d-flex align-items-end pb-1">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="customSsl" checked>
+                      <label class="form-check-label small" for="customSsl">SSL</label>
+                    </div>
+                  </div>
+                  <div class="col-sm-3 d-flex gap-2 align-items-end">
+                    <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" id="testCustomBtn">
+                      <i class="bi bi-wifi me-1"></i>Test
+                    </button>
+                    <button type="button" class="btn btn-sm btn-secondary flex-fill" id="addCustomBtn">
+                      <i class="bi bi-plus me-1"></i>Add
+                    </button>
+                  </div>
+                  <div class="col-12">
+                    <div id="customTestResult" class="small"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status line -->
+        <div id="emailCheckStatus" class="small text-muted"></div>
+      </div>
+    </div>
+
+    <!-- Cover Letter -->
+    <div class="card border-0 shadow-sm mb-4" id="section-cover-letters" data-section="cover-letters">
+      <div class="card-header bg-transparent border-0 d-flex align-items-center">
+        <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
+        <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-file-earmark-richtext me-2 text-info"></i>Cover Letters</h6>
+      </div>
+      <div class="card-body">
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" name="use_ai_cover_letter"
+                 id="useAI" value="true"
+                 {% if settings.get('use_ai_cover_letter') == 'true' %}checked{% endif %}>
+          <label class="form-check-label" for="useAI">
+            Use AI (OpenAI) for cover letters
+          </label>
+        </div>
+        <div class="alert alert-secondary small mb-0">
+          <i class="bi bi-info-circle me-1"></i>
+          Requires <code>OPENAI_API_KEY</code> in your <code>.env</code> file.
+          Falls back to template-based generation if not configured.
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="card border-0 shadow-sm mb-4" id="section-notifications" data-section="notifications">
+      <div class="card-header bg-transparent border-0 d-flex align-items-center">
+        <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
+        <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-bell me-2 text-primary"></i>Notifications</h6>
+      </div>
+      <div class="card-body d-flex flex-column gap-3">
+
+        <!-- Auto-Archive -->
+        <div class="rounded-3 p-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+          <div class="fw-semibold small text-uppercase text-secondary mb-2">
+            <i class="bi bi-archive me-1 text-warning"></i>Auto-Archive
+          </div>
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" name="notif_auto_archive_enabled"
+                   id="archiveEnabled" value="true"
+                   {% if settings.get('notif_auto_archive_enabled') == 'true' %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="archiveEnabled">
+              Auto-Archive Notifications
+            </label>
+          </div>
+          <div class="input-group input-group-sm">
+            <input type="number" name="notif_auto_archive_days" class="form-control"
+                   value="{{ settings.get('notif_auto_archive_days','30') }}" min="1" max="365">
+            <span class="input-group-text">days</span>
+          </div>
+          <div class="form-text text-muted mt-1">Hide notifications older than this many days from the Notifications page.</div>
+        </div>
+
+        <!-- Auto-Delete -->
+        <div class="rounded-3 p-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+          <div class="fw-semibold small text-uppercase text-secondary mb-2">
+            <i class="bi bi-trash me-1 text-danger"></i>Auto-Delete
+          </div>
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" name="notif_auto_delete_enabled"
+                   id="deleteEnabled" value="true"
+                   {% if settings.get('notif_auto_delete_enabled') == 'true' %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="deleteEnabled">
+              Auto-Delete Notifications
+            </label>
+          </div>
+          <div class="input-group input-group-sm">
+            <input type="number" name="notif_auto_delete_days" class="form-control"
+                   value="{{ settings.get('notif_auto_delete_days','60') }}" min="1" max="365">
+            <span class="input-group-text">days</span>
+          </div>
+          <div class="form-text text-muted mt-1">Permanently delete notifications older than this many days.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Calendar Integration -->
+    <div class="card border-0 shadow-sm mb-4" id="section-calendar" data-section="calendar">
+      <div class="card-header bg-transparent border-0 d-flex align-items-center">
+        <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
+        <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-calendar3 me-2 text-info"></i>Calendar Integration</h6>
+      </div>
+      <div class="card-body">
+
+        <p class="small text-muted mb-3">
+          Subscribe to your personal <strong>Job Tracker calendar feed</strong> — no sign-in, no OAuth.
+          All your interviews and follow-up reminders appear in a dedicated calendar that stays in sync automatically.
+          Events use the timezone set in your <strong>Scan Schedule</strong> settings below.
+        </p>
+
+        <div class="alert alert-warning py-2 px-3 small mb-3">
+          <i class="bi bi-clock-history me-1"></i>
+          <strong>Sync delay:</strong> Google Calendar only polls subscribed feeds every <strong>8–24 hours</strong>.
+          After saving changes in the app, right-click the <em>Job Tracker</em> calendar in the left sidebar
+          and choose <strong>Refresh</strong> to force an immediate update.
+          Outlook syncs similarly — open the calendar settings and click <strong>Update</strong>.
+        </div>
+
+        <!-- Feed URL -->
+        {% set feed_token = settings.get('cal_feed_token','') %}
+        {% set feed_url = url_for('calendar_feed', token=feed_token, _external=True) %}
+        <div class="rounded-3 p-3 mb-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+          <div class="fw-semibold small text-uppercase text-secondary mb-2">
+            <i class="bi bi-link-45deg me-1 text-info"></i>Your Calendar Feed URL
+          </div>
+          <div class="input-group input-group-sm mb-2">
+            <input type="text" id="calFeedUrl" class="form-control font-monospace"
+                   value="{{ feed_url }}" readonly>
+            <button type="button" class="btn btn-outline-secondary" id="copyFeedUrlBtn" title="Copy URL">
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <button type="button" class="btn btn-sm btn-outline-danger" id="regenTokenBtn">
+              <i class="bi bi-arrow-clockwise me-1"></i>Regenerate URL
+            </button>
+          </div>
+          <div class="form-text text-warning mt-2">
+            <i class="bi bi-shield-lock me-1"></i>Keep this URL private — it grants read access to your calendar events.
+            Regenerate it if you ever share it accidentally.
+          </div>
+        </div>
+
+        <!-- Google Calendar instructions -->
+        <div class="rounded-3 p-3 mb-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+          <div class="fw-semibold small mb-2">
+            <img src="https://www.gstatic.com/images/branding/product/1x/calendar_2020q4_16dp.png" width="14" height="14" class="me-1" alt="">Subscribe in Google Calendar
+          </div>
+          <ol class="small text-muted mb-0 ps-3" style="line-height:1.9">
+            <li>Open <strong>Google Calendar</strong> in your browser</li>
+            <li>In the left sidebar click <strong>+</strong> next to <em>Other calendars</em></li>
+            <li>Choose <strong>From URL</strong></li>
+            <li>Paste the feed URL above and click <strong>Add calendar</strong></li>
+            <li>A new <em>Job Tracker</em> calendar appears with your events</li>
+            <li>To force an update after saving changes: right-click <em>Job Tracker</em> in the sidebar → <strong>Refresh</strong></li>
+          </ol>
+        </div>
+
+        <!-- Outlook instructions -->
+        <div class="rounded-3 p-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+          <div class="fw-semibold small mb-2">
+            <i class="bi bi-microsoft me-1"></i>Subscribe in Outlook
+          </div>
+          <ol class="small text-muted mb-0 ps-3" style="line-height:1.9">
+            <li>Open <strong>Outlook</strong> (web or desktop)</li>
+            <li>Go to <strong>Calendar</strong> → <strong>Add calendar</strong></li>
+            <li>Choose <strong>Subscribe from web</strong></li>
+            <li>Paste the feed URL above, give it a name (e.g. <em>Job Tracker</em>), and click <strong>Import</strong></li>
+          </ol>
+        </div>
+
+      </div>
+    </div>
+
+    <script>
+    // Copy feed URL
+    document.getElementById('copyFeedUrlBtn').addEventListener('click', function() {
+      const url = document.getElementById('calFeedUrl').value;
+      navigator.clipboard.writeText(url).then(() => {
+        this.innerHTML = '<i class="bi bi-check2"></i>';
+        setTimeout(() => { this.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1800);
+      });
+    });
+
+    // Regenerate token
+    document.getElementById('regenTokenBtn').addEventListener('click', async function() {
+      if (!confirm('This will break any existing calendar subscriptions. Continue?')) return;
+      const resp = await fetch('/api/calendar/regenerate-token', {method: 'POST'});
+      const data = await resp.json();
+      if (data.ok) {
+        const newUrl = document.getElementById('calFeedUrl').value.replace(/token=[^&]+/, 'token=' + data.token);
+        document.getElementById('calFeedUrl').value = newUrl;
+        this.innerHTML = '<i class="bi bi-check2 me-1"></i>Done — re-subscribe with new URL';
+        setTimeout(() => { this.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Regenerate URL'; }, 3000);
+      }
+    });
+    </script>
+
+  </div>
+
+  <!-- Right column -->
+  <div class="col-lg-6 settings-col" id="settingsColRight">
+
+    <!-- Job Search Preferences -->
+    <div class="card border-0 shadow-sm mb-4" id="section-job-filtering" data-section="job-filtering">
+      <div class="card-header bg-transparent border-0 d-flex align-items-center">
+        <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
+        <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-search me-2 text-success"></i>Job Filtering</h6>
+      </div>
+      <div class="card-body d-flex flex-column gap-3">
+
+        <!-- ① Minimum Match Score -->
+        <div class="rounded-3 p-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+          <div class="fw-semibold small text-uppercase text-secondary mb-2 letter-spacing-1">
+            <i class="bi bi-sliders me-1 text-warning"></i>Minimum Match Score
+          </div>
+          <input type="range" name="min_match_score" class="form-range"
+                 min="0" max="100" step="5"
+                 value="{{ settings.get('min_match_score','25') }}"
+                 oninput="document.getElementById('scoreVal').textContent=this.value">
+          <div class="text-center small fw-bold">
+            <span id="scoreVal">{{ settings.get('min_match_score','25') }}</span>
+            <span class="text-muted fw-normal"> — jobs below this score are discarded (0–100)</span>
+          </div>
+        </div>
+
+        <!-- ② Skills Source (Use Resume toggle + all skill fields) -->
+        <div class="rounded-3 p-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+          <div class="fw-semibold small text-uppercase text-secondary mb-3">
+            <i class="bi bi-file-earmark-person me-1 text-info"></i>Skills Source
+          </div>
+
+          <!-- Use Resume toggle -->
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" name="use_resume"
+                   id="useResumeToggle" value="true"
+                   {% if settings.get('use_resume','false') == 'true' %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="useResumeToggle">
+              Use Resume for Skills
+            </label>
+            <div class="form-text text-muted mt-0">
+              When on, skills are sourced from your Resume file — overriding the manual Required &amp; Preferred fields below.
+            </div>
+          </div>
+
+          <!-- Resume Skills (visible only when Use Resume is on) -->
+          <div id="resumeSkillsSection">
+            <!-- Resume Required Skills (+20) -->
+            <div class="mb-2">
+              <label class="form-label text-warning fw-semibold">Resume Required Skills
+                <span class="text-muted small fw-normal">— must-have keywords, +20 pts each</span>
+              </label>
+              <div class="input-group">
+                <input type="text" name="resume_required_skills" id="resumeRequiredInput" class="form-control"
+                       value="{{ settings.get('resume_required_skills','') }}"
+                       placeholder="High-importance skills from your resume…">
+              </div>
+            </div>
+            <!-- Resume Preferred Skills (+8) -->
+            <div class="mb-2">
+              <label class="form-label text-info fw-semibold">Resume Preferred Skills
+                <span class="text-muted small fw-normal">— bonus keywords, +8 pts each</span>
+              </label>
+              <div class="input-group">
+                <input type="text" name="resume_preferred_skills" id="resumePreferredInput" class="form-control"
+                       value="{{ settings.get('resume_preferred_skills','') }}"
+                       placeholder="Skills will appear here after scanning your resume…">
+                <button type="button" class="btn btn-outline-info" id="parseResumeBtn"
+                        title="Parse resume file and populate the Preferred list">
+                  <span id="parseBtnLabel"><i class="bi bi-file-earmark-person"></i> Scan Resume</span>
+                </button>
+                <button type="button" class="btn btn-outline-primary"
+                        onclick="openResumeSkillsPicker()">
+                  <i class="bi bi-list-check"></i> Choose…
+                </button>
+              </div>
+              <div class="form-text" id="parseResumeMsg"></div>
+            </div>
+            <div class="form-text text-muted mb-1">
+              Use <strong>Choose…</strong> to assign <span class="text-warning">+20 Required</span>
+              or <span class="text-info">+8 Preferred</span> weight per skill.
+              <strong>Scan Resume</strong> auto-fills the Preferred list from your resume file.
+            </div>
+          </div>
+
+          <!-- Required Skills (hidden when Use Resume is on) -->
+          <div id="manualSkillsSection">
+            <div class="mb-2">
+              <label class="form-label">Required Skills <span class="text-warning small fw-normal">— must-have keywords, +20 pts each</span></label>
+              <div class="input-group">
+                <input type="text" name="required_skills" id="requiredSkillsInput" class="form-control"
+                       value="{{ settings.get('required_skills','') }}"
+                       placeholder="C#,.NET,Oracle,SQL Server,Azure">
+                <button type="button" class="btn btn-outline-primary"
+                        onclick="openSkillsPicker('requiredSkillsInput','Choose Required Skills')">
+                  <i class="bi bi-list-check"></i> Choose…
+                </button>
+              </div>
+              <div class="form-text text-muted">Type directly or click Choose… to browse skill groups.</div>
+            </div>
+          </div>
+          <div id="preferredSkillsSection">
+            <div class="mb-1">
+              <label class="form-label">Preferred Skills <span class="text-warning small fw-normal">— bonus keywords, +8 pts each</span></label>
+              <div class="input-group">
+                <input type="text" name="preferred_skills" id="preferredSkillsInput" class="form-control"
+                       value="{{ settings.get('preferred_skills','') }}"
+                       placeholder="ASP.NET,Entity Framework,LINQ,PL/SQL">
+                <button type="button" class="btn btn-outline-primary"
+                        onclick="openSkillsPicker('preferredSkillsInput','Choose Preferred Skills')">
+                  <i class="bi bi-list-check"></i> Choose…
+                </button>
+              </div>
+              <div class="form-text text-muted">Type directly or click Choose… to browse skill groups.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ③ Job Duration Filter -->
+        <div class="rounded-3 p-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+          <div class="fw-semibold small text-uppercase text-secondary mb-2">
+            <i class="bi bi-clock me-1 text-info"></i>Job Duration Filter
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            {% set active_durations = settings.get('job_duration_filter','').split(',') %}
+            {% for dur in ['Full Time', 'Part Time', 'Contract', 'Internship', 'Temporary', 'Seasonal', 'Freelance', 'Per Diem'] %}
+            <div>
+              <input type="checkbox" class="btn-check" name="job_duration_filter"
+                     id="dur_{{ dur|replace(' ','_') }}" value="{{ dur }}" autocomplete="off"
+                     {% if dur in active_durations %}checked{% endif %}>
+              <label class="btn btn-sm btn-outline-info" for="dur_{{ dur|replace(' ','_') }}">{{ dur }}</label>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="form-text text-muted mt-2">Leave all unchecked to accept all job types. Checked types are the only ones saved during scans.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Scheduling -->
+    <div class="card border-0 shadow-sm mb-4" id="section-scheduled-scans" data-section="scheduled-scans">
+      <div class="card-header bg-transparent border-0 d-flex align-items-center">
+        <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
+        <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-clock me-2 text-warning"></i>Scheduled Scans</h6>
+      </div>
+      <div class="card-body">
+
+        <!-- Automated / Manual toggle -->
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" name="scan_auto_enabled"
+                 id="scanAutoEnabled" value="true"
+                 {% if settings.get('scan_auto_enabled','true') == 'true' %}checked{% endif %}>
+          <label class="form-check-label fw-semibold" for="scanAutoEnabled">
+            Enable Automated Scans
+          </label>
+          <div class="form-text text-muted mt-0">Toggle off to use Manual Scans only.</div>
+        </div>
+
+        <!-- Scheduler options (hidden when automated is off) -->
+        <div id="schedulerOptions">
+
+          <!-- Frequency -->
+          <div class="mb-3">
+            <label class="form-label">Scan Frequency <span class="text-warning small fw-normal">— how often scans run automatically</span></label>
+            <div class="d-flex gap-4">
+              {% for val, lbl in [('daily','Daily'), ('weekly','Weekly'), ('monthly','Monthly')] %}
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="scan_frequency"
+                       id="freq_{{ val }}" value="{{ val }}"
+                       {% if settings.get('scan_frequency','daily') == val %}checked{% endif %}>
+                <label class="form-check-label" for="freq_{{ val }}">{{ lbl }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Scan Times -->
+          <div class="mb-3">
+            <label class="form-label">Scan Times <span class="text-warning small fw-normal">— select one or more times</span></label>
+            <div class="d-flex flex-wrap gap-2">
+              {% set active_times = settings.get('scan_times','08:00,20:00').split(',') %}
+              {% set time_opts = [
+                ('06:00','6 AM'),('07:00','7 AM'),('08:00','8 AM'),('09:00','9 AM'),
+                ('10:00','10 AM'),('11:00','11 AM'),('12:00','12 PM'),('13:00','1 PM'),
+                ('14:00','2 PM'),('15:00','3 PM'),('16:00','4 PM'),('17:00','5 PM'),
+                ('18:00','6 PM'),('19:00','7 PM'),('20:00','8 PM'),('21:00','9 PM'),
+                ('22:00','10 PM')
+              ] %}
+              {% for val, lbl in time_opts %}
+              <div>
+                <input type="checkbox" class="btn-check" name="scan_times"
+                       id="time_{{ val|replace(':','') }}" value="{{ val }}" autocomplete="off"
+                       {% if val in active_times %}checked{% endif %}>
+                <label class="btn btn-sm btn-outline-warning" for="time_{{ val|replace(':','') }}">{{ lbl }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Weekdays (weekly only) -->
+          <div class="mb-3" id="weekdaySection">
+            <label class="form-label">Days of Week <span class="text-warning small fw-normal">— which days to run the scan</span></label>
+            <div class="d-flex flex-wrap gap-2">
+              {% set active_days = settings.get('scan_weekdays','0,1,2,3,4').split(',') %}
+              {% for val, lbl in [('0','Mon'),('1','Tue'),('2','Wed'),('3','Thu'),('4','Fri'),('5','Sat'),('6','Sun')] %}
+              <div>
+                <input type="checkbox" class="btn-check" name="scan_weekdays"
+                       id="day_{{ val }}" value="{{ val }}" autocomplete="off"
+                       {% if val in active_days %}checked{% endif %}>
+                <label class="btn btn-sm btn-outline-info" for="day_{{ val }}">{{ lbl }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Month days (monthly only) -->
+          <div class="mb-3" id="monthdaySection">
+            <label class="form-label">Days of Month <span class="text-warning small fw-normal">— which day(s) of the month to scan</span></label>
+            <div class="d-flex flex-wrap gap-2">
+              {% set active_mdays = settings.get('scan_monthdays','1').split(',') %}
+              {% for d in range(1, 32) %}
+              <div>
+                <input type="checkbox" class="btn-check" name="scan_monthdays"
+                       id="mday_{{ d }}" value="{{ d }}" autocomplete="off"
+                       {% if d|string in active_mdays %}checked{% endif %}>
+                <label class="btn btn-sm btn-outline-secondary" for="mday_{{ d }}">{{ d }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Timezone -->
+          <div class="mb-3">
+            <label class="form-label">Timezone <span class="text-warning small fw-normal">— all scan times use this timezone</span></label>
+            <div class="input-group">
+              <select class="form-select" name="timezone" id="timezoneSelect">
+                {% set cur_tz = settings.get('timezone','America/New_York') %}
+                {% set tz_opts = [
+                  ('America/New_York',    'UTC-5/-4 — Eastern Time (ET) — New York, Miami'),
+                  ('America/Chicago',     'UTC-6/-5 — Central Time (CT) — Chicago, Dallas'),
+                  ('America/Denver',      'UTC-7/-6 — Mountain Time (MT) — Denver, Salt Lake City'),
+                  ('America/Phoenix',     'UTC-7     — Mountain Time (no DST) — Arizona'),
+                  ('America/Los_Angeles', 'UTC-8/-7 — Pacific Time (PT) — Los Angeles, Seattle'),
+                  ('America/Anchorage',   'UTC-9/-8 — Alaska Time (AKT) — Anchorage'),
+                  ('Pacific/Honolulu',    'UTC-10    — Hawaii Time (HT) — Honolulu'),
+                  ('America/Puerto_Rico', 'UTC-4     — Atlantic Time (AT) — Puerto Rico'),
+                  ('Pacific/Guam',        'UTC+10    — Chamorro Time (ChST) — Guam, CNMI'),
+                  ('Pacific/Pago_Pago',   'UTC-11    — Samoa Time (SST) — American Samoa'),
+                  ('America/Indiana/Indianapolis', 'UTC-5     — Eastern Time (no DST) — Indiana'),
+                  ('America/Boise',       'UTC-7/-6 — Mountain Time — Boise, Idaho'),
+                ] %}
+                {% for val, lbl in tz_opts %}
+                <option value="{{ val }}" {% if cur_tz == val %}selected{% endif %}>{{ lbl }}</option>
+                {% endfor %}
+              </select>
+              <button type="button" class="btn btn-outline-secondary" id="tzDetectBtn" title="Auto-detect my timezone">
+                <i class="bi bi-geo-alt"></i> Detect
+              </button>
+            </div>
+            <div class="form-text" id="tzDetectMsg"></div>
+          </div>
+
+        </div><!-- /schedulerOptions -->
+
+        <!-- Follow-up Reminder (always visible) -->
+        <div class="mb-3">
+          <label class="form-label">Follow-up Reminder <span class="text-warning small fw-normal">— days after applying before a reminder appears</span></label>
+          <input type="number" name="follow_up_days" class="form-control"
+                 value="{{ settings.get('follow_up_days','7') }}" min="1" max="30">
+        </div>
+
+        <!-- Background Daemon panel -->
+        <div class="rounded-3 p-3 mt-1" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+          <div class="fw-semibold small text-uppercase text-secondary mb-3">
+            <i class="bi bi-cpu me-1 text-success"></i>Background Daemon
+            <span class="ms-2 small fw-normal text-muted normal-case" style="text-transform:none">— scans run even when the web app is closed</span>
+          </div>
+
+          <!-- Daemon Name -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="daemonNameInput">
+              Daemon Name
+            </label>
+            <input type="text" name="daemon_name" id="daemonNameInput" class="form-control"
+                   value="{{ settings.get('daemon_name', 'JobTrackerDaemon') }}"
+                   maxlength="40" placeholder="JobTrackerDaemon">
+            <div class="form-text text-muted mt-1">
+              The process name displayed in <strong>Windows Task Manager</strong> when the daemon is running.
+              Letters, numbers, hyphens, and underscores only — no spaces.
+              A copy of Python is created with this name so you can identify and manage the daemon process easily.
+              <em>Save Settings first, then Start the daemon to apply a new name.</em>
+            </div>
+          </div>
+
+          <!-- Tray Icon Picker -->
+          <div class="mb-3" id="trayIconSection">
+            <label class="form-label fw-semibold">Tray Icon</label>
+            <div class="d-flex align-items-start gap-3">
+              <!-- Preview thumbnail -->
+              <div style="flex-shrink:0;">
+                <img id="trayIconPreview" src="/api/daemon/icon-preview"
+                     width="64" height="64"
+                     style="border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);"
+                     alt="Tray icon preview">
+              </div>
+              <!-- Controls -->
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                  <span id="trayIconFilename" class="small text-muted fst-italic">
+                    {{ 'Custom: ' + settings.get('daemon_icon_path','').split('\\')[-1] if settings.get('daemon_icon_path','') else 'Default (built-in)' }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" id="trayIconBrowseBtn">
+                    <i class="bi bi-folder2-open me-1"></i>Browse…
+                  </button>
+                  <button type="button" class="btn btn-outline-danger btn-sm" id="trayIconResetBtn"
+                          {% if not settings.get('daemon_icon_path','') %}style="display:none"{% endif %}>
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to default
+                  </button>
+                </div>
+                <input type="file" id="trayIconFile" accept=".ico,.png,.jpg,.jpeg,.bmp" style="display:none">
+                <!-- Icon variants grid (populated after upload) -->
+                <div id="trayIconGrid" class="d-flex flex-wrap gap-2 mt-2" style="display:none"></div>
+                <div id="trayIconUploadStatus" class="small mt-1"></div>
+              </div>
+            </div>
+            <div class="form-text text-muted mt-1">
+              Icon shown near the clock when the daemon is running. Supports <code>.ico</code> files (multiple sizes) or
+              any image (<code>.png</code>, <code>.jpg</code>). Click a variant to select it.
+            </div>
+          </div>
+
+          <!-- Daemon Controls Card -->
+          <div class="card border mb-3 daemon-control-card">
+            <div class="card-header bg-transparent py-2 d-flex align-items-center gap-2" style="border-color:rgba(57,255,20,0.4);">
+              <i class="bi bi-cpu text-success"></i>
+              <span class="fw-semibold small text-success">Daemon Controls</span>
+            </div>
+            <div class="card-body py-3 px-3" style="border-top:1px solid rgba(57,255,20,0.2);">
+              <!-- Status row -->
+              <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+                <span id="daemonStatusBadge" class="badge rounded-pill fs-6 px-3 py-2 bg-secondary">
+                  <span class="spinner-border spinner-border-sm me-1" role="status"></span>Checking…
+                </span>
+                <span id="daemonPidText" class="small text-muted"></span>
+                <button type="button" class="btn btn-success btn-sm" id="daemonStartBtn" disabled>
+                  <i class="bi bi-play-fill me-1"></i>Start
+                </button>
+                <button type="button" class="btn btn-danger btn-sm" id="daemonStopBtn" disabled>
+                  <i class="bi bi-stop-fill me-1"></i>Stop
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" id="daemonRefreshBtn" title="Refresh status">
+                  <i class="bi bi-arrow-clockwise"></i>
+                </button>
+              </div>
+              <!-- Auto-start at login via HKCU Run registry key (no admin required) -->
+              <div class="d-flex align-items-center gap-3 mb-0 flex-wrap">
+                <span class="small text-muted" title="Adds an entry to HKCU\Software\Microsoft\Windows\CurrentVersion\Run — no administrator rights needed">
+                  Auto-start at Windows login:
+                </span>
+                <span id="taskStatusBadge" class="badge rounded-pill bg-secondary">Checking…</span>
+                <button type="button" class="btn btn-outline-success btn-sm" id="installTaskBtn" disabled>
+                  <i class="bi bi-toggle-on me-1"></i>Enable
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" id="uninstallTaskBtn" disabled>
+                  <i class="bi bi-toggle-off me-1"></i>Disable
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tray icon toggle (saved with the main form) -->
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" name="show_tray_icon"
+                   id="showTrayIcon" value="true"
+                   {% if settings.get('show_tray_icon','true') == 'true' %}checked{% endif %}>
+            <label class="form-check-label" for="showTrayIcon">
+              Show system tray icon <span class="text-muted small">— displays a Job&nbsp;Tracker icon near the clock when the daemon is running</span>
+            </label>
+          </div>
+
+          <!-- Daemon action feedback -->
+          <div id="daemonMsg" class="form-text mt-2"></div>
+        </div>
+
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<!-- ================================================================
+     Posted Date Color Coding  (full-width)
+     ================================================================ -->
+<div class="card border-0 shadow-sm mb-4" id="section-posted-date-colors" data-section="posted-date-colors">
+  <div class="card-header bg-transparent border-0 d-flex align-items-center">
+    <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
+    <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-palette me-2 text-warning"></i>Posted Date Color Coding</h6>
+  </div>
+  <div class="card-body">
+    <p class="text-muted small mb-4">
+      Color-code <strong>Posted On</strong> dates throughout the app based on how recently the job was posted.
+      Range 1 covers the freshest postings; anything older than Range 2 falls into Range 3 (light grey, fixed).
+    </p>
+
+    <div class="d-flex flex-column gap-3">
+
+      <!-- ── Range 1 ───────────────────────────────────────────────── -->
+      <div class="rounded-3 p-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+        <div class="fw-semibold small text-uppercase text-secondary mb-3">
+          <i class="bi bi-circle-fill me-1" id="pdRange1Icon" style="color:{{ settings.get('posted_date_range1_color','#28a745') }};font-size:.55rem;"></i>Range 1 — Freshest
+        </div>
+        <div class="row g-2 align-items-center flex-wrap">
+          <div class="col-auto">
+            <span class="small text-muted">0 to</span>
+          </div>
+          <div class="col-auto">
+            <input type="number" name="posted_date_range1_days" id="pdRange1Days"
+                   class="form-control form-control-sm text-center"
+                   style="width:70px;" min="1" max="364"
+                   value="{{ settings.get('posted_date_range1_days','7') }}">
+          </div>
+          <div class="col-auto">
+            <span class="small text-muted">days old</span>
+          </div>
+          <div class="col-auto ms-2">
+            <input type="color" id="pdColorPicker1"
+                   value="{{ settings.get('posted_date_range1_color','#28a745') }}"
+                   title="Pick a color" style="width:36px;height:30px;padding:2px;border-radius:4px;cursor:pointer;">
+          </div>
+          <div class="col-auto">
+            <input type="text" name="posted_date_range1_color" id="pdColorHex1"
+                   class="form-control form-control-sm font-monospace"
+                   style="width:95px;" maxlength="7" placeholder="#28a745"
+                   value="{{ settings.get('posted_date_range1_color','#28a745') }}">
+          </div>
+          <div class="col-auto ms-2">
+            <span id="pdColorPreview1" class="fw-semibold"
+                  style="color:{{ settings.get('posted_date_range1_color','#28a745') }};">
+              <i class="bi bi-calendar-event me-1"></i>Posted Apr 10, 2025
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Range 2 ───────────────────────────────────────────────── -->
+      <div class="rounded-3 p-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+        <div class="fw-semibold small text-uppercase text-secondary mb-3">
+          <i class="bi bi-circle-fill me-1" id="pdRange2Icon" style="color:{{ settings.get('posted_date_range2_color','#fd7e14') }};font-size:.55rem;"></i>Range 2
+        </div>
+        <div class="row g-2 align-items-center flex-wrap">
+          <div class="col-auto">
+            <span class="small text-muted">Day <strong id="pdRange2StartLabel">{{ (settings.get('posted_date_range1_days','7')|int) + 1 }}</strong> to</span>
+          </div>
+          <div class="col-auto">
+            <input type="number" name="posted_date_range2_days" id="pdRange2Days"
+                   class="form-control form-control-sm text-center"
+                   style="width:70px;" min="2" max="365"
+                   value="{{ settings.get('posted_date_range2_days','30') }}">
+          </div>
+          <div class="col-auto">
+            <span class="small text-muted">days old</span>
+          </div>
+          <div class="col-auto ms-2">
+            <input type="color" id="pdColorPicker2"
+                   value="{{ settings.get('posted_date_range2_color','#fd7e14') }}"
+                   title="Pick a color" style="width:36px;height:30px;padding:2px;border-radius:4px;cursor:pointer;">
+          </div>
+          <div class="col-auto">
+            <input type="text" name="posted_date_range2_color" id="pdColorHex2"
+                   class="form-control form-control-sm font-monospace"
+                   style="width:95px;" maxlength="7" placeholder="#fd7e14"
+                   value="{{ settings.get('posted_date_range2_color','#fd7e14') }}">
+          </div>
+          <div class="col-auto ms-2">
+            <span id="pdColorPreview2" class="fw-semibold"
+                  style="color:{{ settings.get('posted_date_range2_color','#fd7e14') }};">
+              <i class="bi bi-calendar-event me-1"></i>Posted Mar 20, 2025
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Range 3 (fixed light grey) ───────────────────────────── -->
+      <div class="rounded-3 p-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+        <div class="fw-semibold small text-uppercase text-secondary mb-3">
+          <i class="bi bi-circle-fill me-1" style="color:#adb5bd;font-size:.55rem;"></i>Range 3 — Oldest (fixed light grey)
+        </div>
+        <div class="row g-2 align-items-center flex-wrap">
+          <div class="col-auto">
+            <span class="small text-muted">Older than day <strong id="pdRange3StartLabel">{{ settings.get('posted_date_range2_days','30') }}</strong></span>
+          </div>
+          <div class="col-auto ms-2">
+            <span class="badge bg-secondary text-white small">Light Grey #adb5bd</span>
+          </div>
+          <div class="col-auto ms-2">
+            <span class="fw-semibold" style="color:#adb5bd;">
+              <i class="bi bi-calendar-event me-1"></i>Posted Jan 5, 2025
+            </span>
+          </div>
+        </div>
+        <div class="form-text text-muted mt-2">
+          <i class="bi bi-info-circle me-1"></i>Range 3 color is always light grey — no custom color needed for old postings.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     Unemployment Settings  (full-width)
+     ================================================================ -->
+<div class="card border-0 shadow-sm mb-4" id="section-unemployment" data-section="unemployment">
+  <div class="card-header bg-transparent border-0 d-flex align-items-center">
+    <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
+    <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-building-check me-2 text-info"></i>Unemployment</h6>
+    <div class="form-check form-switch mb-0 ms-3">
+      <input class="form-check-input" type="checkbox" name="unemployment_enabled"
+             id="unemploymentEnabled" value="true"
+             {% if settings.get('unemployment_enabled','false') == 'true' %}checked{% endif %}>
+      <label class="form-check-label small text-muted" for="unemploymentEnabled">Enable</label>
+    </div>
+  </div>
+  <div class="card-body">
+    <p class="text-muted small mb-3">
+      Select your state to auto-fill the official unemployment filing website. The URL is saved with your
+      settings and you can open it any time with the <strong>Go</strong> button.
+    </p>
+
+    <!-- Fields container — greyed out when master switch is off -->
+    <div id="unemploymentFields"
+         style="transition:opacity .2s;{% if settings.get('unemployment_enabled','false') != 'true' %}opacity:.4;pointer-events:none;user-select:none;{% endif %}">
+
+      <div class="rounded-3 p-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+
+        <!-- State -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="unemploymentState">State</label>
+          <select class="form-select" id="unemploymentState" name="unemployment_state" style="max-width:18rem;">
+            <option value="">— Select your state —</option>
+            <option value="AL" {% if settings.get('unemployment_state') == 'AL' %}selected{% endif %}>Alabama</option>
+            <option value="AK" {% if settings.get('unemployment_state') == 'AK' %}selected{% endif %}>Alaska</option>
+            <option value="AZ" {% if settings.get('unemployment_state') == 'AZ' %}selected{% endif %}>Arizona</option>
+            <option value="AR" {% if settings.get('unemployment_state') == 'AR' %}selected{% endif %}>Arkansas</option>
+            <option value="CA" {% if settings.get('unemployment_state') == 'CA' %}selected{% endif %}>California</option>
+            <option value="CO" {% if settings.get('unemployment_state') == 'CO' %}selected{% endif %}>Colorado</option>
+            <option value="CT" {% if settings.get('unemployment_state') == 'CT' %}selected{% endif %}>Connecticut</option>
+            <option value="DE" {% if settings.get('unemployment_state') == 'DE' %}selected{% endif %}>Delaware</option>
+            <option value="DC" {% if settings.get('unemployment_state') == 'DC' %}selected{% endif %}>District of Columbia</option>
+            <option value="FL" {% if settings.get('unemployment_state') == 'FL' %}selected{% endif %}>Florida</option>
+            <option value="GA" {% if settings.get('unemployment_state') == 'GA' %}selected{% endif %}>Georgia</option>
+            <option value="HI" {% if settings.get('unemployment_state') == 'HI' %}selected{% endif %}>Hawaii</option>
+            <option value="ID" {% if settings.get('unemployment_state') == 'ID' %}selected{% endif %}>Idaho</option>
+            <option value="IL" {% if settings.get('unemployment_state') == 'IL' %}selected{% endif %}>Illinois</option>
+            <option value="IN" {% if settings.get('unemployment_state') == 'IN' %}selected{% endif %}>Indiana</option>
+            <option value="IA" {% if settings.get('unemployment_state') == 'IA' %}selected{% endif %}>Iowa</option>
+            <option value="KS" {% if settings.get('unemployment_state') == 'KS' %}selected{% endif %}>Kansas</option>
+            <option value="KY" {% if settings.get('unemployment_state') == 'KY' %}selected{% endif %}>Kentucky</option>
+            <option value="LA" {% if settings.get('unemployment_state') == 'LA' %}selected{% endif %}>Louisiana</option>
+            <option value="ME" {% if settings.get('unemployment_state') == 'ME' %}selected{% endif %}>Maine</option>
+            <option value="MD" {% if settings.get('unemployment_state') == 'MD' %}selected{% endif %}>Maryland</option>
+            <option value="MA" {% if settings.get('unemployment_state') == 'MA' %}selected{% endif %}>Massachusetts</option>
+            <option value="MI" {% if settings.get('unemployment_state') == 'MI' %}selected{% endif %}>Michigan</option>
+            <option value="MN" {% if settings.get('unemployment_state') == 'MN' %}selected{% endif %}>Minnesota</option>
+            <option value="MS" {% if settings.get('unemployment_state') == 'MS' %}selected{% endif %}>Mississippi</option>
+            <option value="MO" {% if settings.get('unemployment_state') == 'MO' %}selected{% endif %}>Missouri</option>
+            <option value="MT" {% if settings.get('unemployment_state') == 'MT' %}selected{% endif %}>Montana</option>
+            <option value="NE" {% if settings.get('unemployment_state') == 'NE' %}selected{% endif %}>Nebraska</option>
+            <option value="NV" {% if settings.get('unemployment_state') == 'NV' %}selected{% endif %}>Nevada</option>
+            <option value="NH" {% if settings.get('unemployment_state') == 'NH' %}selected{% endif %}>New Hampshire</option>
+            <option value="NJ" {% if settings.get('unemployment_state') == 'NJ' %}selected{% endif %}>New Jersey</option>
+            <option value="NM" {% if settings.get('unemployment_state') == 'NM' %}selected{% endif %}>New Mexico</option>
+            <option value="NY" {% if settings.get('unemployment_state') == 'NY' %}selected{% endif %}>New York</option>
+            <option value="NC" {% if settings.get('unemployment_state') == 'NC' %}selected{% endif %}>North Carolina</option>
+            <option value="ND" {% if settings.get('unemployment_state') == 'ND' %}selected{% endif %}>North Dakota</option>
+            <option value="OH" {% if settings.get('unemployment_state') == 'OH' %}selected{% endif %}>Ohio</option>
+            <option value="OK" {% if settings.get('unemployment_state') == 'OK' %}selected{% endif %}>Oklahoma</option>
+            <option value="OR" {% if settings.get('unemployment_state') == 'OR' %}selected{% endif %}>Oregon</option>
+            <option value="PA" {% if settings.get('unemployment_state') == 'PA' %}selected{% endif %}>Pennsylvania</option>
+            <option value="RI" {% if settings.get('unemployment_state') == 'RI' %}selected{% endif %}>Rhode Island</option>
+            <option value="SC" {% if settings.get('unemployment_state') == 'SC' %}selected{% endif %}>South Carolina</option>
+            <option value="SD" {% if settings.get('unemployment_state') == 'SD' %}selected{% endif %}>South Dakota</option>
+            <option value="TN" {% if settings.get('unemployment_state') == 'TN' %}selected{% endif %}>Tennessee</option>
+            <option value="TX" {% if settings.get('unemployment_state') == 'TX' %}selected{% endif %}>Texas</option>
+            <option value="UT" {% if settings.get('unemployment_state') == 'UT' %}selected{% endif %}>Utah</option>
+            <option value="VT" {% if settings.get('unemployment_state') == 'VT' %}selected{% endif %}>Vermont</option>
+            <option value="VA" {% if settings.get('unemployment_state') == 'VA' %}selected{% endif %}>Virginia</option>
+            <option value="WA" {% if settings.get('unemployment_state') == 'WA' %}selected{% endif %}>Washington</option>
+            <option value="WV" {% if settings.get('unemployment_state') == 'WV' %}selected{% endif %}>West Virginia</option>
+            <option value="WI" {% if settings.get('unemployment_state') == 'WI' %}selected{% endif %}>Wisconsin</option>
+            <option value="WY" {% if settings.get('unemployment_state') == 'WY' %}selected{% endif %}>Wyoming</option>
+          </select>
+        </div>
+
+        <!-- URL + Go -->
+        <div>
+          <label class="form-label fw-semibold" for="unemploymentUrl">Unemployment Office Website</label>
+          <div class="input-group">
+            <input type="url" class="form-control" id="unemploymentUrl" name="unemployment_url"
+                   value="{{ settings.get('unemployment_url','') }}"
+                   placeholder="Select a state above to auto-fill, or enter a URL manually">
+            <a id="unemploymentGoBtn"
+               href="{{ settings.get('unemployment_url','#') or '#' }}"
+               target="_blank" rel="noopener noreferrer"
+               class="btn btn-info {% if not settings.get('unemployment_url','') %}disabled{% endif %}"
+               tabindex="-1">
+              <i class="bi bi-box-arrow-up-right me-1"></i>Go
+            </a>
+          </div>
+          <div class="form-check form-switch mt-2 mb-0">
+            <input class="form-check-input" type="checkbox" name="unemployment_url_lowercase"
+                   id="unemploymentLowercaseSwitch" value="true"
+                   {% if settings.get('unemployment_url_lowercase','false') == 'true' %}checked{% endif %}>
+            <label class="form-check-label small" for="unemploymentLowercaseSwitch">
+              Force URL to lowercase
+            </label>
+          </div>
+          <div class="form-text mt-1">URL is auto-filled when you pick a state. You can also edit it manually before saving.</div>
+        </div>
+
+      </div>
+
+      <!-- Benefit period & claim week -->
+      <div class="rounded-3 p-3 mt-3" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
+        <div class="fw-semibold small text-uppercase text-secondary mb-3">
+          <i class="bi bi-calendar-range me-1 text-info"></i>Benefit Period &amp; Claim Week
+        </div>
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="unemploymentStartDate">
+              <i class="bi bi-calendar-event me-1 text-success"></i>Benefits Start Date
+            </label>
+            <input type="date" class="form-control" id="unemploymentStartDate"
+                   name="unemployment_start_date"
+                   value="{{ settings.get('unemployment_start_date','') }}">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="unemploymentEndDate">
+              <i class="bi bi-calendar-check me-1 text-danger"></i>Benefits End Date
+              <span class="text-muted small fw-normal">— auto-set to start + 1 year</span>
+            </label>
+            <input type="date" class="form-control" id="unemploymentEndDate"
+                   name="unemployment_end_date"
+                   value="{{ settings.get('unemployment_end_date','') }}">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="unemploymentWeekStart">
+              <i class="bi bi-calendar-week me-1 text-info"></i>Claim Week Starts
+            </label>
+            <select class="form-select" id="unemploymentWeekStart" name="unemployment_week_start">
+              {% for val, lbl in [(0,'Monday'),(1,'Tuesday'),(2,'Wednesday'),(3,'Thursday'),(4,'Friday'),(5,'Saturday'),(6,'Sunday')] %}
+              <option value="{{ val }}" {% if settings.get('unemployment_week_start','0')|int == val %}selected{% endif %}>{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="unemploymentWeekEnd">
+              <i class="bi bi-calendar-week me-1 text-warning"></i>Claim Week Ends
+            </label>
+            <select class="form-select" id="unemploymentWeekEnd" name="unemployment_week_end">
+              {% for val, lbl in [(0,'Monday'),(1,'Tuesday'),(2,'Wednesday'),(3,'Thursday'),(4,'Friday'),(5,'Saturday'),(6,'Sunday')] %}
+              <option value="{{ val }}" {% if settings.get('unemployment_week_end','5')|int == val %}selected{% endif %}>{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label fw-semibold" for="unemploymentRequiredPerWeek">
+              <i class="bi bi-send-check me-1 text-success"></i>Required Applications / Week
+            </label>
+            <select class="form-select" id="unemploymentRequiredPerWeek" name="unemployment_required_per_week">
+              {% for n in range(1, 21) %}
+              <option value="{{ n }}" {% if settings.get('unemployment_required_per_week','3')|int == n %}selected{% endif %}>{{ n }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="form-text mt-2">
+          Claim weeks are generated forward from your start date in 7-day increments. The end date defaults to exactly one year after the start date.
+        </div>
+
+        <!-- Claim deadline alarms -->
+        <hr class="border-secondary mt-3 mb-3">
+        <div class="fw-semibold small text-uppercase text-secondary mb-2">
+          <i class="bi bi-bell-fill me-1 text-warning"></i>Claim Deadline Alarms
+          <span class="text-muted fw-normal ms-1">— notify when required applications not yet met</span>
+        </div>
+        <div class="d-flex flex-wrap gap-4">
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" name="unemployment_alarm_3day"
+                   id="unemploymentAlarm3" value="true"
+                   {% if settings.get('unemployment_alarm_3day','false') == 'true' %}checked{% endif %}>
+            <label class="form-check-label" for="unemploymentAlarm3">
+              <span class="badge bg-secondary me-1">3-Day</span> Reminder
+            </label>
+          </div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" name="unemployment_alarm_2day"
+                   id="unemploymentAlarm2" value="true"
+                   {% if settings.get('unemployment_alarm_2day','false') == 'true' %}checked{% endif %}>
+            <label class="form-check-label" for="unemploymentAlarm2">
+              <span class="badge bg-warning text-dark me-1">2-Day</span> Warning
+            </label>
+          </div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" name="unemployment_alarm_1day"
+                   id="unemploymentAlarm1" value="true"
+                   {% if settings.get('unemployment_alarm_1day','false') == 'true' %}checked{% endif %}>
+            <label class="form-check-label" for="unemploymentAlarm1">
+              <span class="badge bg-danger me-1">1-Day</span> Alert
+            </label>
+          </div>
+        </div>
+        <div class="form-text mt-2">
+          An in-app notification is created each day an alarm is triggered until the weekly requirement is met.
+          Alarms escalate in severity: Reminder (grey) → Warning (yellow) → Alert (red).
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     Database Management  (full-width, outside the two-column grid)
+     ================================================================ -->
+<div class="card border-0 shadow-sm mb-4" id="section-database" data-section="database">
+  <div class="card-header bg-transparent border-0 d-flex align-items-center">
+    <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
+    <i class="bi bi-database-gear me-2 text-muted"></i>
+    <h5 class="mb-0 fw-semibold">Database Management</h5>
+  </div>
+  <div class="card-body pt-0">
+
+    <div class="row g-4">
+
+      <!-- ── Reset ────────────────────────────────────────────────── -->
+      <div class="col-md-6 d-flex">
+        <div class="card shadow h-100 w-100" style="border-top: 3px solid var(--bs-danger);">
+          <div class="card-body d-flex flex-column">
+            <h6 class="fw-semibold text-danger mb-1">
+              <i class="bi bi-trash3-fill me-1"></i>Reset Database
+            </h6>
+            <p class="small text-muted mb-3">
+              Permanently deletes <strong>all jobs, applications, scan logs, and notifications</strong>
+              from the database and resets all ID counters back to 1.
+              This cannot be undone.
+            </p>
+            <div class="alert alert-danger py-2 mb-3 small">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>
+              <strong>Warning:</strong> All tracked jobs and application history will be lost forever.
+            </div>
+            <div class="mt-auto">
+              <button type="button" class="btn btn-danger" id="btnResetDb">
+                <i class="bi bi-trash3 me-1"></i>Delete All Jobs&hellip;
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Repair ───────────────────────────────────────────────── -->
+      <div class="col-md-6 d-flex">
+        <div class="card shadow h-100 w-100" style="border-top: 3px solid var(--bs-warning);">
+          <div class="card-body d-flex flex-column">
+            <h6 class="fw-semibold text-warning mb-1">
+              <i class="bi bi-wrench-adjustable me-1"></i>Repair &amp; Recalculate
+            </h6>
+            <p class="small text-muted mb-3">
+              Re-scores every job against your current skill settings, updates job categories
+              and duration labels, and removes any orphaned notification records.
+              Safe to run at any time.
+            </p>
+            <div class="alert alert-warning py-2 mb-3 small">
+              <i class="bi bi-info-circle-fill me-1"></i>
+              Use this after updating your required or preferred skills to refresh all match scores.
+            </div>
+            <div class="mt-auto">
+              <button type="button" class="btn btn-warning" id="btnRepairDb">
+                <i class="bi bi-wrench me-1"></i>Repair &amp; Recalculate&hellip;
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /row -->
+  </div>
+</div>
+
+<div class="text-end">
+  <button type="submit" class="btn btn-primary btn-lg px-5">
+    <i class="bi bi-save me-2"></i>Save All Settings
+  </button>
+</div>
+</form>
+
+<!-- ================================================================
+     Reset Confirmation Modal
+     ================================================================ -->
+<div class="modal fade" id="dbResetModal" tabindex="-1" aria-labelledby="dbResetModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title fw-bold" id="dbResetModalLabel">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>Delete All Jobs?
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>This will permanently delete:</p>
+        <ul>
+          <li>All <strong>jobs</strong> in the database</li>
+          <li>All <strong>applications</strong> and their history</li>
+          <li>All <strong>scan logs</strong></li>
+          <li>All <strong>notifications</strong></li>
+        </ul>
+        <p class="mb-0 text-danger fw-semibold">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1"></i>Cancel
+        </button>
+        <button type="button" class="btn btn-danger fw-bold" id="btnConfirmReset">
+          <i class="bi bi-trash3 me-1"></i>Yes, Delete Everything
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     Progress Modal  (shared by Reset and Repair)
+     ================================================================ -->
+<div class="modal fade" id="dbProgressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="dbProgressModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="dbProgressModalLabel">
+          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          <span id="dbProgressTitle">Processing…</span>
+        </h5>
+      </div>
+      <div class="modal-body">
+        <p id="dbProgressDesc" class="text-muted small mb-3">Please wait while the operation completes.</p>
+        <div class="progress" style="height: 22px;">
+          <div id="dbProgressBar"
+               class="progress-bar progress-bar-striped progress-bar-animated"
+               role="progressbar"
+               style="width: 0%"
+               aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            0%
+          </div>
+        </div>
+        <p id="dbProgressStatus" class="text-muted small mt-2 mb-0"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     Skills Picker Modal  (used by both Required and Preferred fields)
+     ================================================================ -->
+<div class="modal fade" id="skillsPickerModal" tabindex="-1" aria-labelledby="skillsPickerTitle" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="skillsPickerTitle">Choose Skills</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body pb-0">
+        <!-- Search -->
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" id="skillsSearch" class="form-control"
+                 placeholder="Search skills, groups, or categories…" autocomplete="off">
+          <button type="button" class="btn btn-outline-secondary" id="skillsClearSearch">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <!-- Tree rendered here by JS -->
+        <div id="skillsTree">
+          <div class="text-center py-5 text-muted">
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span>Loading skills…
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <span class="me-auto small text-muted" id="skillsSelectedCount">0 skills selected</span>
+        <button type="button" class="btn btn-outline-danger btn-sm" id="skillsClearAll">
+          <i class="bi bi-x-circle me-1"></i>Clear All
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="skillsApplyBtn">
+          <i class="bi bi-check-lg me-1"></i>Apply
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Email Check Progress Modal ─────────────────────────────────────── -->
+<div class="modal fade" id="emailCheckProgressModal" tabindex="-1" aria-labelledby="emailCheckProgressLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content bg-dark text-white border border-secondary">
+      <div class="modal-header border-secondary py-2">
+        <h6 class="modal-title fw-bold mb-0" id="emailCheckProgressLabel">
+          <i class="bi bi-envelope-check me-2 text-success"></i>Checking Email Inboxes…
+        </h6>
+        <span id="emailCheckSpinner" class="spinner-border spinner-border-sm text-success ms-2" role="status"></span>
+      </div>
+      <div class="modal-body py-2">
+        <pre id="emailCheckLog"
+             style="background:#0d1117;border:1px solid #444;border-radius:6px;
+                    padding:.75rem 1rem;max-height:340px;overflow-y:auto;
+                    font-size:.8rem;line-height:1.5;color:#c9d1d9;white-space:pre-wrap;word-break:break-word;">Waiting for results…</pre>
+      </div>
+      <div class="modal-footer border-secondary py-2 justify-content-between">
+        <span id="emailCheckSummary" class="small text-muted"></span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="emailCheckCloseBtn" disabled
+                data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+@keyframes yellowPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255,215,0,0.0), 0 0 6px 1px rgba(255,215,0,0.55); }
+  50%  { box-shadow: 0 0 0 3px rgba(255,215,0,0.25), 0 0 18px 4px rgba(255,215,0,0.85); }
+  100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.0), 0 0 6px 1px rgba(255,215,0,0.55); }
+}
+.email-account-card {
+  border-color: rgba(255,215,0,0.6) !important;
+  border-radius: .5rem !important;
+  animation: yellowPulse 2.4s ease-in-out infinite;
+}
+.email-account-card .card-header {
+  border-radius: calc(.5rem - 1px) calc(.5rem - 1px) 0 0 !important;
+}
+@keyframes neonGreenPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(57,255,20,0.0), 0 0 6px 1px rgba(57,255,20,0.55); }
+  50%  { box-shadow: 0 0 0 3px rgba(57,255,20,0.25), 0 0 18px 4px rgba(57,255,20,0.85); }
+  100% { box-shadow: 0 0 0 0 rgba(57,255,20,0.0), 0 0 6px 1px rgba(57,255,20,0.55); }
+}
+.daemon-control-card {
+  border-color: rgba(57,255,20,0.6) !important;
+  border-radius: .5rem !important;
+  animation: neonGreenPulse 2.4s ease-in-out infinite;
+}
+.daemon-control-card .card-header {
+  border-radius: calc(.5rem - 1px) calc(.5rem - 1px) 0 0 !important;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+// ── Posted Date Color Coding ──────────────────────────────────────────────
+(function () {
+  function syncColorPair(pickerId, hexId, previewId, iconId) {
+    var picker  = document.getElementById(pickerId);
+    var hexInp  = document.getElementById(hexId);
+    var preview = document.getElementById(previewId);
+    var icon    = document.getElementById(iconId);
+    function applyColor(val) {
+      if (preview) preview.style.color = val;
+      if (icon)    icon.style.color    = val;
+    }
+    if (picker) {
+      picker.addEventListener('input', function () {
+        if (hexInp) hexInp.value = this.value;
+        applyColor(this.value);
+      });
+    }
+    if (hexInp) {
+      hexInp.addEventListener('input', function () {
+        var v = this.value.trim();
+        if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+          if (picker) picker.value = v;
+          applyColor(v);
+        }
+      });
+    }
+  }
+
+  syncColorPair('pdColorPicker1', 'pdColorHex1', 'pdColorPreview1', 'pdRange1Icon');
+  syncColorPair('pdColorPicker2', 'pdColorHex2', 'pdColorPreview2', 'pdRange2Icon');
+
+  function updateRangeLabels() {
+    var n1 = parseInt((document.getElementById('pdRange1Days') || {}).value) || 0;
+    var n2 = parseInt((document.getElementById('pdRange2Days') || {}).value) || 0;
+    var lbl2 = document.getElementById('pdRange2StartLabel');
+    var lbl3 = document.getElementById('pdRange3StartLabel');
+    if (lbl2) lbl2.textContent = n1 + 1;
+    if (lbl3) lbl3.textContent = n2;
+  }
+
+  var r1 = document.getElementById('pdRange1Days');
+  var r2 = document.getElementById('pdRange2Days');
+  if (r1) r1.addEventListener('input', updateRangeLabels);
+  if (r2) r2.addEventListener('input', updateRangeLabels);
+  updateRangeLabels();
+}());
+
+// ── Response Email Monitoring ─────────────────────────────────────────────
+(function () {
+  var listEl   = document.getElementById('responseEmailList');
+  var statusEl = document.getElementById('emailCheckStatus');
+
+  function fmtDate(iso) {
+    if (!iso) return 'Never';
+    var d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleString();
+  }
+
+  function providerIcon(type) {
+    if (type === 'gmail') {
+      return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 48 48" class="me-1" style="vertical-align:middle">' +
+        '<path fill="#EA4335" d="M24 5.4c5 0 9.3 1.7 12.8 4.5l-5.2 5.2C29.7 13.3 27 12.2 24 12.2c-6.1 0-11.2 4-13 9.5l-6.2-4.8C7.9 9.8 15.4 5.4 24 5.4z"/>' +
+        '<path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.5 6.7l6.9 5.3c4-3.7 6.3-9.2 6.3-16z"/>' +
+        '<path fill="#FBBC05" d="M11 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7L4.8 14.5C3 17.7 2 21.2 2 24s1 6.3 2.8 9.5l6.2-4.8z"/>' +
+        '<path fill="#34A853" d="M24 42.6c-7 0-13-4.6-15.1-11l-6.2 4.8C6.6 43 14.7 48 24 48c8.4 0 15.5-4.3 19.5-10.7l-6.9-5.3C34.3 41 29.5 42.6 24 42.6z"/>' +
+        '</svg>';
+    }
+    if (type === 'outlook') {
+      return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 48 48" class="me-1" style="vertical-align:middle">' +
+        '<path fill="#0078D4" d="M28 8H44a2 2 0 0 1 2 2v28a2 2 0 0 1-2 2H28V8z"/>' +
+        '<path fill="#28A8E8" d="M4 8h24v32H4a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z"/>' +
+        '<path fill="#fff" d="M10 17h12v14H10z" opacity=".9"/>' +
+        '<path fill="#0078D4" d="M10 17h12v7H10z"/>' +
+        '</svg>';
+    }
+    return '<i class="bi bi-server me-1"></i>';
+  }
+
+  function renderAccounts(accounts) {
+    if (!listEl) return;
+    if (!accounts || accounts.length === 0) {
+      listEl.innerHTML = '<p class="text-muted small mb-0"><i class="bi bi-inbox me-1"></i>No email accounts configured yet.</p>';
+      return;
+    }
+    var html = '';
+    accounts.forEach(function (acc) {
+      var statusBadge = acc.last_status === 'ok'
+        ? '<span class="badge bg-success">OK</span>'
+        : acc.last_status === 'error'
+          ? '<span class="badge bg-danger" title="' + (acc.last_message || '') + '">Error</span>'
+          : '<span class="badge bg-secondary">—</span>';
+      var enabledCls = acc.enabled ? '' : ' opacity-50';
+      var provLabel = acc.provider_type === 'gmail' ? 'Gmail'
+                    : acc.provider_type === 'outlook' ? 'Outlook'
+                    : (acc.label || 'Custom');
+      var hostInfo = acc.imap_host + ' &middot; Port ' + acc.imap_port + (acc.use_ssl ? ' &middot; SSL' : '');
+      html += '<div class="card border mb-3 email-account-card' + enabledCls + '">';
+      html +=   '<div class="card-header bg-transparent py-2 d-flex align-items-center gap-2" style="border-color:rgba(255,215,0,0.4);">';
+      html +=     providerIcon(acc.provider_type);
+      html +=     '<span class="fw-semibold small">' + provLabel + '</span>';
+      html +=     '<span class="fw-semibold small text-white ms-1">' + acc.email + '</span>';
+      html +=     '<span class="text-muted small ms-2">' + hostInfo + '</span>';
+      html +=     '<div class="ms-auto d-flex align-items-center gap-2">';
+      html +=       statusBadge;
+      html +=       '<button class="btn btn-xs btn-outline-secondary" onclick="toggleEmailAccount(\'' + acc.id + '\')" title="' + (acc.enabled ? 'Disable account' : 'Enable account') + '">';
+      html +=         '<i class="bi bi-' + (acc.enabled ? 'pause' : 'play') + '-fill"></i>';
+      html +=         '<span class="ms-1 small">' + (acc.enabled ? 'Disable' : 'Enable') + '</span>';
+      html +=       '</button>';
+      html +=       '<button class="btn btn-xs btn-outline-danger" onclick="removeEmailAccount(\'' + acc.id + '\')" title="Remove account">';
+      html +=         '<i class="bi bi-trash"></i>';
+      html +=       '</button>';
+      html +=     '</div>';
+      html +=   '</div>';
+      html +=   '<div class="card-body py-2 px-3" style="border-top:1px solid rgba(255,215,0,0.2);">';
+      html +=     '<span class="text-muted small"><i class="bi bi-clock me-1"></i>Last checked: ' + fmtDate(acc.last_checked) + '</span>';
+      if (acc.last_status === 'error' && acc.last_message) {
+        html +=   '<span class="text-danger small ms-3"><i class="bi bi-exclamation-circle me-1"></i>' + acc.last_message + '</span>';
+      }
+      html +=   '</div>';
+      html += '</div>';
+    });
+    listEl.innerHTML = html;
+  }
+
+  function loadAccounts() {
+    fetch('/api/response-emails/accounts')
+      .then(function (r) { return r.json(); })
+      .then(renderAccounts)
+      .catch(function () { if (listEl) listEl.innerHTML = '<p class="text-danger small">Failed to load accounts.</p>'; });
+  }
+
+  window.toggleEmailAccount = function (id) {
+    fetch('/api/response-emails/accounts/' + id + '/toggle', { method: 'POST' })
+      .then(function () { loadAccounts(); });
+  };
+
+  window.removeEmailAccount = function (id) {
+    if (!confirm('Remove this email account?')) return;
+    fetch('/api/response-emails/accounts/' + id + '/remove', { method: 'POST' })
+      .then(function () { loadAccounts(); });
+  };
+
+  // ── Helper: post to add endpoint and clear fields on success ────────────
+  function addAccount(payload, clearFn, resultEl) {
+    if (!payload.email || !payload.imap_host) {
+      if (resultEl) resultEl.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Email address and IMAP host are required.</span>';
+      return;
+    }
+    fetch('/api/response-emails/accounts/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      if (data.ok) {
+        if (clearFn) clearFn();
+        if (resultEl) resultEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Account added.</span>';
+        loadAccounts();
+      } else {
+        if (resultEl) resultEl.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>' + (data.message || 'Unknown error') + '</span>';
+      }
+    });
+  }
+
+  // ── Helper: post to test endpoint ───────────────────────────────────────
+  function testConnection(payload, resultEl) {
+    if (!payload.email || !payload.imap_host) {
+      if (resultEl) resultEl.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Email address and IMAP host are required.</span>';
+      return;
+    }
+    if (resultEl) resultEl.innerHTML = '<i class="bi bi-hourglass me-1"></i>Testing…';
+    fetch('/api/response-emails/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      if (resultEl) {
+        resultEl.innerHTML = data.ok
+          ? '<span class="text-success"><i class="bi bi-check-circle me-1"></i>' + data.message + '</span>'
+          : '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>' + data.message + '</span>';
+      }
+    });
+  }
+
+  // ── Gmail ────────────────────────────────────────────────────────────────
+  function gmailPayload() {
+    return {
+      provider_type: 'gmail',
+      label:         'Gmail',
+      email:         (document.getElementById('gmailEmail') || {}).value.trim(),
+      password:      (document.getElementById('gmailPassword') || {}).value,
+      imap_host:     'imap.gmail.com',
+      imap_port:     993,
+      use_ssl:       true,
+    };
+  }
+  function clearGmail() {
+    document.getElementById('gmailEmail').value    = '';
+    document.getElementById('gmailPassword').value = '';
+  }
+
+  var addGmailBtn = document.getElementById('addGmailBtn');
+  if (addGmailBtn) {
+    addGmailBtn.addEventListener('click', function () {
+      addAccount(gmailPayload(), clearGmail, document.getElementById('gmailTestResult'));
+    });
+  }
+  var testGmailBtn = document.getElementById('testGmailBtn');
+  if (testGmailBtn) {
+    testGmailBtn.addEventListener('click', function () {
+      testConnection(gmailPayload(), document.getElementById('gmailTestResult'));
+    });
+  }
+
+  // ── Outlook / Hotmail / Live ─────────────────────────────────────────────
+  function outlookPayload() {
+    return {
+      provider_type: 'outlook',
+      label:         'Outlook',
+      email:         (document.getElementById('outlookEmail') || {}).value.trim(),
+      password:      (document.getElementById('outlookPassword') || {}).value,
+      imap_host:     'outlook.office365.com',
+      imap_port:     993,
+      use_ssl:       true,
+    };
+  }
+  function clearOutlook() {
+    document.getElementById('outlookEmail').value    = '';
+    document.getElementById('outlookPassword').value = '';
+  }
+
+  var addOutlookBtn = document.getElementById('addOutlookBtn');
+  if (addOutlookBtn) {
+    addOutlookBtn.addEventListener('click', function () {
+      addAccount(outlookPayload(), clearOutlook, document.getElementById('outlookTestResult'));
+    });
+  }
+  var testOutlookBtn = document.getElementById('testOutlookBtn');
+  if (testOutlookBtn) {
+    testOutlookBtn.addEventListener('click', function () {
+      testConnection(outlookPayload(), document.getElementById('outlookTestResult'));
+    });
+  }
+
+  // ── Custom IMAP ──────────────────────────────────────────────────────────
+  function customPayload() {
+    return {
+      provider_type: 'custom',
+      label:         (document.getElementById('customLabel') || {}).value.trim() || 'Custom',
+      email:         (document.getElementById('customEmail') || {}).value.trim(),
+      password:      (document.getElementById('customPassword') || {}).value,
+      imap_host:     (document.getElementById('customHost') || {}).value.trim(),
+      imap_port:     parseInt((document.getElementById('customPort') || {}).value) || 993,
+      use_ssl:       (document.getElementById('customSsl') || {}).checked !== false,
+    };
+  }
+  function clearCustom() {
+    ['customLabel','customEmail','customPassword','customHost'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.value = '';
+    });
+    var portEl = document.getElementById('customPort'); if (portEl) portEl.value = '993';
+    var sslEl  = document.getElementById('customSsl');  if (sslEl)  sslEl.checked = true;
+  }
+
+  var addCustomBtn = document.getElementById('addCustomBtn');
+  if (addCustomBtn) {
+    addCustomBtn.addEventListener('click', function () {
+      addAccount(customPayload(), clearCustom, document.getElementById('customTestResult'));
+    });
+  }
+  var testCustomBtn = document.getElementById('testCustomBtn');
+  if (testCustomBtn) {
+    testCustomBtn.addEventListener('click', function () {
+      testConnection(customPayload(), document.getElementById('customTestResult'));
+    });
+  }
+
+  // ── Check Now button — opens progress modal and polls for updates ────────
+  var checkNowBtn     = document.getElementById('checkEmailsNowBtn');
+  var checkProgressModal = document.getElementById('emailCheckProgressModal');
+  var checkLogEl      = document.getElementById('emailCheckLog');
+  var checkSpinner    = document.getElementById('emailCheckSpinner');
+  var checkSummaryEl  = document.getElementById('emailCheckSummary');
+  var checkCloseBtn   = document.getElementById('emailCheckCloseBtn');
+  var _pollTimer      = null;
+
+  function _stopPolling() {
+    if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+  }
+
+  function _pollStatus() {
+    fetch('/api/response-emails/check-status')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (checkLogEl) {
+          checkLogEl.textContent = data.log && data.log.length
+            ? data.log.join('\n')
+            : 'Waiting for results…';
+          // auto-scroll to bottom
+          checkLogEl.scrollTop = checkLogEl.scrollHeight;
+        }
+        if (data.finished) {
+          _stopPolling();
+          if (checkSpinner)  checkSpinner.style.display = 'none';
+          if (checkCloseBtn) checkCloseBtn.disabled = false;
+          if (checkSummaryEl) checkSummaryEl.innerHTML =
+            '<i class="bi bi-check-circle text-success me-1"></i>Check complete.';
+          // Refresh the account list so Last Checked timestamps update
+          setTimeout(function () { loadAccounts(); }, 500);
+          // Update the status line on the card
+          if (statusEl) statusEl.innerHTML =
+            '<i class="bi bi-check-circle me-1 text-success"></i>Check complete — see results above.';
+          checkNowBtn.disabled = false;
+          checkNowBtn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Check Now';
+        }
+      })
+      .catch(function () { /* ignore poll errors silently */ });
+  }
+
+  if (checkNowBtn && checkProgressModal) {
+    checkNowBtn.addEventListener('click', function () {
+      // Reset modal
+      if (checkLogEl)     checkLogEl.textContent  = 'Starting…';
+      if (checkSpinner)   checkSpinner.style.display = '';
+      if (checkCloseBtn)  checkCloseBtn.disabled  = true;
+      if (checkSummaryEl) checkSummaryEl.textContent = '';
+
+      // Open the modal
+      var bsModal = new bootstrap.Modal(checkProgressModal);
+      bsModal.show();
+
+      // Reset modal title to "Checking…" (in case re-opened after done)
+      var titleEl = document.getElementById('emailCheckProgressLabel');
+      if (titleEl) titleEl.innerHTML = '<i class="bi bi-envelope-check me-2 text-success"></i>Checking Email Inboxes…';
+
+      checkNowBtn.disabled = true;
+      checkNowBtn.innerHTML = '<i class="bi bi-hourglass me-1"></i>Checking…';
+
+      // Start the check
+      fetch('/api/response-emails/check-now', { method: 'POST' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) {
+            // Already running or error
+            if (checkLogEl) checkLogEl.textContent = data.message || 'Error starting check.';
+            if (checkSpinner)  checkSpinner.style.display = 'none';
+            if (checkCloseBtn) checkCloseBtn.disabled = false;
+            checkNowBtn.disabled = false;
+            checkNowBtn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Check Now';
+            return;
+          }
+          // Poll every 800ms
+          _stopPolling();
+          _pollTimer = setInterval(_pollStatus, 800);
+        })
+        .catch(function (err) {
+          if (checkLogEl) checkLogEl.textContent = 'Request failed: ' + err;
+          if (checkSpinner)  checkSpinner.style.display = 'none';
+          if (checkCloseBtn) checkCloseBtn.disabled = false;
+          checkNowBtn.disabled = false;
+          checkNowBtn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Check Now';
+        });
+    });
+
+    // Stop polling if user closes modal manually
+    checkProgressModal.addEventListener('hidden.bs.modal', function () {
+      _stopPolling();
+      checkNowBtn.disabled = false;
+      checkNowBtn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Check Now';
+    });
+  }
+
+  loadAccounts();
+}());
+
+(function () {
+  const ccSel   = document.getElementById('phoneCountryCode');
+  const localIn = document.getElementById('phoneLocal');
+  const hidden  = document.getElementById('applicantPhoneHidden');
+  if (!ccSel || !localIn || !hidden) return;
+
+  // Parse stored value like "+1 (402) 575-0410" into country code + local number
+  const stored = hidden.value.trim();
+  const match  = stored.match(/^(\+\d{1,4})\s*(.*)/);
+  if (match) {
+    const code = match[1];
+    const opt  = Array.from(ccSel.options).find(o => o.value === code);
+    if (opt) ccSel.value = code;
+    localIn.value = match[2];
+  } else {
+    localIn.value = stored;
+  }
+
+  function sync() {
+    hidden.value = (ccSel.value + ' ' + localIn.value.trim()).trim();
+  }
+  ccSel.addEventListener('change', sync);
+  localIn.addEventListener('input', sync);
+  sync();
+}());
+
+// ================================================================
+// Skills Picker Modal
+// ================================================================
+(function () {
+  var _taxonomy   = null;    // cached after first fetch
+  var _targetId   = null;    // id of the field being populated (normal mode)
+  var _resumeMode = false;   // true when picking for weighted resume fields
+
+  // Normal mode — called by Required / Preferred "Choose…" buttons
+  window.openSkillsPicker = function (fieldId, title) {
+    _targetId   = fieldId;
+    _resumeMode = false;
+    _showModal(title || 'Choose Skills');
+  };
+
+  // Resume mode — single weighted picker that writes to both resume fields
+  window.openResumeSkillsPicker = function () {
+    _targetId   = '__resume__';
+    _resumeMode = true;
+    _showModal('Choose Resume Skills  \u2014  +20 Required / +8 Preferred');
+  };
+
+  function _showModal(title) {
+    var titleEl = document.getElementById('skillsPickerTitle');
+    if (titleEl) titleEl.textContent = title;
+    document.getElementById('skillsSearch').value = '';
+
+    var modal = bootstrap.Modal.getOrCreateInstance(
+      document.getElementById('skillsPickerModal')
+    );
+    modal.show();
+
+    if (_taxonomy) {
+      renderTree();
+    } else {
+      document.getElementById('skillsTree').innerHTML =
+        '<div class="text-center py-5 text-muted">' +
+        '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Loading skills…</div>';
+      fetch('/api/skills-taxonomy')
+        .then(function (r) { return r.json(); })
+        .then(function (data) { _taxonomy = data; renderTree(); })
+        .catch(function () {
+          document.getElementById('skillsTree').innerHTML =
+            '<div class="alert alert-danger m-3">Failed to load skills taxonomy.</div>';
+        });
+    }
+  }
+
+  // Build a set of already-selected skills (lower-cased for comparison).
+  // Normal mode: { lowerskill: originalCaseName }
+  // Resume mode: { lowerskill: '+20' | '+8' }
+  function currentSet() {
+    var s = {};
+    if (_resumeMode) {
+      var reqField  = document.getElementById('resumeRequiredInput');
+      var prefField = document.getElementById('resumePreferredInput');
+      if (reqField && reqField.value.trim()) {
+        reqField.value.split(',').forEach(function (v) {
+          v = v.trim(); if (v) s[v.toLowerCase()] = '+20';
+        });
+      }
+      if (prefField && prefField.value.trim()) {
+        prefField.value.split(',').forEach(function (v) {
+          v = v.trim();
+          if (v && !(v.toLowerCase() in s)) s[v.toLowerCase()] = '+8';
+        });
+      }
+    } else {
+      var field = document.getElementById(_targetId);
+      if (field && field.value.trim()) {
+        field.value.split(',').forEach(function (v) {
+          v = v.trim();
+          if (v) s[v.toLowerCase()] = v;
+        });
+      }
+    }
+    return s;
+  }
+
+  function renderTree() {
+    var cur   = currentSet();
+    var q     = (document.getElementById('skillsSearch').value || '').trim().toLowerCase();
+    var html  = '<div class="accordion accordion-flush" id="spAccordion">';
+    var idx   = 0;
+    var firstOpen = true;
+
+    Object.keys(_taxonomy).forEach(function (cat) {
+      var subcats = _taxonomy[cat];
+      var bodyHtml = '';
+      var catVisible = false;
+
+      Object.keys(subcats).forEach(function (sub) {
+        var skills = subcats[sub];
+        // Filter: match skill, subcat, or category name
+        var filtered = q
+          ? skills.filter(function (sk) {
+              return sk.toLowerCase().indexOf(q) !== -1 ||
+                     sub.toLowerCase().indexOf(q)  !== -1 ||
+                     cat.toLowerCase().indexOf(q)  !== -1;
+            })
+          : skills;
+        if (!filtered.length) return;
+        catVisible = true;
+
+        var gridHtml = '';
+        filtered.forEach(function (sk) {
+          var sid     = 'spsk_' + idx + '_' + sk.replace(/[^a-zA-Z0-9]/g, '_');
+          var skLower = sk.toLowerCase();
+          var isChecked = (skLower in cur);
+
+          if (_resumeMode) {
+            // Each skill gets a +20 / +8 weight selector
+            var weight = isChecked ? cur[skLower] : '+8';
+            gridHtml +=
+              '<div class="col-sm-6 mb-1">' +
+                '<div class="d-flex align-items-center gap-1">' +
+                  '<input class="form-check-input sp-skill flex-shrink-0" type="checkbox"' +
+                    ' id="' + esc(sid) + '" value="' + esc(sk) + '"' +
+                    (isChecked ? ' checked' : '') + ' autocomplete="off">' +
+                  '<label class="form-check-label small" for="' + esc(sid) + '">' + esc(sk) + '</label>' +
+                  '<select class="form-select form-select-sm sp-weight ms-1 flex-shrink-0" style="width:90px' + (isChecked ? '' : ';display:none') + '" tabindex="-1"' +
+                    ' title="Score weight for this skill">' +
+                    '<option value="+20"' + (weight === '+20' ? ' selected' : '') + '>+20 Req</option>' +
+                    '<option value="+8"'  + (weight === '+8'  ? ' selected' : '') + '>+8 Pref</option>' +
+                  '</select>' +
+                '</div>' +
+              '</div>';
+          } else {
+            gridHtml +=
+              '<div class="col-sm-6 col-lg-4 mb-1">' +
+                '<div class="form-check">' +
+                  '<input class="form-check-input sp-skill" type="checkbox"' +
+                    ' id="' + esc(sid) + '" value="' + esc(sk) + '"' +
+                    (isChecked ? ' checked' : '') + ' autocomplete="off">' +
+                  '<label class="form-check-label small" for="' + esc(sid) + '">' + esc(sk) + '</label>' +
+                '</div>' +
+              '</div>';
+          }
+        });
+
+        var scId = 'spsc_' + idx + '_' + sub.replace(/[^a-zA-Z0-9]/g, '_');
+        bodyHtml +=
+          '<div class="sp-subcat mb-3">' +
+            '<div class="d-flex align-items-center mb-1">' +
+              '<input type="checkbox" class="form-check-input sp-subcat-cb me-2" id="' + esc(scId) + '">' +
+              '<label class="fw-semibold small text-info mb-0" for="' + esc(scId) + '">' + esc(sub) + '</label>' +
+            '</div>' +
+            '<div class="row g-0 ms-4">' + gridHtml + '</div>' +
+          '</div>';
+      });
+
+      if (!catVisible) { idx++; return; }
+
+      var colId  = 'spcat_' + idx;
+      var isOpen = q ? true : firstOpen;
+      if (!q && firstOpen) firstOpen = false;
+
+      html +=
+        '<div class="accordion-item border-0 border-bottom">' +
+          '<h2 class="accordion-header">' +
+            '<button class="accordion-button py-2 fw-semibold ' + (isOpen ? '' : 'collapsed') + '"' +
+              ' type="button" data-bs-toggle="collapse" data-bs-target="#' + colId + '">' +
+              '<i class="bi bi-folder2-open me-2 text-warning"></i>' + esc(cat) +
+            '</button>' +
+          '</h2>' +
+          '<div id="' + colId + '" class="accordion-collapse collapse ' + (isOpen ? 'show' : '') + '">' +
+            '<div class="accordion-body py-2">' + bodyHtml + '</div>' +
+          '</div>' +
+        '</div>';
+      idx++;
+    });
+
+    html += '</div>';
+    document.getElementById('skillsTree').innerHTML = html;
+    wireEvents();
+    updateFooter();
+  }
+
+  function wireEvents() {
+    // Subcat "select all" checkboxes
+    document.querySelectorAll('#skillsTree .sp-subcat-cb').forEach(function (cb) {
+      var container = cb.closest('.sp-subcat');
+      var children  = container.querySelectorAll('.sp-skill');
+      var total     = children.length;
+      var checked   = Array.from(children).filter(function (c) { return c.checked; }).length;
+      cb.checked       = total > 0 && checked === total;
+      cb.indeterminate = checked > 0 && checked < total;
+
+      cb.addEventListener('change', function () {
+        cb.closest('.sp-subcat').querySelectorAll('.sp-skill')
+          .forEach(function (c) {
+            c.checked = cb.checked;
+            // In resume mode, show/hide the weight dropdown to match the checked state
+            if (_resumeMode) {
+              var ws = c.closest('.d-flex') && c.closest('.d-flex').querySelector('.sp-weight');
+              if (ws) ws.style.display = cb.checked ? '' : 'none';
+            }
+          });
+        updateFooter();
+      });
+    });
+
+    // Individual skill checkboxes — update parent subcat state + weight visibility
+    document.querySelectorAll('#skillsTree .sp-skill').forEach(function (cb) {
+      // In resume mode, show the weight select only when the skill is checked
+      if (_resumeMode) {
+        var weightSel = cb.closest('.d-flex') && cb.closest('.d-flex').querySelector('.sp-weight');
+        if (weightSel) weightSel.style.display = cb.checked ? '' : 'none';
+        cb.addEventListener('change', function () {
+          if (weightSel) weightSel.style.display = cb.checked ? '' : 'none';
+        });
+      }
+      cb.addEventListener('change', function () {
+        var container = cb.closest('.sp-subcat');
+        var children  = container.querySelectorAll('.sp-skill');
+        var scCb      = container.querySelector('.sp-subcat-cb');
+        if (scCb) {
+          var n = Array.from(children).filter(function (c) { return c.checked; }).length;
+          scCb.checked       = n === children.length;
+          scCb.indeterminate = n > 0 && n < children.length;
+        }
+        updateFooter();
+      });
+    });
+  }
+
+  function updateFooter() {
+    var n  = document.querySelectorAll('#skillsTree .sp-skill:checked').length;
+    var el = document.getElementById('skillsSelectedCount');
+    if (el) {
+      el.textContent = _resumeMode
+        ? n + ' skill' + (n !== 1 ? 's' : '') + ' selected — set each weight with the dropdown'
+        : n + ' skill' + (n !== 1 ? 's' : '') + ' selected';
+    }
+  }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    // Apply button — write checked skills back to the target field(s)
+    var applyBtn = document.getElementById('skillsApplyBtn');
+    if (applyBtn) {
+      applyBtn.addEventListener('click', function () {
+        if (_resumeMode) {
+          // Split by weight dropdown value into the two resume fields
+          var req = [], pref = [];
+          document.querySelectorAll('#skillsTree .sp-skill:checked').forEach(function (c) {
+            var weightSel = c.closest('.d-flex').querySelector('.sp-weight');
+            var w = weightSel ? weightSel.value : '+8';
+            if (w === '+20') req.push(c.value);
+            else             pref.push(c.value);
+          });
+          var reqF  = document.getElementById('resumeRequiredInput');
+          var prefF = document.getElementById('resumePreferredInput');
+          if (reqF)  reqF.value  = req.join(', ');
+          if (prefF) prefF.value = pref.join(', ');
+        } else {
+          var skills = Array.from(
+            document.querySelectorAll('#skillsTree .sp-skill:checked')
+          ).map(function (c) { return c.value; });
+          var field = document.getElementById(_targetId);
+          if (field) field.value = skills.join(', ');
+        }
+        bootstrap.Modal.getInstance(
+          document.getElementById('skillsPickerModal')
+        ).hide();
+      });
+    }
+
+    // Clear All button
+    var clearBtn = document.getElementById('skillsClearAll');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function () {
+        document.querySelectorAll('#skillsTree .sp-skill').forEach(function (c) {
+          c.checked = false;
+        });
+        document.querySelectorAll('#skillsTree .sp-subcat-cb').forEach(function (c) {
+          c.checked = false; c.indeterminate = false;
+        });
+        updateFooter();
+      });
+    }
+
+    // Search input — debounced re-render
+    var searchEl = document.getElementById('skillsSearch');
+    var clearSrch = document.getElementById('skillsClearSearch');
+    var timer;
+    if (searchEl) {
+      searchEl.addEventListener('input', function () {
+        clearTimeout(timer);
+        timer = setTimeout(function () { if (_taxonomy) renderTree(); }, 220);
+      });
+    }
+    if (clearSrch) {
+      clearSrch.addEventListener('click', function () {
+        searchEl.value = '';
+        if (_taxonomy) renderTree();
+      });
+    }
+  });
+}());
+
+// ---- GitHub URL opener ----
+(function () {
+  const openBtn = document.getElementById('openGithubBtn');
+  const ghInput = document.getElementById('githubUrlInput');
+  if (!openBtn || !ghInput) return;
+  openBtn.addEventListener('click', function () {
+    const url = ghInput.value.trim();
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      ghInput.focus();
+      ghInput.placeholder = 'Enter a GitHub URL first';
+    }
+  });
+}());
+
+// ---- Resume file browser ----
+(function () {
+  const browseBtn  = document.getElementById('browseResumeBtn');
+  const pathInput  = document.getElementById('resumePathInput');
+  if (!browseBtn || !pathInput) return;
+  browseBtn.addEventListener('click', function () {
+    browseBtn.disabled = true;
+    browseBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+    fetch('/api/browse-file')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.path) pathInput.value = data.path;
+      })
+      .catch(function () {})
+      .finally(function () {
+        browseBtn.disabled = false;
+        browseBtn.innerHTML = '<i class="bi bi-folder2-open"></i> Browse\u2026';
+      });
+  });
+}());
+
+// ---- Grey out miles when Remote is selected ----
+(function () {
+  const locSel   = document.getElementById('applicantLocationState');
+  const milesSel = document.getElementById('locationMiles');
+  if (!locSel || !milesSel) return;
+
+  function updateMiles() {
+    const isRemote = locSel.value === 'Remote';
+    milesSel.disabled = isRemote;
+    milesSel.style.opacity = isRemote ? '0.38' : '1';
+    milesSel.style.pointerEvents = isRemote ? 'none' : '';
+  }
+
+  locSel.addEventListener('change', updateMiles);
+  updateMiles(); // apply on page load
+}());
+
+// ---- Scheduled Scans: auto-toggle, frequency show/hide, timezone detect ----
+(function () {
+  const autoToggle      = document.getElementById('scanAutoEnabled');
+  const optionsDiv      = document.getElementById('schedulerOptions');
+  const weekdaySection  = document.getElementById('weekdaySection');
+  const monthdaySection = document.getElementById('monthdaySection');
+  const freqRadios      = document.querySelectorAll('input[name="scan_frequency"]');
+  const tzSelect        = document.getElementById('timezoneSelect');
+  const tzDetectBtn     = document.getElementById('tzDetectBtn');
+  const tzDetectMsg     = document.getElementById('tzDetectMsg');
+
+  if (!autoToggle || !optionsDiv) return;
+
+  function updateAutoVisibility() {
+    optionsDiv.style.display = autoToggle.checked ? '' : 'none';
+  }
+
+  function updateFrequencyVisibility() {
+    const checked = document.querySelector('input[name="scan_frequency"]:checked');
+    const freq = checked ? checked.value : 'daily';
+    weekdaySection.style.display  = (freq === 'weekly')  ? '' : 'none';
+    monthdaySection.style.display = (freq === 'monthly') ? '' : 'none';
+  }
+
+  autoToggle.addEventListener('change', updateAutoVisibility);
+  freqRadios.forEach(function (r) { r.addEventListener('change', updateFrequencyVisibility); });
+
+  // Apply on page load
+  updateAutoVisibility();
+  updateFrequencyVisibility();
+
+  // Timezone auto-detect via browser Intl API
+  if (tzDetectBtn && tzSelect) {
+    tzDetectBtn.addEventListener('click', function () {
+      const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const opt = Array.from(tzSelect.options).find(function (o) { return o.value === detected; });
+      if (opt) {
+        tzSelect.value = detected;
+        tzDetectMsg.textContent = 'Detected: ' + detected;
+        tzDetectMsg.className = 'form-text text-success';
+      } else {
+        tzDetectMsg.textContent = 'Detected "' + detected + '" — not in list, please select manually.';
+        tzDetectMsg.className = 'form-text text-warning';
+      }
+    });
+  }
+}());
+
+// ---- Use Resume toggle: show/hide sections, Scan Resume button ----
+(function () {
+  var toggle       = document.getElementById('useResumeToggle');
+  var resumeSec    = document.getElementById('resumeSkillsSection');
+  var manualSec    = document.getElementById('manualSkillsSection');
+  var preferredSec = document.getElementById('preferredSkillsSection');
+  var parseBtn     = document.getElementById('parseResumeBtn');
+  var parseBtnLbl  = document.getElementById('parseBtnLabel');
+  var parseMsg     = document.getElementById('parseResumeMsg');
+  // Scan Resume fills the Preferred (+8) field by default
+  var prefInput    = document.getElementById('resumePreferredInput');
+
+  if (!toggle) return;
+
+  function applyToggleState() {
+    var on = toggle.checked;
+    resumeSec.style.display    = on ? '' : 'none';
+    manualSec.style.display    = on ? 'none' : '';
+    preferredSec.style.display = on ? 'none' : '';
+  }
+
+  function parseResume() {
+    parseBtn.disabled = true;
+    parseBtnLbl.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Scanning…';
+    parseMsg.textContent  = '';
+    parseMsg.className    = 'form-text';
+
+    // After 4 s without a response, assume a PDF library is being auto-installed
+    var installHintTimer = setTimeout(function () {
+      parseBtnLbl.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Installing PDF library… please wait';
+      parseMsg.textContent  = 'pypdf is being installed automatically — this only happens once.';
+      parseMsg.className    = 'form-text text-info';
+    }, 4000);
+
+    fetch('/api/parse-resume')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        clearTimeout(installHintTimer);
+        if (data.error) {
+          parseMsg.textContent = 'Error: ' + data.error;
+          parseMsg.className   = 'form-text text-danger';
+        } else if (data.skills && data.skills.length > 0) {
+          // All auto-scanned skills land in the Preferred (+8) field by default.
+          // Use the Choose… picker to promote any to Required (+20).
+          if (prefInput) prefInput.value = data.skills.join(', ');
+          var msg = data.count + ' skill' + (data.count !== 1 ? 's' : '') +
+            ' added to Preferred — use Choose… to promote skills to +20 Required.';
+          if (data.installed_library) msg = 'pypdf was installed automatically. ' + msg;
+          parseMsg.textContent = msg;
+          parseMsg.className   = data.installed_library ? 'form-text text-info' : 'form-text text-success';
+        } else {
+          parseMsg.textContent = 'No matching skills found in resume. Check the Resume File Path.';
+          parseMsg.className   = 'form-text text-warning';
+        }
+      })
+      .catch(function (err) {
+        clearTimeout(installHintTimer);
+        parseMsg.textContent = 'Request failed: ' + err;
+        parseMsg.className   = 'form-text text-danger';
+      })
+      .finally(function () {
+        parseBtn.disabled = false;
+        parseBtnLbl.innerHTML = '<i class="bi bi-file-earmark-person"></i> Scan Resume';
+      });
+  }
+
+  toggle.addEventListener('change', function () {
+    applyToggleState();
+    // Auto-scan when toggled ON and both resume fields are empty
+    var reqInput = document.getElementById('resumeRequiredInput');
+    var bothEmpty = (!prefInput || !prefInput.value.trim()) &&
+                    (!reqInput  || !reqInput.value.trim());
+    if (toggle.checked && bothEmpty) parseResume();
+  });
+
+  if (parseBtn) parseBtn.addEventListener('click', parseResume);
+
+  // Apply on page load
+  applyToggleState();
+}());
+
+// ================================================================
+// Background Daemon control panel
+// ================================================================
+(function () {
+  var statusBadge    = document.getElementById('daemonStatusBadge');
+  var pidText        = document.getElementById('daemonPidText');
+  var startBtn       = document.getElementById('daemonStartBtn');
+  var stopBtn        = document.getElementById('daemonStopBtn');
+  var refreshBtn     = document.getElementById('daemonRefreshBtn');
+  var installBtn     = document.getElementById('installTaskBtn');
+  var uninstallBtn   = document.getElementById('uninstallTaskBtn');
+  var taskBadge      = document.getElementById('taskStatusBadge');
+  var msgEl          = document.getElementById('daemonMsg');
+
+  if (!statusBadge) return;
+
+  function showMsg(text, ok) {
+    msgEl.textContent = text;
+    msgEl.className   = 'form-text mt-2 ' + (ok ? 'text-success' : 'text-danger');
+    setTimeout(function () { msgEl.textContent = ''; msgEl.className = 'form-text mt-2'; }, 6000);
+  }
+
+  function applyStatus(data) {
+    var running = data.running;
+    // Status badge
+    statusBadge.className = 'badge rounded-pill fs-6 px-3 py-2 ' +
+      (running ? 'bg-success' : 'bg-secondary');
+    statusBadge.innerHTML = running
+      ? '<i class="bi bi-circle-fill me-1" style="font-size:.55em;vertical-align:.1em"></i>Running'
+      : '<i class="bi bi-circle me-1"      style="font-size:.55em;vertical-align:.1em"></i>Stopped';
+    pidText.textContent = running ? 'PID ' + data.pid : '';
+    // Start / Stop buttons
+    startBtn.disabled = running;
+    stopBtn.disabled  = !running;
+    // Task Scheduler badge + buttons
+    var taskInstalled = data.task_installed;
+    taskBadge.className = 'badge rounded-pill ' + (taskInstalled ? 'bg-success' : 'bg-secondary');
+    taskBadge.textContent = taskInstalled ? 'Installed' : 'Not installed';
+    installBtn.disabled   = taskInstalled;
+    uninstallBtn.disabled = !taskInstalled;
+  }
+
+  function fetchStatus() {
+    statusBadge.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Checking…';
+    statusBadge.className = 'badge rounded-pill fs-6 px-3 py-2 bg-secondary';
+    startBtn.disabled = stopBtn.disabled = installBtn.disabled = uninstallBtn.disabled = true;
+    fetch('/api/daemon/status')
+      .then(function (r) { return r.json(); })
+      .then(applyStatus)
+      .catch(function () {
+        statusBadge.textContent = 'Error';
+        statusBadge.className   = 'badge rounded-pill fs-6 px-3 py-2 bg-danger';
+      });
+  }
+
+  function daemonAction(url, label) {
+    startBtn.disabled = stopBtn.disabled = installBtn.disabled = uninstallBtn.disabled = true;
+    msgEl.textContent = label + '…';
+    msgEl.className   = 'form-text mt-2 text-info';
+    fetch(url, { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        showMsg(data.message, data.ok);
+        fetchStatus();
+      })
+      .catch(function (err) { showMsg('Request failed: ' + err, false); fetchStatus(); });
+  }
+
+  startBtn.addEventListener('click',     function () { daemonAction('/api/daemon/start',          'Starting daemon'); });
+  stopBtn.addEventListener('click',      function () { daemonAction('/api/daemon/stop',           'Stopping daemon'); });
+  installBtn.addEventListener('click',   function () { daemonAction('/api/daemon/install-task',   'Installing startup task'); });
+  uninstallBtn.addEventListener('click', function () { daemonAction('/api/daemon/uninstall-task', 'Removing startup task'); });
+  refreshBtn.addEventListener('click',   fetchStatus);
+
+  // Poll every 10 seconds while the page is open
+  fetchStatus();
+  setInterval(fetchStatus, 10000);
+}());
+
+// ================================================================
+// Tray Icon Picker
+// ================================================================
+(function () {
+  var browseBtn    = document.getElementById('trayIconBrowseBtn');
+  var fileInput    = document.getElementById('trayIconFile');
+  var resetBtn     = document.getElementById('trayIconResetBtn');
+  var preview      = document.getElementById('trayIconPreview');
+  var grid         = document.getElementById('trayIconGrid');
+  var filenameEl   = document.getElementById('trayIconFilename');
+  var statusEl     = document.getElementById('trayIconUploadStatus');
+
+  if (!browseBtn) return;
+
+  browseBtn.addEventListener('click', function () { fileInput.click(); });
+
+  fileInput.addEventListener('change', function () {
+    var file = fileInput.files[0];
+    if (!file) return;
+    statusEl.textContent = 'Uploading…';
+    statusEl.className   = 'small mt-1 text-muted';
+    grid.style.display   = 'none';
+    grid.innerHTML       = '';
+
+    var fd = new FormData();
+    fd.append('icon', file);
+    fetch('/api/daemon/icon-upload', { method: 'POST', body: fd })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) { statusEl.textContent = 'Error: ' + (data.error || 'unknown'); statusEl.className = 'small mt-1 text-danger'; return; }
+        statusEl.textContent = '';
+        var variants = data.variants || [];
+        if (variants.length === 1) {
+          // Single image — select automatically
+          selectVariant(data.path, variants[0].size, variants[0].data);
+        } else if (variants.length > 1) {
+          // Multiple sizes — show grid for user to choose
+          statusEl.textContent = 'Choose a size:';
+          statusEl.className   = 'small mt-1 text-muted';
+          grid.style.display   = '';
+          variants.forEach(function (v) {
+            var cell = document.createElement('div');
+            cell.style.cssText = 'cursor:pointer;border:2px solid transparent;border-radius:6px;padding:4px;text-align:center;background:rgba(255,255,255,.05);transition:border-color .15s';
+            cell.innerHTML = '<img src="' + v.data + '" width="48" height="48" style="border-radius:4px;display:block"><span style="font-size:10px;color:#aaa">' + v.size + '</span>';
+            cell.addEventListener('mouseenter', function () { cell.style.borderColor = '#0d6efd'; });
+            cell.addEventListener('mouseleave', function () { cell.style.borderColor = cell._selected ? '#0d6efd' : 'transparent'; });
+            cell.addEventListener('click', function () {
+              // Deselect all
+              Array.from(grid.children).forEach(function (c) { c.style.borderColor = 'transparent'; c._selected = false; });
+              cell.style.borderColor = '#0d6efd';
+              cell._selected = true;
+              selectVariant(data.path, v.size, v.data);
+            });
+            grid.appendChild(cell);
+          });
+          // Auto-select largest (last)
+          var lastCell = grid.lastChild;
+          if (lastCell) { lastCell.style.borderColor = '#0d6efd'; lastCell._selected = true; }
+          var last = variants[variants.length - 1];
+          selectVariant(data.path, last.size, last.data);
+        }
+      })
+      .catch(function (err) { statusEl.textContent = 'Upload failed: ' + err; statusEl.className = 'small mt-1 text-danger'; });
+    fileInput.value = '';
+  });
+
+  function selectVariant(path, size, imgData) {
+    fetch('/api/daemon/icon-select', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: path, size: size })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.ok) {
+        // Update preview with actual 64×64 render from server
+        preview.src = '/api/daemon/icon-preview?t=' + Date.now();
+        // Update filename label
+        var parts = path.replace(/\\/g, '/').split('/');
+        filenameEl.textContent = 'Custom: ' + parts[parts.length - 1] + (size ? ' (' + size + ')' : '');
+        resetBtn.style.display = '';
+        statusEl.textContent = 'Icon saved.';
+        statusEl.className   = 'small mt-1 text-success';
+        setTimeout(function () { statusEl.textContent = ''; }, 3000);
+      }
+    });
+  }
+
+  resetBtn.addEventListener('click', function () {
+    fetch('/api/daemon/icon-reset', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok) {
+          preview.src         = '/api/daemon/icon-preview?t=' + Date.now();
+          filenameEl.textContent = 'Default (built-in)';
+          resetBtn.style.display = 'none';
+          grid.style.display  = 'none';
+          grid.innerHTML      = '';
+          statusEl.textContent = '';
+        }
+      });
+  });
+}());
+
+// ================================================================
+// Section Layout Manager  (Auto-balance  |  Manual drag-and-drop)
+// ================================================================
+(function () {
+  var STORAGE_KEY_MODE  = 'settings-layout-mode';
+  var STORAGE_KEY_ORDER = 'settings-layout-order';
+
+  var row      = document.getElementById('settingsRow');
+  var colLeft  = document.getElementById('settingsColLeft');
+  var colRight = document.getElementById('settingsColRight');
+  var autoBtn  = document.getElementById('layoutAutoBtn');
+  var manBtn   = document.getElementById('layoutManualBtn');
+
+  if (!row || !colLeft || !colRight) return;
+
+  // Default section order (IDs without 'section-' prefix)
+  var DEFAULT_ORDER = ['profile', 'cover-letters', 'notifications', 'job-filtering', 'scheduled-scans'];
+
+  var sortableLeft  = null;
+  var sortableRight = null;
+  var resizeTimer   = null;
+
+  // ── Helpers ─────────────────────────────────────────────────────────────
+
+  function getSections() {
+    // Returns all section cards in user-defined order (or DEFAULT_ORDER if no saved order)
+    var savedOrder = [];
+    try { savedOrder = JSON.parse(localStorage.getItem(STORAGE_KEY_ORDER) || '[]'); } catch(e) {}
+    var order = savedOrder.length ? savedOrder : DEFAULT_ORDER;
+    var found = [];
+    order.forEach(function (id) {
+      var el = document.getElementById('section-' + id);
+      if (el) found.push(el);
+    });
+    // Append any sections not in the saved order (future-proof for new sections)
+    document.querySelectorAll('[data-section]').forEach(function (el) {
+      if (found.indexOf(el) === -1) found.push(el);
+    });
+    return found;
+  }
+
+  function saveOrder() {
+    var ids = [];
+    [colLeft, colRight].forEach(function (col) {
+      col.querySelectorAll('[data-section]').forEach(function (el) {
+        ids.push(el.getAttribute('data-section'));
+      });
+    });
+    localStorage.setItem(STORAGE_KEY_ORDER, JSON.stringify(ids));
+  }
+
+  // ── Auto-balance ─────────────────────────────────────────────────────────
+
+  function autoBalance() {
+    // Only balance on large screens where two columns show side-by-side
+    if (window.innerWidth < 992) return; // Bootstrap lg breakpoint
+    var sections  = getSections();
+    var leftH     = 0;
+    var rightH    = 0;
+    var leftSecs  = [];
+    var rightSecs = [];
+    sections.forEach(function (s) {
+      var h = s.offsetHeight || 0;
+      if (leftH <= rightH) {
+        leftSecs.push(s);
+        leftH += h;
+      } else {
+        rightSecs.push(s);
+        rightH += h;
+      }
+    });
+    leftSecs.forEach(function (s) { colLeft.appendChild(s); });
+    rightSecs.forEach(function (s) { colRight.appendChild(s); });
+  }
+
+  // ── Manual mode (SortableJS) ─────────────────────────────────────────────
+
+  function enableManual() {
+    if (typeof Sortable === 'undefined') return;
+    var opts = {
+      group: 'settings-sections',
+      handle: '.section-drag-handle',
+      animation: 180,
+      ghostClass: 'sortable-ghost',
+      dragClass: 'sortable-drag',
+      onEnd: saveOrder,
+    };
+    sortableLeft  = Sortable.create(colLeft,  opts);
+    sortableRight = Sortable.create(colRight, opts);
+    // Ensure sections are in saved order across both columns
+    var sections = getSections();
+    var half = Math.ceil(sections.length / 2);
+    sections.slice(0, half).forEach(function (s) { colLeft.appendChild(s); });
+    sections.slice(half).forEach(function (s) { colRight.appendChild(s); });
+  }
+
+  function disableManual() {
+    if (sortableLeft)  { sortableLeft.destroy();  sortableLeft  = null; }
+    if (sortableRight) { sortableRight.destroy(); sortableRight = null; }
+  }
+
+  // ── Mode activation ──────────────────────────────────────────────────────
+
+  function activateAuto() {
+    localStorage.setItem(STORAGE_KEY_MODE, 'auto');
+    autoBtn.classList.add('active');
+    manBtn.classList.remove('active');
+    disableManual();
+    document.querySelectorAll('.section-drag-handle').forEach(function (h) {
+      h.style.opacity = '0';
+      h.style.pointerEvents = 'none';
+      h.style.cursor = 'default';
+    });
+    row.classList.remove('layout-manual');
+    autoBalance();
+  }
+
+  function activateManual() {
+    localStorage.setItem(STORAGE_KEY_MODE, 'manual');
+    manBtn.classList.add('active');
+    autoBtn.classList.remove('active');
+    document.querySelectorAll('.section-drag-handle').forEach(function (h) {
+      h.style.opacity = '1';
+      h.style.pointerEvents = 'auto';
+      h.style.cursor = 'grab';
+    });
+    row.classList.add('layout-manual');
+    enableManual();
+  }
+
+  // ── Event listeners ───────────────────────────────────────────────────────
+
+  autoBtn.addEventListener('click', activateAuto);
+  manBtn.addEventListener('click', activateManual);
+
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      var mode = localStorage.getItem(STORAGE_KEY_MODE) || 'auto';
+      if (mode === 'auto') autoBalance();
+    }, 200);
+  });
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+
+  // Small delay so all cards have rendered heights before measuring
+  setTimeout(function () {
+    var mode = localStorage.getItem(STORAGE_KEY_MODE) || 'auto';
+    if (mode === 'manual') {
+      activateManual();
+    } else {
+      activateAuto();
+    }
+  }, 50);
+
+}());
+</script>
+
+<script>
+/* ── Database Management buttons ─────────────────────────────────────────── */
+(function () {
+  'use strict';
+
+  var resetModal    = new bootstrap.Modal(document.getElementById('dbResetModal'));
+  var progressModal = new bootstrap.Modal(document.getElementById('dbProgressModal'));
+
+  var progressBar    = document.getElementById('dbProgressBar');
+  var progressTitle  = document.getElementById('dbProgressTitle');
+  var progressDesc   = document.getElementById('dbProgressDesc');
+  var progressStatus = document.getElementById('dbProgressStatus');
+
+  function animateTo(pct, label) {
+    progressBar.style.width = pct + '%';
+    progressBar.setAttribute('aria-valuenow', pct);
+    progressBar.textContent = pct + '%';
+    if (label) progressStatus.textContent = label;
+  }
+
+  function startProgress(title, desc) {
+    progressTitle.textContent  = title;
+    progressDesc.textContent   = desc;
+    progressStatus.textContent = '';
+    animateTo(0, '');
+    progressModal.show();
+  }
+
+  function finishProgress(successMsg) {
+    animateTo(100, successMsg);
+    progressBar.classList.remove('progress-bar-animated');
+    progressBar.classList.add('bg-success');
+    setTimeout(function () {
+      progressModal.hide();
+      progressBar.classList.add('progress-bar-animated');
+      progressBar.classList.remove('bg-success');
+      animateTo(0, '');
+    }, 2200);
+  }
+
+  function failProgress(errMsg) {
+    animateTo(100, '');
+    progressBar.classList.remove('progress-bar-animated');
+    progressBar.classList.add('bg-danger');
+    progressStatus.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>' + errMsg + '</span>';
+    setTimeout(function () {
+      progressModal.hide();
+      progressBar.classList.remove('bg-danger');
+      progressBar.classList.add('progress-bar-animated');
+      animateTo(0, '');
+    }, 3000);
+  }
+
+  var _ticker = null;
+  function startTicker(maxPct) {
+    var cur = 5;
+    animateTo(cur, 'Working\u2026');
+    _ticker = setInterval(function () {
+      if (cur < maxPct) {
+        cur = Math.min(cur + Math.random() * 8 + 2, maxPct);
+        animateTo(Math.round(cur), 'Working\u2026');
+      }
+    }, 400);
+  }
+  function stopTicker() {
+    if (_ticker) { clearInterval(_ticker); _ticker = null; }
+  }
+
+  // Reset flow
+  document.getElementById('btnResetDb').addEventListener('click', function () {
+    resetModal.show();
+  });
+
+  document.getElementById('btnConfirmReset').addEventListener('click', function () {
+    resetModal.hide();
+    startProgress('Deleting All Jobs\u2026', 'Removing jobs, applications, scan logs, and notifications from the database.');
+    startTicker(85);
+
+    fetch('/api/database/reset', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        stopTicker();
+        if (data.ok) {
+          var d = data.deleted;
+          finishProgress(
+            'Done \u2014 removed ' + d.jobs + ' job(s), ' + d.applications +
+            ' application(s), ' + d.scan_logs + ' scan log(s), ' +
+            d.notifications + ' notification(s).'
+          );
+        } else {
+          failProgress(data.error || 'Reset failed.');
+        }
+      })
+      .catch(function (err) {
+        stopTicker();
+        failProgress('Network error: ' + err.message);
+      });
+  });
+
+  // Repair flow
+  document.getElementById('btnRepairDb').addEventListener('click', function () {
+    startProgress('Repairing Database\u2026', 'Re-scoring jobs against current skills, updating categories and durations, removing orphaned records.');
+    startTicker(85);
+
+    fetch('/api/database/repair', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        stopTicker();
+        if (data.ok) {
+          finishProgress(
+            'Done \u2014 re-scored ' + data.rescored + ' job(s), removed ' +
+            data.orphans_removed + ' orphaned record(s).'
+          );
+        } else {
+          failProgress(data.error || 'Repair failed.');
+        }
+      })
+      .catch(function (err) {
+        stopTicker();
+        failProgress('Network error: ' + err.message);
+      });
+  });
+
+}());
+</script>
+
+<style>
+/* Drag handle — hidden by default, revealed in manual mode */
+.section-drag-handle {
+  opacity: 0;
+  pointer-events: none;
+  cursor: default;
+  transition: opacity .15s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+/* Ghost card during drag */
+.sortable-ghost {
+  opacity: .35;
+}
+/* Card being dragged */
+.sortable-drag {
+  box-shadow: 0 8px 24px rgba(0,0,0,.5) !important;
+  transform: rotate(1deg);
+}
+/* Cursor feedback while hovering the handle in manual mode */
+.layout-manual .section-drag-handle:hover i {
+  color: #0d6efd !important;
+}
+</style>
+
+<script>
+/* ---- Unemployment settings ---- */
+(function () {
+  var STATE_URLS = {
+    AL: 'https://labor.alabama.gov/unemployment/',
+    AK: 'https://labor.alaska.gov/unemployment/',
+    AZ: 'https://des.az.gov/unemployment',
+    AR: 'https://www.dws.arkansas.gov/unemployment/',
+    CA: 'https://www.edd.ca.gov/unemployment/',
+    CO: 'https://cdle.colorado.gov/unemployment',
+    CT: 'https://www.ctdol.state.ct.us/HP/default.htm',
+    DE: 'https://ui.delawareworks.com/',
+    DC: 'https://does.dc.gov/service/file-unemployment-claim',
+    FL: 'https://connect.myflorida.com/',
+    GA: 'https://www.dol.state.ga.us/public/uisvc/intro/begin',
+    HI: 'https://uiclaims.hawaii.gov/',
+    ID: 'https://www.labor.idaho.gov/divisions/unemployment/',
+    IL: 'https://ides.illinois.gov/',
+    IN: 'https://uplink.in.gov/',
+    IA: 'https://www.iowaworkforcedevelopment.gov/unemployment-insurance',
+    KS: 'https://www.getkansasbenefits.gov/',
+    KY: 'https://kcc.ky.gov/career/Pages/Unemployment.aspx',
+    LA: 'https://www.laworks.net/UnemploymentInsurance/UI_MainMenu.asp',
+    ME: 'https://www.maine.gov/unemployment/',
+    MD: 'https://www.dllr.state.md.us/employment/unemployment.shtml',
+    MA: 'https://www.mass.gov/how-to/file-for-unemployment',
+    MI: 'https://www.michigan.gov/leo/bureaus-agencies/wd/esd',
+    MN: 'https://www.uimn.org/',
+    MS: 'https://www.mdes.ms.gov/',
+    MO: 'https://labor.mo.gov/unemploymentbenefits',
+    MT: 'https://uid.dli.mt.gov/',
+    NE: 'https://www.dol.nebraska.gov/uibenefits',
+    NV: 'https://ui.nv.gov/',
+    NH: 'https://nhes.nh.gov/',
+    NJ: 'https://www.myunemployment.nj.gov/',
+    NM: 'https://www.dws.state.nm.us/Unemployment-Insurance',
+    NY: 'https://www.labor.ny.gov/unemploymentinsurance/',
+    NC: 'https://des.nc.gov/',
+    ND: 'https://www.jobsnd.com/unemployment',
+    OH: 'https://unemployment.ohio.gov/',
+    OK: 'https://www.ok.gov/oesc/Unemployment/',
+    OR: 'https://unemployment.oregon.gov/',
+    PA: 'https://www.uc.pa.gov/',
+    RI: 'https://dlt.ri.gov/individuals/unemployment-insurance',
+    SC: 'https://dew.sc.gov/',
+    SD: 'https://dlr.sd.gov/ra/',
+    TN: 'https://www.tn.gov/workforce/unemployment.html',
+    TX: 'https://www.twc.texas.gov/jobseekers/unemployment-benefits-services',
+    UT: 'https://jobs.utah.gov/ui/',
+    VT: 'https://www.vermontjoblink.com/',
+    VA: 'https://www.vec.virginia.gov/',
+    WA: 'https://esd.wa.gov/unemployment',
+    WV: 'https://workforcewv.org/unemployment',
+    WI: 'https://dwd.wisconsin.gov/ui/',
+    WY: 'https://wyomingworkforce.org/workers/ui/'
+  };
+
+  var enabledToggle = document.getElementById('unemploymentEnabled');
+  var fieldsDiv     = document.getElementById('unemploymentFields');
+  var stateSelect   = document.getElementById('unemploymentState');
+  var urlInput      = document.getElementById('unemploymentUrl');
+  var goBtn         = document.getElementById('unemploymentGoBtn');
+  var lcSwitch      = document.getElementById('unemploymentLowercaseSwitch');
+
+  // Track the canonical (original-case) URL separately from the displayed value
+  var _origUrl = urlInput ? urlInput.value : '';
+
+  // ---- Master enable/disable ----
+  function syncEnabled() {
+    if (enabledToggle.checked) {
+      fieldsDiv.style.opacity       = '1';
+      fieldsDiv.style.pointerEvents = '';
+      fieldsDiv.style.userSelect    = '';
+    } else {
+      fieldsDiv.style.opacity       = '0.4';
+      fieldsDiv.style.pointerEvents = 'none';
+      fieldsDiv.style.userSelect    = 'none';
+    }
+  }
+  if (enabledToggle) enabledToggle.addEventListener('change', syncEnabled);
+
+  // ---- Go button ----
+  function syncGoBtn(url) {
+    if (url && url !== '#') {
+      goBtn.setAttribute('href', url);
+      goBtn.classList.remove('disabled');
+    } else {
+      goBtn.setAttribute('href', '#');
+      goBtn.classList.add('disabled');
+    }
+  }
+
+  // ---- Apply lowercase if switch is on ----
+  function applyCase(url) {
+    return (lcSwitch && lcSwitch.checked) ? url.toLowerCase() : url;
+  }
+
+  // ---- State dropdown change ----
+  if (stateSelect) {
+    stateSelect.addEventListener('change', function () {
+      _origUrl = STATE_URLS[this.value] || '';
+      var url  = applyCase(_origUrl);
+      urlInput.value = url;
+      syncGoBtn(url);
+    });
+  }
+
+  // ---- Manual URL edit ----
+  if (urlInput) {
+    urlInput.addEventListener('input', function () {
+      _origUrl = this.value;
+      syncGoBtn(this.value.trim());
+    });
+  }
+
+  // ---- Lowercase switch toggle ----
+  if (lcSwitch) {
+    lcSwitch.addEventListener('change', function () {
+      var url = applyCase(_origUrl);
+      urlInput.value = url;
+      syncGoBtn(url);
+    });
+  }
+
+  // ---- Prevent Go button navigating when disabled ----
+  if (goBtn) {
+    goBtn.addEventListener('click', function (e) {
+      if (this.classList.contains('disabled')) e.preventDefault();
+    });
+  }
+
+  // ---- Auto-calculate end date (start + 1 year) ----
+  var startDateInput = document.getElementById('unemploymentStartDate');
+  var endDateInput   = document.getElementById('unemploymentEndDate');
+  if (startDateInput && endDateInput) {
+    startDateInput.addEventListener('change', function () {
+      if (!endDateInput.value && this.value) {
+        var d = new Date(this.value + 'T00:00:00');
+        d.setFullYear(d.getFullYear() + 1);
+        d.setDate(d.getDate() - 1);
+        endDateInput.value = d.toISOString().slice(0, 10);
+      }
+    });
+  }
+}());
+</script>
+{% endblock %}

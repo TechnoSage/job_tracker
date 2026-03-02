@@ -1,0 +1,538 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Job Tracker{% endblock %}
+
+{% block content %}
+<div class="mt-3 mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h2>
+</div>
+
+<!-- ===== METRICS CARDS ===== -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100 metric-card" data-tooltip="Total jobs found across all enabled sources">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="metric-icon bg-primary bg-opacity-25 text-primary rounded-circle">
+          <i class="bi bi-briefcase-fill"></i>
+        </div>
+        <div>
+          <div class="fs-1 fw-bold lh-1">{{ metrics.total_jobs }}</div>
+          <div class="text-muted small">Total Jobs Found</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100 metric-card" data-tooltip="Jobs you have submitted an application for">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="metric-icon bg-warning bg-opacity-25 text-warning rounded-circle">
+          <i class="bi bi-send-fill"></i>
+        </div>
+        <div>
+          <div class="fs-1 fw-bold lh-1">{{ metrics.total_applications }}</div>
+          <div class="text-muted small">Applications Sent</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100 metric-card" data-tooltip="Applications that progressed to an interview">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="metric-icon bg-info bg-opacity-25 text-info rounded-circle">
+          <i class="bi bi-camera-video-fill"></i>
+        </div>
+        <div>
+          <div class="fs-1 fw-bold lh-1">{{ metrics.interviews }}</div>
+          <div class="text-muted small">Interviews</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100 metric-card" data-tooltip="Job offers you have received">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="metric-icon bg-success bg-opacity-25 text-success rounded-circle">
+          <i class="bi bi-trophy-fill"></i>
+        </div>
+        <div>
+          <div class="fs-1 fw-bold lh-1">{{ metrics.offers }}</div>
+          <div class="text-muted small">Offers Received</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECONDARY METRICS ===== -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="card border-0 shadow-sm" data-tooltip="Jobs found that you haven't reviewed yet">
+      <div class="card-body text-center">
+        <div class="fs-4 fw-bold text-primary">{{ metrics.new_jobs }}</div>
+        <div class="text-muted small">New Unreviewed</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card border-0 shadow-sm" data-tooltip="% of applications that received any response">
+      <div class="card-body text-center">
+        <div class="fs-4 fw-bold text-warning">{{ metrics.response_rate }}%</div>
+        <div class="text-muted small">Response Rate</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card border-0 shadow-sm" data-tooltip="% of applications that led to a job offer">
+      <div class="card-body text-center">
+        <div class="fs-4 fw-bold text-success">{{ metrics.offer_rate }}%</div>
+        <div class="text-muted small">Offer Rate</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN GRID ===== -->
+<div class="row g-4">
+
+  <!-- Recent Job Matches -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm h-100" data-tooltip="All jobs ranked by best match score — click a row to view details">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-search me-2 text-primary"></i>Recent Matches</h6>
+        <a href="{{ url_for('jobs') }}" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="app-hint text-info small fst-italic px-3 pb-2" style="margin-top:-4px;">
+        <i class="bi bi-info-circle me-1"></i>Jobs found by the scanner, ranked by skill match. Score = % of your configured skills detected in the posting.
+      </div>
+      <div class="card-body p-0">
+        {% if recent_jobs %}
+        <div class="table-scroll">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-dark small">
+              <tr>
+                <th>Score <small class="app-hint text-info fw-normal" style="font-size:.65rem;">% skill match</small></th>
+                <th>Position</th>
+                <th>Company</th>
+                <th>Duration</th>
+                <th>Posted</th>
+                <th>Source</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for job in recent_jobs %}
+              <tr>
+                <td>
+                  <span class="badge score-badge
+                    {% if job.match_score >= score_t2 %}score-neon
+                    {% elif job.match_score >= score_t1 %}score-blue
+                    {% else %}score-grey{% endif %}">
+                    {{ job.match_score }}
+                  </span>
+                </td>
+                <td>
+                  <a href="{{ url_for('job_detail', job_id=job.id) }}" class="text-decoration-none fw-semibold">
+                    {{ job.title|truncate(40) }}
+                  </a>
+                  {% if job.job_category != 'general' %}
+                    <span class="badge bg-secondary ms-1 small">{{ job.job_category.replace('_',' ') }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-muted small">{{ job.company }}</td>
+                <td>
+                  {% if job.job_duration %}
+                    <span class="badge bg-secondary small">{{ job.job_duration }}</span>
+                  {% else %}
+                    <span class="text-muted small">—</span>
+                  {% endif %}
+                </td>
+                <td class="small">
+                  {% if job.posted_date %}<span data-posted-date="{{ job.posted_date.strftime('%Y-%m-%d') }}">{{ job.posted_date.strftime('%b %d, %Y') }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
+                </td>
+                <td><span class="badge bg-dark">{{ job.source }}</span></td>
+                <td>
+                  <span class="badge bg-{{ job.status_badge() }}">{{ job.status }}</span>
+                </td>
+                <td>
+                  <a href="{{ url_for('job_detail', job_id=job.id) }}" class="btn btn-xs btn-outline-secondary">
+                    <i class="bi bi-arrow-right"></i>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-search fs-1 d-block mb-2 opacity-25"></i>
+          No jobs yet. Click <strong>Run Scan Now</strong> to fetch jobs.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Follow-ups & Pipeline -->
+  <div class="col-lg-4">
+
+    <!-- Follow-up reminders -->
+    <div class="card border-0 shadow-sm mb-3" data-tooltip="Applications due for a follow-up contact">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-clock-fill me-2 text-warning"></i>Follow-ups Due</h6>
+      </div>
+      <div class="card-body">
+        {% if followups %}
+          {% for app in followups %}
+          <div class="d-flex align-items-start gap-2 mb-3">
+            <div class="flex-shrink-0">
+              <span class="badge bg-{{ 'danger' if app.is_overdue_followup() else 'warning' }}">
+                {{ app.next_follow_up.strftime('%b %d') if app.next_follow_up else '?' }}
+              </span>
+            </div>
+            <div class="flex-grow-1 small">
+              <div class="fw-semibold">{{ app.job.title|truncate(35) }}</div>
+              <div class="text-muted">{{ app.job.company }}</div>
+            </div>
+            <a href="{{ url_for('application_detail', app_id=app.id) }}"
+               class="btn btn-xs btn-outline-secondary flex-shrink-0">
+              <i class="bi bi-arrow-right"></i>
+            </a>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted small mb-0">No follow-ups due soon.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Application pipeline -->
+    <div class="card border-0 shadow-sm" data-tooltip="Count of applications at each stage of the process">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-funnel-fill me-2 text-info"></i>Pipeline</h6>
+      </div>
+      <div class="card-body">
+        {% set statuses = [
+          ('submitted','primary','Submitted'),
+          ('phone_screen','info','Phone Screen'),
+          ('interview','warning','Interview'),
+          ('offer','success','Offer'),
+          ('rejected','danger','Rejected'),
+        ] %}
+        {% for key, color, label in statuses %}
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="badge bg-{{ color }}">{{ label }}</span>
+          <span class="fw-bold">{{ pipeline.get(key, 0) }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Scan log -->
+{% if scan_logs %}
+<div class="card border-0 shadow-sm mt-4" data-tooltip="Results from your most recent automated job scans">
+  <div class="card-header bg-transparent border-0 pb-0">
+    <h6 class="fw-bold mb-0"><i class="bi bi-journal-text me-2 text-secondary"></i>Recent Scan History</h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-scroll">
+      <table class="table table-sm mb-0 small align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th>Date</th><th>Status</th><th>Fetched</th><th>New</th><th>Matched</th><th>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in scan_logs %}
+          <tr{% if loop.first %} class="scan-latest"{% endif %}>
+            <td>{{ log.scan_date.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td class="scan-status-col">
+              <span class="badge bg-{{ 'success' if log.status == 'success' else 'danger' }}">
+                {{ log.status }}
+              </span>
+            </td>
+            <td>{{ log.jobs_found or 0 }}</td>
+            <td>{{ log.jobs_new or 0 }}</td>
+            <td>{{ log.jobs_matched or 0 }}</td>
+            <td>{{ '%.1fs' % log.duration_seconds if log.duration_seconds else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== EMAIL RESPONSE REVIEWS ===== -->
+{% if pending_reviews %}
+<div class="card border-0 shadow-sm mt-4" id="emailReviewsCard">
+  <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
+    <h6 class="fw-bold mb-0">
+      <i class="bi bi-envelope-check me-2 text-info"></i>Email Response Reviews
+      <span class="badge bg-danger ms-2">{{ pending_reviews|length }}</span>
+    </h6>
+    <span class="small text-muted">Confirm or correct each email-to-job match before status is updated</span>
+    <div class="app-hint text-info small fst-italic w-100 mt-1" style="font-size:.72rem;">
+      <i class="bi bi-info-circle me-1"></i>Emails from employers were matched to your applications. Click <strong>Review</strong> to see the email and job side-by-side, then confirm or reject the match. Confirmed matches update the application status automatically.
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-scroll">
+      <table class="table table-hover table-sm mb-0 align-middle">
+        <thead class="table-dark small">
+          <tr>
+            <th>Classification</th>
+            <th>From</th>
+            <th>Subject</th>
+            <th>Suggested Job Match</th>
+            <th>Received</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rev in pending_reviews %}
+          <tr>
+            <td>
+              {% if rev.classification == 'declined' %}
+                <span class="badge bg-danger">Declined</span>
+              {% else %}
+                <span class="badge bg-success">Interview</span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">{{ rev.sender|truncate(35) }}</td>
+            <td class="small">{{ rev.subject|truncate(45) }}</td>
+            <td class="small fw-semibold">
+              {% if rev.suggested_app and rev.suggested_app.job %}
+                {{ rev.suggested_app.job.title|truncate(35) }}
+                <span class="text-muted fw-normal">· {{ rev.suggested_app.job.company }}</span>
+              {% else %}
+                <span class="text-muted fst-italic">No match found</span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">{{ rev.created_at.strftime('%b %d %I:%M %p') if rev.created_at else '—' }}</td>
+            <td>
+              <button class="btn btn-xs btn-outline-info"
+                      onclick="openEmailReview({{ rev.id }},
+                        {{ rev.classification | tojson }},
+                        {{ rev.sender | tojson }},
+                        {{ rev.subject | tojson }},
+                        {{ rev.body_preview | tojson }},
+                        {{ (rev.suggested_app.id if rev.suggested_app else null) | tojson }},
+                        {{ (rev.suggested_app.job.title if rev.suggested_app and rev.suggested_app.job else '') | tojson }},
+                        {{ (rev.suggested_app.job.company if rev.suggested_app and rev.suggested_app.job else '') | tojson }},
+                        {{ (rev.suggested_app.job.location if rev.suggested_app and rev.suggested_app.job else '') | tojson }},
+                        {{ (rev.suggested_app.job.url if rev.suggested_app and rev.suggested_app.job else null) | tojson }},
+                        {{ (rev.suggested_app.job.salary_range if rev.suggested_app and rev.suggested_app.job else null) | tojson }},
+                        {{ ((rev.suggested_app.job.description or '')[:600] if rev.suggested_app and rev.suggested_app.job else '') | tojson }},
+                        {{ (rev.suggested_app.job.get_matched_skills()[:8] if rev.suggested_app and rev.suggested_app.job else []) | tojson }},
+                        {{ (rev.suggested_app.job.match_score if rev.suggested_app and rev.suggested_app.job else 0) | tojson }}
+                      )">
+                <i class="bi bi-eye me-1"></i>Review
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== EMAIL REVIEW MODAL ===== -->
+<div class="modal fade" id="emailReviewModal" tabindex="-1" aria-labelledby="emailReviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content bg-dark text-white border border-secondary">
+      <div class="modal-header border-secondary py-2">
+        <h6 class="modal-title fw-bold" id="emailReviewModalLabel">
+          <i class="bi bi-envelope-check me-2 text-info"></i>Review Email Response Match
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="row g-0" style="min-height:420px;">
+
+          <!-- Left: Job Details -->
+          <div class="col-md-6 border-end border-secondary p-4" id="erJobPanel">
+            <h6 class="fw-bold text-info mb-3"><i class="bi bi-briefcase me-2"></i>Suggested Job Match</h6>
+            <div id="erJobContent">
+              <p class="text-muted fst-italic">No matching job found.</p>
+            </div>
+          </div>
+
+          <!-- Right: Email Content -->
+          <div class="col-md-6 p-4" id="erEmailPanel">
+            <h6 class="fw-bold text-warning mb-3"><i class="bi bi-envelope me-2"></i>Received Email</h6>
+            <div class="mb-2">
+              <span class="text-muted small">From:</span>
+              <span class="small ms-1 fw-semibold" id="erEmailFrom"></span>
+            </div>
+            <div class="mb-2">
+              <span class="text-muted small">Subject:</span>
+              <span class="small ms-1 fw-semibold" id="erEmailSubject"></span>
+            </div>
+            <div class="mb-3">
+              <span class="text-muted small">Classification:</span>
+              <span class="ms-1" id="erEmailClass"></span>
+            </div>
+            <hr class="border-secondary my-2">
+            <div class="small text-muted" style="white-space:pre-wrap;max-height:320px;overflow-y:auto;font-family:monospace;font-size:.8rem;" id="erEmailBody"></div>
+          </div>
+
+        </div>
+      </div>
+      <div class="modal-footer border-secondary d-flex justify-content-between">
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-success" id="erConfirmBtn" onclick="confirmEmailReview()">
+            <i class="bi bi-check-circle me-1"></i>Correct Match — Confirm
+          </button>
+          <button type="button" class="btn btn-warning text-dark" id="erRejectBtn" onclick="rejectEmailReview()">
+            <i class="bi bi-arrow-repeat me-1"></i>Not a Match — Try Another
+          </button>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <span class="small text-muted" id="erStatusMsg"></span>
+          <button type="button" class="btn btn-outline-secondary btn-sm" onclick="dismissEmailReview()">
+            <i class="bi bi-x me-1"></i>Dismiss
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}{{ super() }}
+<script>
+// ── Email Review Modal ────────────────────────────────────────────────────
+var _erCurrentId   = null;
+var _erModal       = null;
+
+function openEmailReview(reviewId, classification, sender, subject, bodyPreview,
+                          appId, jobTitle, jobCompany, jobLocation, jobUrl,
+                          jobSalary, jobDesc, jobSkills, jobScore) {
+  _erCurrentId = reviewId;
+  if (!_erModal) _erModal = new bootstrap.Modal(document.getElementById('emailReviewModal'));
+
+  // Email panel
+  document.getElementById('erEmailFrom').textContent    = sender || '—';
+  document.getElementById('erEmailSubject').textContent = subject || '—';
+  document.getElementById('erEmailBody').textContent    = bodyPreview || '(no body)';
+  var classBadge = classification === 'declined'
+    ? '<span class="badge bg-danger">Declined</span>'
+    : '<span class="badge bg-success">Interview Invite</span>';
+  document.getElementById('erEmailClass').innerHTML = classBadge;
+
+  // Job panel
+  var jobHtml = '';
+  if (appId && jobTitle) {
+    var scoreClass = jobScore >= 70 ? 'text-success' : jobScore >= 40 ? 'text-warning' : 'text-secondary';
+    jobHtml += '<div class="d-flex align-items-center gap-2 mb-3">';
+    jobHtml += '<span class="fw-bold fs-4 ' + scoreClass + '">' + jobScore + '</span>';
+    jobHtml += '<div><div class="fw-bold fs-6">' + jobTitle + '</div>';
+    jobHtml += '<div class="text-muted small">' + (jobCompany || '') + (jobLocation ? ' · ' + jobLocation : '') + '</div></div>';
+    jobHtml += '</div>';
+    if (jobSalary) jobHtml += '<div class="small mb-2"><i class="bi bi-currency-dollar me-1 text-muted"></i>' + jobSalary + '</div>';
+    if (jobUrl) jobHtml += '<div class="mb-2"><a href="' + jobUrl + '" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-outline-primary"><i class="bi bi-box-arrow-up-right me-1"></i>View Job Posting</a></div>';
+    if (jobSkills && jobSkills.length) {
+      jobHtml += '<div class="d-flex flex-wrap gap-1 mb-3">';
+      jobSkills.forEach(function(s) {
+        jobHtml += '<span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25 small">' + s + '</span>';
+      });
+      jobHtml += '</div>';
+    }
+    if (jobDesc) {
+      jobHtml += '<div class="small text-muted" style="max-height:200px;overflow-y:auto;white-space:pre-wrap;">' + jobDesc.substring(0, 500) + (jobDesc.length > 500 ? '…' : '') + '</div>';
+    }
+    document.getElementById('erConfirmBtn').disabled = false;
+    document.getElementById('erRejectBtn').disabled  = false;
+  } else {
+    jobHtml = '<p class="text-muted fst-italic">No matching job was found for this email.<br>You can try dismissing it or it will be rematched on the next check.</p>';
+    document.getElementById('erConfirmBtn').disabled = true;
+    document.getElementById('erRejectBtn').disabled  = false;
+  }
+  document.getElementById('erJobContent').innerHTML = jobHtml;
+  document.getElementById('erStatusMsg').textContent = '';
+
+  _erModal.show();
+}
+
+function confirmEmailReview() {
+  if (!_erCurrentId) return;
+  fetch('/api/email-reviews/' + _erCurrentId + '/confirm', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        document.getElementById('erStatusMsg').innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>' + (data.message || 'Confirmed!') + '</span>';
+        setTimeout(function() {
+          if (_erModal) _erModal.hide();
+          location.reload();
+        }, 1200);
+      } else {
+        document.getElementById('erStatusMsg').innerHTML = '<span class="text-danger">' + (data.message || 'Error') + '</span>';
+      }
+    });
+}
+
+function rejectEmailReview() {
+  if (!_erCurrentId) return;
+  var btn = document.getElementById('erRejectBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass me-1"></i>Searching…';
+  document.getElementById('erStatusMsg').textContent = '';
+
+  fetch('/api/email-reviews/' + _erCurrentId + '/reject', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Not a Match — Try Another';
+      if (!data.ok) {
+        document.getElementById('erStatusMsg').innerHTML = '<span class="text-danger">' + (data.message || 'Error') + '</span>';
+        return;
+      }
+      if (data.has_new && data.app) {
+        var a = data.app;
+        var scoreClass = a.job_score >= 70 ? 'text-success' : a.job_score >= 40 ? 'text-warning' : 'text-secondary';
+        var jobHtml = '<div class="d-flex align-items-center gap-2 mb-3">';
+        jobHtml += '<span class="fw-bold fs-4 ' + scoreClass + '">' + a.job_score + '</span>';
+        jobHtml += '<div><div class="fw-bold fs-6">' + a.job_title + '</div>';
+        jobHtml += '<div class="text-muted small">' + (a.job_company || '') + (a.job_location ? ' · ' + a.job_location : '') + '</div></div>';
+        jobHtml += '</div>';
+        if (a.job_salary) jobHtml += '<div class="small mb-2"><i class="bi bi-currency-dollar me-1 text-muted"></i>' + a.job_salary + '</div>';
+        if (a.job_url) jobHtml += '<div class="mb-2"><a href="' + a.job_url + '" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-outline-primary"><i class="bi bi-box-arrow-up-right me-1"></i>View Job Posting</a></div>';
+        if (a.job_skills && a.job_skills.length) {
+          jobHtml += '<div class="d-flex flex-wrap gap-1 mb-3">';
+          a.job_skills.forEach(function(s) {
+            jobHtml += '<span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25 small">' + s + '</span>';
+          });
+          jobHtml += '</div>';
+        }
+        if (a.job_description) {
+          jobHtml += '<div class="small text-muted" style="max-height:200px;overflow-y:auto;white-space:pre-wrap;">' + a.job_description.substring(0, 500) + '</div>';
+        }
+        document.getElementById('erJobContent').innerHTML = jobHtml;
+        document.getElementById('erConfirmBtn').disabled = false;
+        document.getElementById('erStatusMsg').innerHTML = '<span class="text-info"><i class="bi bi-arrow-right me-1"></i>New suggestion found — review it above.</span>';
+      } else {
+        document.getElementById('erJobContent').innerHTML = '<p class="text-muted fst-italic">No other matching jobs found for this email.</p>';
+        document.getElementById('erConfirmBtn').disabled = true;
+        document.getElementById('erStatusMsg').innerHTML = '<span class="text-muted">' + (data.message || 'No more matches.') + '</span>';
+      }
+    });
+}
+
+function dismissEmailReview() {
+  if (!_erCurrentId) return;
+  fetch('/api/email-reviews/' + _erCurrentId + '/dismiss', { method: 'POST' })
+    .then(function() {
+      if (_erModal) _erModal.hide();
+      location.reload();
+    });
+}
+</script>
+{% endblock %}

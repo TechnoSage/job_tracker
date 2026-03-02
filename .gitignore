@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Databases
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Build outputs
+dist/
+build_output/
+obf_src/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Packaging
+*.egg-info/
+
+# Secrets / local config
+.env
+
+# App-specific generated data
+email_responses/
+*.log
+instance/
+
+# Build Dashboard local settings (contains machine-specific paths)
+build/build_settings.json
+
+# Embedded Python runtime (not source code)
+DLLs/
+Lib/
+pyvenv.cfg
+*.dll
+*.exe
+*.pyd
+logs/
+scheduler_daemon.pid
+
+# Stray pip output files
+=*

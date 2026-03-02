@@ -1,0 +1,596 @@
+{% extends "base.html" %}
+{% block title %}Unemployment — Job Tracker{% endblock %}
+
+{% block content %}
+{# Reset scroll immediately — #page-content (overflow-auto) retains position across nav #}
+<script>
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  (function () { var e = document.getElementById('page-content'); if (e) e.scrollTop = 0; }());
+</script>
+
+<div class="d-flex align-items-center justify-content-between mt-3 mb-4 flex-wrap gap-2">
+  <h2 class="fw-bold mb-0">
+    <i class="bi bi-building-check me-2 text-info"></i>Unemployment
+    {% if unemp_state %}<span class="badge bg-secondary ms-2 fs-6 align-middle">{{ unemp_state }}</span>{% endif %}
+  </h2>
+  <div class="d-flex gap-2">
+    {% if unemp_url %}
+    <a href="{{ unemp_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-info btn-sm">
+      <i class="bi bi-box-arrow-up-right me-1"></i>Open {{ unemp_state or '' }} Unemployment Site
+    </a>
+    {% endif %}
+    <a href="{{ url_for('settings') }}#section-unemployment" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-gear me-1"></i>Settings
+    </a>
+  </div>
+</div>
+
+{% if not start_date %}
+<!-- No start date configured -->
+<div class="card border-0 shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-calendar-x fs-1 d-block mb-3 opacity-25"></i>
+    <h5>No Benefits Start Date Set</h5>
+    <p class="small mb-4">Configure your benefits start date and claim week in Settings to start tracking.</p>
+    <a href="{{ url_for('settings') }}#section-unemployment" class="btn btn-primary">
+      <i class="bi bi-gear me-2"></i>Configure Unemployment Settings
+    </a>
+  </div>
+</div>
+
+{% else %}
+
+<!-- ── Summary cards ─────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center py-3">
+      <div class="card-body p-2">
+        <div class="text-success fw-bold fs-5">{{ start_date.strftime('%b %d, %Y') }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-calendar-event me-1"></i>Benefits Start</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center py-3">
+      <div class="card-body p-2">
+        <div class="text-danger fw-bold fs-5">{{ end_date.strftime('%b %d, %Y') if end_date else '—' }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-calendar-check me-1"></i>Benefits End</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center py-3">
+      <div class="card-body p-2">
+        <div class="text-primary fw-bold fs-5">{{ periods|length }}</div>
+        <div class="small text-muted mt-1">
+          <i class="bi bi-calendar-week me-1"></i>
+          Claim Weeks
+          <span class="text-secondary">({{ day_names[week_start][:3] }}–{{ day_names[week_end][:3] }})</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center py-3">
+      <div class="card-body p-2">
+        <div class="text-warning fw-bold fs-5">{{ total_applied }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-send me-1"></i>Jobs Applied</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Weekly claim periods ───────────────────────────────────────── -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-transparent border-0 d-flex align-items-center flex-wrap gap-2">
+    <h6 class="fw-bold mb-0 flex-grow-1">
+      <i class="bi bi-list-check me-2 text-primary"></i>Claim Weeks
+      <span class="text-muted fw-normal small ms-2">— required: {{ required_per_week }} application{{ 's' if required_per_week != 1 else '' }} / week</span>
+    </h6>
+    <span class="badge bg-secondary">{{ periods|length }} weeks</span>
+    <div class="app-hint text-info w-100" style="font-size:.72rem;font-style:italic;">
+      <i class="bi bi-info-circle me-1"></i>Each row = one claim period. Click a row to expand and see individual applications. Count badge turns neon ✓ when the weekly requirement is met. <strong>View</strong> opens a printable summary · <strong>Export</strong> downloads as CSV or Excel.
+    </div>
+  </div>
+
+  {% if periods %}
+  <div class="card-body p-0" style="max-height:55vh;overflow-y:auto;">
+    <div class="accordion accordion-flush" id="periodsAccordion">
+      {% for period in periods|reverse %}
+      {% set app_count = period.counted_count %}
+      <div class="accordion-item bg-transparent border-bottom border-secondary border-opacity-25">
+        <h2 class="accordion-header" id="heading{{ period.num }}" style="display:flex;align-items:stretch;">
+          <button class="accordion-button {% if not period.is_current %}collapsed{% endif %} bg-transparent text-white py-2 px-3"
+                  type="button" data-bs-toggle="collapse"
+                  data-bs-target="#period{{ period.num }}"
+                  aria-expanded="{{ 'true' if period.is_current else 'false' }}"
+                  aria-controls="period{{ period.num }}"
+                  style="flex:1 1 auto;width:auto;">
+            <div class="d-flex align-items-center gap-3 w-100 me-2 flex-wrap">
+
+              {# ── Week N badge — color reflects completion status ──── #}
+              {% if period.color_override %}
+                <span class="badge fw-bold week-num-badge"
+                      data-week="{{ period.num }}"
+                      style="min-width:4.5rem;background:{{ period.color_override }};color:#fff;">
+                  Week {{ period.num }}
+                </span>
+              {% elif period.is_current %}
+                <span class="badge fw-bold week-num-badge week-badge-current"
+                      data-week="{{ period.num }}"
+                      data-completion="{{ period.completion }}"
+                      style="min-width:4.5rem;background:#ff6666;color:#000;">
+                  Week {{ period.num }}
+                </span>
+              {% elif period.is_past and not period.met %}
+                <span class="badge fw-bold week-num-badge"
+                      data-week="{{ period.num }}"
+                      style="min-width:4.5rem;background:#ff8c00;color:#000;">
+                  Week {{ period.num }}
+                </span>
+              {% else %}
+                <span class="badge week-num-badge bg-dark border border-secondary text-secondary"
+                      data-week="{{ period.num }}"
+                      style="min-width:4.5rem;">
+                  Week {{ period.num }}
+                </span>
+              {% endif %}
+
+              {# ── Manual color override picker ──────────────────── #}
+              <span class="week-color-wrap d-inline-flex align-items-center gap-1"
+                    title="Override week color" onclick="event.stopPropagation()">
+                <input type="color" class="week-color-input"
+                       data-week="{{ period.num }}"
+                       value="{{ period.color_override or '#6c757d' }}"
+                       style="width:16px;height:16px;padding:0;border:none;border-radius:50%;cursor:pointer;background:none;">
+                {% if period.color_override %}
+                <button type="button" class="btn-close btn-close-white week-color-clear p-0"
+                        data-week="{{ period.num }}"
+                        style="font-size:.55rem;"
+                        title="Clear color override"
+                        onclick="event.stopPropagation()"></button>
+                {% endif %}
+              </span>
+
+              <span class="small fw-semibold">
+                {{ period.start.strftime('%a %b') }} {{ period.start.day }} &ndash; {{ period.end.strftime('%a %b') }} {{ period.end.day }}, {{ period.end.year }}
+              </span>
+              {% if period.is_current %}
+                <span class="badge bg-info text-dark">Current Week</span>
+              {% elif period.is_past %}
+                <span class="badge bg-secondary opacity-50">Past</span>
+              {% endif %}
+
+            </div>
+          </button>
+
+          {# ── Action buttons + count badge — outside the toggle button so they never trigger accordion ── #}
+          <div class="d-flex align-items-center gap-2 px-3 flex-shrink-0 border-start border-secondary border-opacity-25">
+
+            {# View jobs in new tab — neon green #}
+            <a href="{{ url_for('unemployment_week_jobs', start=period.start.isoformat(), end=period.end.isoformat(), week=period.num) }}"
+               target="_blank"
+               class="btn fw-bold"
+               style="background:#39ff14;color:#000;border:none;font-size:.72rem;padding:2px 8px;"
+               title="View jobs applied this week in a new tab">
+              <i class="bi bi-eye me-1"></i>View
+            </a>
+
+            {# Export to CSV / Excel #}
+            <span role="button"
+                  class="btn btn-outline-secondary"
+                  style="font-size:.72rem;padding:2px 8px;"
+                  title="Export this week's jobs to CSV or Excel"
+                  data-week="{{ period.num }}"
+                  data-start="{{ period.start.isoformat() }}"
+                  data-end="{{ period.end.isoformat() }}"
+                  onclick="openExportModal(this)">
+              <i class="bi bi-download me-1"></i>Export
+            </span>
+
+            {# Applied count badge — enlarged only when quota is met #}
+            {% if app_count >= required_per_week %}
+              <span class="badge fw-bold fs-5 py-1 px-2" style="background:#39ff14;color:#000;min-width:4rem;">
+                {{ app_count }} / {{ required_per_week }} ✓
+              </span>
+            {% elif app_count > 0 %}
+              <span class="badge bg-success" style="font-size:.8rem;min-width:4rem;">
+                {{ app_count }} / {{ required_per_week }}
+              </span>
+            {% else %}
+              <span class="badge bg-dark text-secondary border border-secondary" style="font-size:.8rem;min-width:4rem;">
+                0 / {{ required_per_week }}
+              </span>
+            {% endif %}
+
+          </div>
+        </h2>
+        <div id="period{{ period.num }}"
+             class="accordion-collapse collapse {% if period.is_current %}show{% endif %}"
+             data-bs-parent="">
+          <div class="accordion-body pt-1 pb-2 px-3">
+            {% if period.applications %}
+            <div class="table-responsive">
+              <table class="table table-sm table-dark table-hover mb-0 align-middle">
+                <thead>
+                  <tr class="text-muted small border-secondary">
+                    <th style="width:110px;">Applied</th>
+                    <th>Job Title</th>
+                    <th>Company</th>
+                    <th style="width:110px;">Posted On</th>
+                    <th style="width:110px;">Status</th>
+                    <th style="width:40px;"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for app in period.applications %}
+                  <tr{% if app.status == 'withdrawn' %} class="opacity-50"{% endif %}>
+                    <td class="small text-muted">
+                      {% set _d = app.applied_date or app.created_at %}{{ (_d.strftime('%a %b') ~ ' ' ~ _d.day) if _d else '—' }}
+                    </td>
+                    <td>
+                      <a href="{{ url_for('job_detail', job_id=app.job_id) }}"
+                         class="text-decoration-none {% if app.status == 'withdrawn' %}text-muted{% else %}text-white fw-semibold{% endif %} small">
+                        {{ app.job.title if app.job else '—' }}
+                        {% if app.status == 'withdrawn' %}<span class="ms-1 small fst-italic">(not counted)</span>{% endif %}
+                      </a>
+                    </td>
+                    <td class="small text-muted">{{ app.job.company if app.job else '—' }}</td>
+                    <td class="small">
+                      {% if app.job and app.job.posted_date %}
+                        <span data-posted-date="{{ app.job.posted_date.strftime('%Y-%m-%d') }}">{{ app.job.posted_date.strftime('%b %d, %Y') }}</span>
+                      {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td>
+                      <span class="badge bg-{{ app.status_color() }}">{{ app.status_label() }}</span>
+                    </td>
+                    <td>
+                      <a href="{{ url_for('application_detail', app_id=app.id) }}"
+                         class="btn btn-xs btn-outline-secondary">
+                        <i class="bi bi-arrow-right"></i>
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0 py-1">
+              <i class="bi bi-inbox me-1"></i>No job applications recorded this week.
+            </p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% else %}
+  <div class="card-body text-center py-4 text-muted small">
+    <i class="bi bi-calendar-x me-1"></i>
+    {% if start_date > today %}
+      Your benefit period starts on {{ start_date.strftime('%B %d, %Y') }} — claim weeks will appear here once it begins.
+    {% else %}
+      No claim weeks found. Check your start date in Settings.
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Calendar (pure JS — no page navigation) ───────────────────── -->
+{# Embed period metadata + applied-date counts as safe JSON for the JS renderer #}
+<script id="unemp-cal-data" type="application/json">
+{{ {"startDate": start_date.strftime('%Y-%m-%d'), "endDate": (end_date.strftime('%Y-%m-%d') if end_date else ''), "today": today.strftime('%Y-%m-%d'), "uploadDate": (upload_date.strftime('%Y-%m-%d') if upload_date else ''), "periods": cal_periods_data, "appliedDates": cal_applied_data} | tojson }}
+</script>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
+    <div>
+      <h6 class="fw-bold mb-0">
+        <i class="bi bi-calendar3 me-2 text-primary"></i>
+        <span id="cal-month-title">Calendar</span>
+      </h6>
+      <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;margin-top:2px;">
+        Cells are color-coded by claim week status. Neon green = current week · Orange = past week not met · Grey = past week met. Cloud icon = upload day (file your claim). Blue dot = job applied.
+      </div>
+    </div>
+    <div class="d-flex gap-1">
+      <button type="button" id="cal-prev"  class="btn btn-sm btn-outline-secondary" title="Previous month"><i class="bi bi-chevron-left"></i></button>
+      <button type="button" id="cal-today" class="btn btn-sm btn-outline-secondary" title="Jump to today"><i class="bi bi-dot"></i></button>
+      <button type="button" id="cal-next"  class="btn btn-sm btn-outline-secondary" title="Next month"><i class="bi bi-chevron-right"></i></button>
+    </div>
+  </div>
+  <div class="card-body" id="cal-body">
+    <p class="text-muted small mb-0"><i class="bi bi-hourglass me-1"></i>Loading calendar…</p>
+  </div>
+</div>
+
+<!-- ── Export modal ──────────────────────────────────────────── -->
+<div class="modal fade" id="exportWeekModal" tabindex="-1" aria-labelledby="exportWeekModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content bg-dark text-white border border-secondary">
+      <div class="modal-header border-secondary py-2">
+        <h6 class="modal-title fw-bold" id="exportWeekModalLabel">
+          <i class="bi bi-download me-2 text-info"></i>Export Week <span id="exportModalWeekNum"></span> Jobs
+        </h6>
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="exportWeekForm" method="GET" action="{{ url_for('unemployment_week_export') }}" target="_blank">
+        <input type="hidden" name="start" id="exportModalStart">
+        <input type="hidden" name="end"   id="exportModalEnd">
+        <input type="hidden" name="week"  id="exportModalWeek">
+        <div class="modal-body py-3">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">File Name</label>
+            <input type="text" name="filename" id="exportModalFilename"
+                   class="form-control form-control-sm bg-dark text-white border-secondary"
+                   placeholder="week_applications">
+          </div>
+          <div class="mb-0">
+            <label class="form-label small fw-semibold">Format</label>
+            <div class="d-flex gap-4 mt-1">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="format" value="csv" id="exportFmtCsv" checked>
+                <label class="form-check-label small" for="exportFmtCsv">
+                  <i class="bi bi-filetype-csv me-1 text-success"></i>CSV
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="format" value="excel" id="exportFmtExcel">
+                <label class="form-check-label small" for="exportFmtExcel">
+                  <i class="bi bi-file-earmark-spreadsheet me-1 text-success"></i>Excel (.xlsx)
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm" data-bs-dismiss="modal">
+            <i class="bi bi-download me-1"></i>Download
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endif %}{# start_date #}
+{% endblock %}{# content #}
+
+{% block scripts %}
+<script>
+// ── Export modal helper ───────────────────────────────────────────────────
+function openExportModal(btn) {
+  var weekNum = btn.dataset.week || '';
+  document.getElementById('exportModalWeekNum').textContent = weekNum;
+  document.getElementById('exportModalStart').value = btn.dataset.start || '';
+  document.getElementById('exportModalEnd').value   = btn.dataset.end   || '';
+  document.getElementById('exportModalWeek').value  = weekNum;
+  // Default filename: "week_<N>_applications"
+  document.getElementById('exportModalFilename').value =
+    weekNum ? 'week_' + weekNum + '_applications' : 'week_applications';
+  var modal = new bootstrap.Modal(document.getElementById('exportWeekModal'));
+  modal.show();
+}
+
+(function () {
+  // ── BFCache: reset scroll on back-button restore ──────────────────────
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) {
+      var pc = document.getElementById('page-content');
+      if (pc) pc.scrollTop = 0;
+    }
+  });
+
+  // ── Current-week badge: interpolate light-red → neon-green ───────────
+  function lerpColor(a, b, t) {
+    var ar=parseInt(a.slice(1,3),16), ag=parseInt(a.slice(3,5),16), ab=parseInt(a.slice(5,7),16);
+    var br=parseInt(b.slice(1,3),16), bg=parseInt(b.slice(3,5),16), bb=parseInt(b.slice(5,7),16);
+    return 'rgb('+Math.round(ar+(br-ar)*t)+','+Math.round(ag+(bg-ag)*t)+','+Math.round(ab+(bb-ab)*t)+')';
+  }
+  document.querySelectorAll('.week-badge-current').forEach(function (el) {
+    el.style.background = lerpColor('#ff6666', '#39ff14', parseFloat(el.dataset.completion || '0'));
+    el.style.color = '#000';
+  });
+
+  // ── Manual color picker: save via AJAX ───────────────────────────────
+  function saveWeekColor(weekNum, color) {
+    fetch('/unemployment/week-color', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body:    'week_num=' + encodeURIComponent(weekNum) + '&color=' + encodeURIComponent(color)
+    }).then(function () { location.reload(); });
+  }
+  document.querySelectorAll('.week-color-input').forEach(function (inp) {
+    inp.addEventListener('change', function () { saveWeekColor(this.dataset.week, this.value); });
+  });
+  document.querySelectorAll('.week-color-clear').forEach(function (btn) {
+    btn.addEventListener('click', function () { saveWeekColor(this.dataset.week, ''); });
+  });
+
+  // ── Pure-JS calendar (zero page navigation) ──────────────────────────
+  (function () {
+    var el = document.getElementById('unemp-cal-data');
+    if (!el) return;
+    var data;
+    try { data = JSON.parse(el.textContent); } catch (e) { return; }
+
+    var todayStr  = data.today;
+    var startStr  = data.startDate  || '';
+    var endStr    = data.endDate    || '';
+
+    // Upload icon: day AFTER each claim week's end date
+    var _uploadDates = {};
+    (data.periods || []).forEach(function (p) {
+      if (p.end) {
+        var ep = parseLocalDate(p.end);
+        ep.setDate(ep.getDate() + 1);
+        _uploadDates[dateStr(ep)] = true;
+      }
+    });
+
+    function parseLocalDate(s) {
+      var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]);
+    }
+    var todayDate = parseLocalDate(todayStr);
+    var curYear   = todayDate.getFullYear();
+    var curMonth  = todayDate.getMonth(); // 0-indexed
+
+    function pad2(n) { return (n < 10 ? '0' : '') + n; }
+    function dateStr(d) { return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+
+    function getPeriod(ds) {
+      for (var i = 0; i < data.periods.length; i++) {
+        var p = data.periods[i];
+        if (ds >= p.start && ds <= p.end) return p;
+      }
+      return null;
+    }
+
+    // Colour helpers
+    function hexRGBA(hex, a) {
+      return 'rgba('+parseInt(hex.slice(1,3),16)+','+parseInt(hex.slice(3,5),16)+','+parseInt(hex.slice(5,7),16)+','+a+')';
+    }
+    function getDayBg(period, isUpload) {
+      if (isUpload) return 'rgba(255,193,7,0.30)';       // amber — upload reminder
+      if (!period) return '';
+      if (period.colorOverride) return hexRGBA(period.colorOverride, 0.28);
+      if (period.isCurrent)     return 'rgba(57,255,20,0.55)';   // neon green — current week
+      if (period.isPast && !period.met) return 'rgba(255,140,0,0.22)';
+      if (period.isPast &&  period.met) return 'rgba(80,82,95,0.28)';
+      return '';
+    }
+
+    var MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+
+    function render(year, month) {
+      document.getElementById('cal-month-title').textContent = MONTHS[month] + ' ' + year;
+
+      var firstDay = new Date(year, month, 1);
+      var lastDay  = new Date(year, month + 1, 0);
+      // Monday-start: Sun=0 → pad 6; Mon=1 → pad 0; Sat=6 → pad 5
+      var startPad = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+      var endPad   = lastDay.getDay()  === 0 ? 0 : 7 - lastDay.getDay();
+      var calStart = new Date(firstDay); calStart.setDate(1 - startPad);
+      var calEnd   = new Date(lastDay);  calEnd.setDate(lastDay.getDate() + endPad);
+
+      // Legend
+      var h = '<div class="d-flex flex-wrap gap-3 mb-3 small">';
+      h += '<span><span class="badge bg-success px-2 me-1">&#9679;</span>Benefits Start</span>';
+      h += '<span><span class="badge bg-danger  px-2 me-1">&#9679;</span>Benefits End</span>';
+      h += '<span><span class="badge bg-primary px-2 me-1">&#9679;</span>Job Applied</span>';
+      // Today: red filled badge matching the cell style
+      h += '<span class="d-flex align-items-center gap-1">'
+         + '<span class="badge bg-danger rounded-circle d-inline-flex align-items-center justify-content-center fw-bold"'
+         + ' style="width:18px;height:18px;font-size:.65rem;">T</span>Today</span>';
+      h += '<span class="d-flex align-items-center gap-1"><span style="display:inline-block;width:14px;height:14px;'
+         + 'background:rgba(80,82,95,0.35);border-radius:3px;"></span>Week met</span>';
+      h += '<span class="d-flex align-items-center gap-1"><span style="display:inline-block;width:14px;height:14px;'
+         + 'background:rgba(255,140,0,0.30);border-radius:3px;"></span>Week not met</span>';
+      // Current week: neon green swatch
+      h += '<span class="d-flex align-items-center gap-1"><span style="display:inline-block;width:14px;height:14px;'
+         + 'background:rgba(57,255,20,0.55);border-radius:3px;"></span>Current week</span>';
+      h += '<span class="d-flex align-items-center gap-1">'
+         + '<span style="font-size:.75rem;">&#128681;</span> Week start &nbsp;'
+         + '<span style="font-size:.75rem;">&#127937;</span> Week end &nbsp;'
+         + '<i class="bi bi-cloud-upload-fill" style="color:#ffc107;font-size:.8rem;"></i> Upload day</span>';
+      h += '</div>';
+
+      // Grid
+      h += '<div class="table-responsive">'
+         + '<table class="table table-bordered mb-0" style="table-layout:fixed;min-width:420px;">'
+         + '<thead><tr class="text-muted small text-center">';
+      ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(function (d) {
+        h += '<th class="py-1">' + d + '</th>';
+      });
+      h += '</tr></thead><tbody>';
+
+      var cur = new Date(calStart);
+      while (cur <= calEnd) {
+        h += '<tr>';
+        for (var i = 0; i < 7; i++) {
+          var ds              = dateStr(cur);
+          var inMonth         = cur.getMonth() === month;
+          var isToday         = ds === todayStr;
+          var isSt            = ds === startStr;
+          var isEn            = ds === endStr;
+          var isUpload        = !!_uploadDates[ds];
+          var apps            = data.appliedDates[ds] || 0;
+          var period          = getPeriod(ds);
+          var isWeekStart     = !!(period && period.isCurrent && ds === period.start);
+          var isWeekEnd       = !!(period && period.isCurrent && ds === period.end);
+          var bg              = getDayBg(period, isUpload);
+          var dayNum          = cur.getDate();
+          // Current week cells get black text (neon bg is light enough)
+          var cellColor       = (period && period.isCurrent && !isUpload) ? 'color:#000;' : '';
+
+          // Cell: position:relative so corner icons can be placed absolutely
+          h += '<td class="text-center' + (inMonth ? '' : ' opacity-25') + '" '
+             + 'style="position:relative;height:56px;vertical-align:middle;padding:2px 4px;'
+             + (bg ? 'background:' + bg + ';' : '') + cellColor + '">';
+
+          // Corner icon — top-right of cell (only one can show per cell; priority: upload > end flag > start flag)
+          if (isUpload) {
+            h += '<i class="bi bi-cloud-upload-fill" style="position:absolute;top:3px;right:4px;font-size:.75rem;color:#ffc107;" title="Upload jobs to unemployment site"></i>';
+          } else if (isWeekEnd) {
+            h += '<span style="position:absolute;top:2px;right:3px;font-size:.75rem;line-height:1;" title="Claim week end">&#127937;</span>';
+          } else if (isWeekStart) {
+            h += '<span style="position:absolute;top:2px;right:3px;font-size:.75rem;line-height:1;" title="Claim week start">&#128681;</span>';
+          }
+
+          h += '<div class="d-flex flex-column align-items-center gap-1">';
+
+          // Day number badge
+          if (isSt) {
+            h += '<span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center fw-bold"'
+               + ' style="width:28px;height:28px;font-size:.8rem;">' + dayNum + '</span>';
+          } else if (isEn) {
+            h += '<span class="badge bg-danger rounded-circle d-flex align-items-center justify-content-center fw-bold"'
+               + ' style="width:28px;height:28px;font-size:.8rem;">' + dayNum + '</span>';
+          } else if (isToday) {
+            // Today: solid red circle
+            h += '<span class="badge bg-danger rounded-circle d-flex align-items-center justify-content-center fw-bold"'
+               + ' style="width:28px;height:28px;font-size:.8rem;">' + dayNum + '</span>';
+          } else {
+            h += '<span style="font-size:.85rem;line-height:28px;' + cellColor + '">' + dayNum + '</span>';
+          }
+
+          // Applied dots / count
+          if (apps === 1) {
+            h += '<span class="rounded-circle bg-primary" style="width:7px;height:7px;display:block;" title="1 job applied"></span>';
+          } else if (apps > 1) {
+            h += '<span class="badge bg-primary rounded-pill" style="font-size:.6rem;padding:1px 4px;" title="' + apps + ' jobs applied">' + apps + '</span>';
+          }
+
+          h += '</div></td>';
+          cur.setDate(cur.getDate() + 1);
+        }
+        h += '</tr>';
+      }
+      h += '</tbody></table></div>';
+      document.getElementById('cal-body').innerHTML = h;
+    }
+
+    // Initial render + navigation (no page load — never triggers scroll)
+    render(curYear, curMonth);
+    document.getElementById('cal-prev').addEventListener('click', function () {
+      if (--curMonth < 0) { curMonth = 11; curYear--; }
+      render(curYear, curMonth);
+    });
+    document.getElementById('cal-next').addEventListener('click', function () {
+      if (++curMonth > 11) { curMonth = 0; curYear++; }
+      render(curYear, curMonth);
+    });
+    document.getElementById('cal-today').addEventListener('click', function () {
+      curYear  = todayDate.getFullYear();
+      curMonth = todayDate.getMonth();
+      render(curYear, curMonth);
+    });
+  }());
+}());
+</script>
+{% endblock %}{# scripts #}
