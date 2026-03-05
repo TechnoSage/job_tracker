@@ -1,0 +1,618 @@
+<!doctype html>
+<!--
+  Job Tracker — Customer Support Page
+  Standalone Flask template served at /support
+  Dark/light mode inherits from localStorage 'app-theme' (same key as main app)
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Customer Support — Job Tracker</title>
+  <!-- Anti-flash: apply saved theme before CSS renders -->
+  <script>(function(){var t=localStorage.getItem('app-theme')||'dark';document.documentElement.setAttribute('data-bs-theme',t);})();</script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/app.css') }}" rel="stylesheet">
+  <style>
+    /* standalone page — allow scrolling */
+    html, body { height: auto !important; overflow: auto !important; }
+    [data-bs-theme="dark"]  body { background: #111317; }
+    [data-bs-theme="light"] body { background: #f0f2f5; }
+
+    .support-topbar {
+      background: #1a1d23;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    /* Quick-action card icon circles */
+    .action-icon {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    /* Accordion tweaks for dark/light */
+    [data-bs-theme="dark"] .accordion-item  { background: #1c1f24; border-color: rgba(255,255,255,.08); }
+    [data-bs-theme="dark"] .accordion-button { background: #23272b; color: #e9ecef; }
+    [data-bs-theme="dark"] .accordion-button:not(.collapsed) { background: #2c3036; color: #fff; box-shadow: none; }
+    [data-bs-theme="dark"] .accordion-button::after { filter: invert(1); }
+    [data-bs-theme="dark"] .accordion-body  { background: #1c1f24; color: #cdd3da; }
+
+    /* system info pre block */
+    #sysInfo {
+      font-size: 0.72rem;
+      line-height: 1.6;
+      word-break: break-all;
+    }
+    [data-bs-theme="dark"]  #sysInfo { background: #0d0f12; color: #8ab4f8; border: 1px solid #333; }
+    [data-bs-theme="light"] #sysInfo { background: #f0f2f5; color: #374151; border: 1px solid #dee2e6; }
+
+    .section-divider {
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent);
+      margin: 2.5rem 0 2rem;
+    }
+    [data-bs-theme="light"] .section-divider {
+      background: linear-gradient(90deg, transparent, rgba(0,0,0,.07), transparent);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Top bar ─────────────────────────────────────────── -->
+<nav class="support-topbar navbar px-4 py-2">
+  <a class="navbar-brand d-flex align-items-center gap-2 text-white text-decoration-none" href="/">
+    <i class="bi bi-briefcase-fill text-primary"></i>
+    <span class="fw-bold">Job Tracker</span>
+    <span class="text-secondary small ms-1">/ Support</span>
+  </a>
+  <div class="ms-auto d-flex align-items-center gap-2">
+    <a href="/" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Back to App
+    </a>
+    <a href="{{ url_for('help_page') }}" target="_blank" class="btn btn-sm btn-outline-info" title="Help & Documentation">
+      <i class="bi bi-book me-1"></i>Docs
+    </a>
+    <div class="border-start border-secondary" style="height:1.5rem;opacity:.35"></div>
+    <button id="darkModeBtn" class="btn btn-sm btn-outline-secondary" title="Toggle dark / light mode">
+      <i id="darkModeIcon" class="bi bi-moon-fill"></i>
+    </button>
+  </div>
+</nav>
+
+<!-- ── Page content ────────────────────────────────────── -->
+<div class="container-fluid px-4 py-4" style="max-width:1200px;">
+
+  <!-- Page header -->
+  <div class="mb-4">
+    <h2 class="fw-bold mb-1">
+      <i class="bi bi-headset me-2 text-warning"></i>Customer Support
+    </h2>
+    <p class="text-muted mb-0">Get help, report bugs, request features, or contact us directly.</p>
+  </div>
+
+  <!-- ── Quick action cards ───────────────────────────── -->
+  <div class="row g-3 mb-4">
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100">
+        <div class="card-body d-flex flex-column align-items-center text-center py-4 gap-2">
+          <div class="action-icon bg-info bg-opacity-15 text-info">
+            <i class="bi bi-envelope-fill"></i>
+          </div>
+          <h6 class="fw-bold mb-0">Email Support</h6>
+          <p class="text-muted small mb-0">Send us a message and we'll get back to you.</p>
+          <a href="#contact-section" class="btn btn-sm btn-outline-info mt-auto">Contact Us</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100">
+        <div class="card-body d-flex flex-column align-items-center text-center py-4 gap-2">
+          <div class="action-icon bg-danger bg-opacity-15 text-danger">
+            <i class="bi bi-bug-fill"></i>
+          </div>
+          <h6 class="fw-bold mb-0">Report a Bug</h6>
+          <p class="text-muted small mb-0">Found something broken? Let us know with details.</p>
+          <a href="https://github.com/TechnoSage/job_tracker/issues/new?labels=bug&title=%5BBug%5D+" target="_blank" class="btn btn-sm btn-outline-danger mt-auto">
+            <i class="bi bi-github me-1"></i>Report Bug
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100">
+        <div class="card-body d-flex flex-column align-items-center text-center py-4 gap-2">
+          <div class="action-icon bg-warning bg-opacity-15 text-warning">
+            <i class="bi bi-stars"></i>
+          </div>
+          <h6 class="fw-bold mb-0">Request a Feature</h6>
+          <p class="text-muted small mb-0">Have an idea to improve the app? We'd love to hear it.</p>
+          <a href="https://github.com/TechnoSage/job_tracker/issues/new?labels=enhancement&title=%5BFeature%5D+" target="_blank" class="btn btn-sm btn-outline-warning mt-auto">
+            <i class="bi bi-github me-1"></i>Request Feature
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100">
+        <div class="card-body d-flex flex-column align-items-center text-center py-4 gap-2">
+          <div class="action-icon bg-success bg-opacity-15 text-success">
+            <i class="bi bi-book-fill"></i>
+          </div>
+          <h6 class="fw-bold mb-0">Documentation</h6>
+          <p class="text-muted small mb-0">Browse the full help docs, tutorials, and tips.</p>
+          <a href="{{ url_for('help_page') }}" target="_blank" class="btn btn-sm btn-outline-success mt-auto">View Docs</a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /quick actions -->
+
+  <div class="section-divider"></div>
+
+  <!-- ── Contact form + Troubleshooting ────────────────── -->
+  <div class="row g-4 mb-4" id="contact-section">
+
+    <!-- Contact form -->
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header bg-transparent border-0 pb-0">
+          <h6 class="fw-bold mb-0">
+            <i class="bi bi-envelope me-1 text-secondary"></i>Send a Message
+          </h6>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            Fill in the form below — clicking <strong>Send</strong> opens your default email client with the message pre-filled.
+            Or click <strong>Post on GitHub</strong> to open a public issue.
+          </p>
+          <div class="row g-2 mb-2">
+            <div class="col-sm-6">
+              <label class="form-label form-label-sm">Your Name</label>
+              <input type="text" class="form-control form-control-sm" id="sName" placeholder="Jane Smith">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label form-label-sm">Email Address</label>
+              <input type="email" class="form-control form-control-sm" id="sEmail" placeholder="jane@example.com">
+            </div>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-sm-6">
+              <label class="form-label form-label-sm">Category</label>
+              <select class="form-select form-select-sm" id="sCategory">
+                <option value="general">General Enquiry</option>
+                <option value="bug">Bug Report</option>
+                <option value="feature">Feature Request</option>
+                <option value="account">Account / Settings</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label form-label-sm">Subject</label>
+              <input type="text" class="form-control form-control-sm" id="sSubject" placeholder="Brief description">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label form-label-sm">Message</label>
+            <textarea class="form-control form-control-sm" id="sMessage" rows="5"
+              placeholder="Describe your issue in detail. For bugs, include steps to reproduce and what you expected to happen…"></textarea>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="includeSysInfo" checked>
+            <label class="form-check-label small" for="includeSysInfo">
+              Attach system information (helps with debugging)
+            </label>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-primary btn-sm" onclick="sendSupportEmail()">
+              <i class="bi bi-send me-1"></i>Send via Email Client
+            </button>
+            <a id="ghIssueBtn" href="https://github.com/TechnoSage/job_tracker/issues/new" target="_blank"
+               class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-github me-1"></i>Post on GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Troubleshooting quick-help -->
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header bg-transparent border-0 pb-0">
+          <h6 class="fw-bold mb-0">
+            <i class="bi bi-wrench me-1 text-secondary"></i>Common Issues
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="accordion accordion-flush" id="quickFix">
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-2 small fw-semibold" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#qf1">
+                  The scheduler isn't running
+                </button>
+              </h2>
+              <div id="qf1" class="accordion-collapse collapse" data-bs-parent="#quickFix">
+                <div class="accordion-body small py-2">
+                  Go to <strong>Settings → Scheduler</strong> and confirm it is enabled.
+                  Check that <code>scheduler_daemon.pid</code> exists in the app directory.
+                  Restart the daemon from the Build Dashboard if needed.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-2 small fw-semibold" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#qf2">
+                  Job scores are showing as 0 or N/A
+                </button>
+              </h2>
+              <div id="qf2" class="accordion-collapse collapse" data-bs-parent="#quickFix">
+                <div class="accordion-body small py-2">
+                  No skills have been configured. Go to <strong>Settings → Skills</strong>
+                  and add the keywords you want to match against. Re-run a scan to update scores.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-2 small fw-semibold" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#qf3">
+                  Scans are timing out or very slow
+                </button>
+              </h2>
+              <div id="qf3" class="accordion-collapse collapse" data-bs-parent="#quickFix">
+                <div class="accordion-body small py-2">
+                  Reduce the number of active sources in <strong>Sources</strong>.
+                  Check your internet connection. If a specific source always times out,
+                  disable it — the site may be blocking automated requests.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-2 small fw-semibold" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#qf4">
+                  How do I reset / clear all job data?
+                </button>
+              </h2>
+              <div id="qf4" class="accordion-collapse collapse" data-bs-parent="#quickFix">
+                <div class="accordion-body small py-2">
+                  Stop the app, delete <code>instance/jobs.db</code>, then restart.
+                  All jobs and scan history will be cleared. Settings and skills are stored
+                  separately and are unaffected.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-2 small fw-semibold" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#qf5">
+                  Email notifications aren't being sent
+                </button>
+              </h2>
+              <div id="qf5" class="accordion-collapse collapse" data-bs-parent="#quickFix">
+                <div class="accordion-body small py-2">
+                  Go to <strong>Settings → Notifications</strong> and verify your SMTP
+                  credentials. Use <em>Test Email</em> to confirm the connection works.
+                  Check that your email provider allows app passwords or SMTP access.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-2 small fw-semibold" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#qf6">
+                  How do I export my job data?
+                </button>
+              </h2>
+              <div id="qf6" class="accordion-collapse collapse" data-bs-parent="#quickFix">
+                <div class="accordion-body small py-2">
+                  Use <strong>Analytics → Export</strong> to download a CSV of your jobs.
+                  For a full database backup, copy <code>instance/jobs.db</code> to a safe location.
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /accordion -->
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /contact + troubleshooting row -->
+
+  <div class="section-divider"></div>
+
+  <!-- ── Bug reports & Feature requests ────────────────── -->
+  <div class="row g-4 mb-4">
+
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header bg-transparent border-0 pb-0">
+          <h6 class="fw-bold mb-0">
+            <i class="bi bi-bug-fill me-1 text-danger"></i>Reporting a Bug
+          </h6>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-2">
+            The more detail you provide, the faster we can fix it. A good bug report includes:
+          </p>
+          <ul class="small mb-3" style="line-height:1.9;">
+            <li>The exact steps to reproduce the issue</li>
+            <li>What you expected to happen</li>
+            <li>What actually happened (error message / screenshot)</li>
+            <li>Your browser, OS, and app version</li>
+            <li>Whether the issue is consistent or intermittent</li>
+          </ul>
+          <a href="https://github.com/TechnoSage/job_tracker/issues/new?labels=bug&title=%5BBug%5D+"
+             target="_blank" class="btn btn-sm btn-danger">
+            <i class="bi bi-github me-1"></i>Open Bug Report on GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header bg-transparent border-0 pb-0">
+          <h6 class="fw-bold mb-0">
+            <i class="bi bi-lightbulb-fill me-1 text-warning"></i>Requesting a Feature
+          </h6>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-2">
+            Feature requests are always welcome. A great request explains:
+          </p>
+          <ul class="small mb-3" style="line-height:1.9;">
+            <li>The problem or workflow it solves</li>
+            <li>How you imagine it working</li>
+            <li>Any examples from other tools you've seen</li>
+            <li>How often you'd use it (daily, occasionally)</li>
+          </ul>
+          <a href="https://github.com/TechnoSage/job_tracker/issues/new?labels=enhancement&title=%5BFeature%5D+"
+             target="_blank" class="btn btn-sm btn-warning text-dark">
+            <i class="bi bi-github me-1"></i>Submit Feature Request on GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /bug + feature row -->
+
+  <div class="section-divider"></div>
+
+  <!-- ── FAQ ─────────────────────────────────────────────── -->
+  <div class="card mb-4">
+    <div class="card-header bg-transparent border-0 pb-0">
+      <h6 class="fw-bold mb-0">
+        <i class="bi bi-question-circle me-1 text-secondary"></i>Frequently Asked Questions
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="accordion accordion-flush" id="faqAccordion">
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed small fw-semibold" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#faq1">
+              Is my data stored in the cloud?
+            </button>
+          </h2>
+          <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body small">
+              No. Job Tracker stores all data locally in <code>instance/jobs.db</code> on your machine.
+              Nothing is sent to external servers. Your job data, skills, and settings remain entirely private.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed small fw-semibold" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#faq2">
+              How do I add a new job source?
+            </button>
+          </h2>
+          <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body small">
+              Go to <strong>Sources</strong> in the sidebar. Click <strong>Add Source</strong>,
+              enter the URL and a label, then save. The source will be included in the next scan.
+              You can enable or disable individual sources at any time.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed small fw-semibold" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#faq3">
+              Can I run the app on a schedule automatically?
+            </button>
+          </h2>
+          <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body small">
+              Yes. Enable the built-in scheduler under <strong>Settings → Scheduler</strong>.
+              The scheduler daemon runs in the background and performs scans at the configured interval
+              even when you have the browser closed. Start it from the <strong>Build Dashboard</strong>.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed small fw-semibold" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#faq4">
+              How are job match scores calculated?
+            </button>
+          </h2>
+          <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body small">
+              Each job description is compared against the skills list you define in
+              <strong>Settings → Skills</strong>. The score is the percentage of your skills
+              that appear in the job description. A score of 80+ (neon green) is a strong match;
+              50–79 (blue) is a partial match; below 50 (grey) is a weak match.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed small fw-semibold" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#faq5">
+              How do I update the app?
+            </button>
+          </h2>
+          <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body small">
+              Pull the latest changes from the <code>main</code> branch on GitHub:
+              <code>git pull origin main</code>. Then restart the app.
+              Check the <a href="https://github.com/TechnoSage/job_tracker/releases" target="_blank"
+              class="text-info">Releases page</a> for changelogs.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed small fw-semibold" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#faq6">
+              Where can I see all open issues and planned features?
+            </button>
+          </h2>
+          <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body small">
+              Visit the
+              <a href="https://github.com/TechnoSage/job_tracker/issues" target="_blank" class="text-info">
+                GitHub Issues page
+              </a>
+              to view all open bugs and feature requests, vote on existing ones, or add new ones.
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /faqAccordion -->
+    </div>
+  </div><!-- /FAQ card -->
+
+  <!-- ── System information ───────────────────────────── -->
+  <div class="card mb-5">
+    <div class="card-header bg-transparent border-0 pb-0 d-flex justify-content-between align-items-center">
+      <h6 class="fw-bold mb-0">
+        <i class="bi bi-info-circle me-1 text-secondary"></i>System Information
+      </h6>
+      <button class="btn btn-xs btn-outline-secondary" onclick="copySystemInfo()" id="copyBtn">
+        <i class="bi bi-clipboard me-1"></i>Copy
+      </button>
+    </div>
+    <div class="card-body">
+      <p class="text-muted small mb-2">Include this when filing a bug report — it helps us reproduce the issue faster.</p>
+      <pre id="sysInfo" class="rounded p-3 mb-0"></pre>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  // ── Dark / light mode ────────────────────────────────
+  var darkBtn  = document.getElementById('darkModeBtn');
+  var darkIcon = document.getElementById('darkModeIcon');
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-bs-theme', theme);
+    localStorage.setItem('app-theme', theme);
+    darkIcon.className = theme === 'dark' ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
+    darkBtn.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+  }
+  applyTheme(document.documentElement.getAttribute('data-bs-theme') || 'dark');
+  darkBtn.addEventListener('click', function () {
+    applyTheme(document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  // ── System info ──────────────────────────────────────
+  var info = [
+    'App:      Job Tracker',
+    'App URL:  ' + window.location.origin,
+    'Browser:  ' + navigator.userAgent,
+    'Platform: ' + navigator.platform,
+    'Theme:    ' + (localStorage.getItem('app-theme') || 'dark'),
+    'Date:     ' + new Date().toISOString()
+  ].join('\n');
+  document.getElementById('sysInfo').textContent = info;
+
+  // ── Update GitHub issue link based on form category ──
+  var catUrls = {
+    general: 'https://github.com/TechnoSage/job_tracker/issues/new?labels=question&title=%5BSupport%5D+',
+    bug:     'https://github.com/TechnoSage/job_tracker/issues/new?labels=bug&title=%5BBug%5D+',
+    feature: 'https://github.com/TechnoSage/job_tracker/issues/new?labels=enhancement&title=%5BFeature%5D+',
+    account: 'https://github.com/TechnoSage/job_tracker/issues/new?labels=question&title=%5BAccount%5D+',
+    other:   'https://github.com/TechnoSage/job_tracker/issues/new?labels=question&title=%5BEnquiry%5D+'
+  };
+  document.getElementById('sCategory').addEventListener('change', function () {
+    document.getElementById('ghIssueBtn').href = catUrls[this.value] || catUrls.general;
+  });
+
+});
+
+// ── Send via email client ─────────────────────────────
+function sendSupportEmail() {
+  var name     = document.getElementById('sName').value.trim();
+  var email    = document.getElementById('sEmail').value.trim();
+  var category = document.getElementById('sCategory').value;
+  var subject  = document.getElementById('sSubject').value.trim();
+  var message  = document.getElementById('sMessage').value.trim();
+  var attach   = document.getElementById('includeSysInfo').checked;
+
+  var catLabel = {
+    general: 'General Enquiry', bug: 'Bug Report',
+    feature: 'Feature Request', account: 'Account / Settings', other: 'Other'
+  }[category] || 'Enquiry';
+
+  if (!subject) { alert('Please enter a subject.'); return; }
+  if (!message) { alert('Please enter a message.'); return; }
+
+  var fullSubject = '[Job Tracker ' + catLabel + '] ' + subject;
+  var body = (name  ? 'From: ' + name  + (email ? ' <' + email + '>' : '') + '\n' : '')
+           + 'Category: ' + catLabel + '\n\n'
+           + message;
+  if (attach) {
+    body += '\n\n---\nSystem Information:\n' + document.getElementById('sysInfo').textContent;
+  }
+
+  window.location.href = 'mailto:support@technosagedv.com'
+    + '?subject=' + encodeURIComponent(fullSubject)
+    + '&body='    + encodeURIComponent(body);
+}
+
+// ── Copy system info ──────────────────────────────────
+function copySystemInfo() {
+  var text = document.getElementById('sysInfo').textContent;
+  var btn  = document.getElementById('copyBtn');
+  navigator.clipboard.writeText(text).then(function () {
+    btn.innerHTML = '<i class="bi bi-clipboard-check me-1"></i>Copied!';
+    setTimeout(function () {
+      btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy';
+    }, 2000);
+  });
+}
+</script>
+</body>
+</html>

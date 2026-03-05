@@ -92,6 +92,7 @@ def create_app(config_class=Config):
             "ALTER TABLE jobs ADD COLUMN company_phone VARCHAR(100)",
             "ALTER TABLE scraper_sources ADD COLUMN health_status VARCHAR(20)",
             "ALTER TABLE scraper_sources ADD COLUMN health_checked_at DATETIME",
+            "ALTER TABLE notifications ADD COLUMN is_acknowledged BOOLEAN DEFAULT 0",
         ]:
             try:
                 db.session.execute(db.text(_sql))
@@ -182,6 +183,7 @@ def _seed_default_settings(app):
         ("posted_date_range1_color", "#28a745",  "Color for recently posted jobs (range 1)"),
         ("posted_date_range2_days",  "30",       "Days threshold for second posted-date color range"),
         ("posted_date_range2_color", "#fd7e14",  "Color for moderately old job postings (range 2)"),
+        ("scan_timeout_minutes",     "30",       "Max scan duration in minutes; daemon restarts on timeout (0 = disabled)"),
     ]
     for key, value, description in defaults:
         if not Setting.query.filter_by(key=key).first():
@@ -814,6 +816,8 @@ def _register_routes(app):
             ScanLog.query.delete()
             Application.query.delete()
             Job.query.delete()
+            # Reset source job-count so the next scan is treated as a fresh start
+            ScraperSource.query.update({ScraperSource.last_jobs_found: 0})
             db.session.commit()
 
             # Reset SQLite auto-increment counters
@@ -850,11 +854,13 @@ def _register_routes(app):
             # Load current skill settings
             use_resume = Setting.get("use_resume_skills", "false") == "true"
             if use_resume:
-                required_skills = json.loads(Setting.get("resume_required_skills") or "[]")
-                preferred_skills = json.loads(Setting.get("resume_preferred_skills") or "[]")
+                raw_req  = Setting.get("resume_required_skills") or ""
+                raw_pref = Setting.get("resume_preferred_skills") or ""
             else:
-                required_skills = json.loads(Setting.get("required_skills") or "[]")
-                preferred_skills = json.loads(Setting.get("preferred_skills") or "[]")
+                raw_req  = Setting.get("required_skills") or ""
+                raw_pref = Setting.get("preferred_skills") or ""
+            required_skills  = [s.strip() for s in raw_req.split(",")  if s.strip()]
+            preferred_skills = [s.strip() for s in raw_pref.split(",") if s.strip()]
 
             jobs = Job.query.all()
             rescored = 0
@@ -1238,6 +1244,7 @@ def _register_routes(app):
                 "unemployment_required_per_week",
                 "posted_date_range1_days", "posted_date_range1_color",
                 "posted_date_range2_days", "posted_date_range2_color",
+                "scan_timeout_minutes",
             ]
             for key in updatable:
                 if key in request.form:
@@ -1692,6 +1699,18 @@ def _register_routes(app):
         } for j in jobs])
 
     # ------------------------------------------------------------------
+    # Help / Documentation page
+    # ------------------------------------------------------------------
+
+    @app.route("/help")
+    def help_page():
+        return render_template("help.html")
+
+    @app.route("/support")
+    def support_page():
+        return render_template("support.html")
+
+    # ------------------------------------------------------------------
     # Server Log page
     # ------------------------------------------------------------------
 
@@ -1748,6 +1767,14 @@ def _register_routes(app):
     def api_notification_count():
         count = Notification.query.filter_by(is_read=False, is_archived=False).count()
         return jsonify({"unread": count})
+
+    @app.route("/api/notifications/<int:notif_id>/acknowledge", methods=["POST"])
+    def api_notification_acknowledge(notif_id):
+        notif = Notification.query.get_or_404(notif_id)
+        data = request.get_json(silent=True) or {}
+        notif.is_acknowledged = data.get("acknowledged", True)
+        db.session.commit()
+        return jsonify({"ok": True, "is_acknowledged": notif.is_acknowledged})
 
     @app.route("/api/skills-taxonomy")
     def api_skills_taxonomy():

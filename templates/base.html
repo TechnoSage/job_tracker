@@ -16,8 +16,10 @@
     .app-hint          { display: none !important; }
     body.hints-on .app-hint { display: revert !important; }
   </style>
+  <!-- Apply saved theme before render to avoid flash -->
+  <script>(function(){var t=localStorage.getItem('app-theme')||'dark';document.documentElement.setAttribute('data-bs-theme',t);})();</script>
 </head>
-<body>
+<body {% block body_attrs %}{% endblock %}>
 
 <!-- ========= SIDEBAR ========= -->
 <div class="d-flex" id="wrapper">
@@ -186,9 +188,6 @@
         </div>
         <!-- ── end scan / clock ── -->
 
-        <button class="btn btn-sm btn-outline-secondary" id="hintsToggleBtn" title="Hints off — click to turn on">
-          <i class="bi bi-question-circle"></i>
-        </button>
         <a href="{{ url_for('notifications') }}" class="btn btn-sm btn-outline-secondary position-relative">
           <i class="bi bi-bell"></i>
           {% if unread_count > 0 %}
@@ -199,6 +198,20 @@
         </a>
         <a href="{{ url_for('settings') }}" class="btn btn-sm btn-outline-secondary">
           <i class="bi bi-gear"></i>
+        </a>
+        <button class="btn btn-sm btn-outline-secondary" id="darkModeBtn" title="Toggle dark / light mode">
+          <i id="darkModeIcon" class="bi bi-moon-fill"></i>
+        </button>
+        <div class="border-start border-secondary" style="height:1.5rem;opacity:.35"></div>
+        <button class="btn btn-sm btn-outline-secondary" id="hintsToggleBtn" title="Hints off — click to turn on">
+          <i class="bi bi-question-circle"></i>
+        </button>
+        <a href="{{ url_for('help_page') }}" target="_blank" class="btn btn-sm btn-outline-info" title="Help & Documentation">
+          <i class="bi bi-question-circle-fill"></i>
+        </a>
+        <div class="border-start border-secondary" style="height:1.5rem;opacity:.35"></div>
+        <a href="{{ url_for('support_page') }}" target="_blank" class="btn btn-sm btn-outline-warning" title="Customer Support">
+          <i class="bi bi-headset"></i>
         </a>
       </div>
     </div>
@@ -629,6 +642,38 @@
     var nowOn = !isOn();
     localStorage.setItem('app-hints', nowOn ? 'on' : 'off');
     applyState(nowOn);
+  });
+}());
+</script>
+
+<!-- ── Dark mode toggle ───────────────────────────────────────────── -->
+<script>
+(function () {
+  var btn  = document.getElementById('darkModeBtn');
+  var icon = document.getElementById('darkModeIcon');
+  if (!btn) return;
+
+  function currentTheme() {
+    return document.documentElement.getAttribute('data-bs-theme') || 'dark';
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-bs-theme', theme);
+    localStorage.setItem('app-theme', theme);
+    if (theme === 'dark') {
+      icon.className = 'bi bi-moon-fill';
+      btn.title = 'Switch to light mode';
+    } else {
+      icon.className = 'bi bi-sun-fill';
+      btn.title = 'Switch to dark mode';
+    }
+  }
+
+  // Sync button icon with already-applied theme
+  applyTheme(currentTheme());
+
+  btn.addEventListener('click', function () {
+    applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
   });
 }());
 </script>
