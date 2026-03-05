@@ -71,27 +71,26 @@ html, body { height: 100%; overflow: hidden; }
 
 /* ---- Metric cards ---- */
 .metric-card {
-  border-radius: 16px;
-  background-color: #2b3035;
+  border-radius: 1.1rem;
+  background: #1c1f24;
   box-shadow:
-    0 2px 2px  rgba(0, 0, 0, .50),
-    0 6px 10px  rgba(0, 0, 0, .45),
-    0 16px 36px rgba(0, 0, 0, .40),
-    0 28px 52px rgba(0, 0, 0, .25),
-    inset 0 1px 0 rgba(255, 255, 255, .10);
-  transition: transform 0.28s cubic-bezier(.22, 1, .36, 1),
-              box-shadow 0.28s cubic-bezier(.22, 1, .36, 1);
-  will-change: transform;
+    0 8px 22px rgba(0, 0, 0, .60),
+    0 3px 8px  rgba(0, 0, 0, .40),
+    inset 0 1px 0 rgba(255, 255, 255, .055),
+    inset 0 -2px 5px rgba(0, 0, 0, .35);
+  border: 1px solid rgba(255, 255, 255, .065);
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .metric-card:hover {
-  transform: translateY(-10px);
   box-shadow:
-    0 4px 4px   rgba(0, 0, 0, .50),
-    0 10px 18px rgba(0, 0, 0, .50),
-    0 26px 52px rgba(0, 0, 0, .45),
-    0 44px 72px rgba(0, 0, 0, .30),
-    inset 0 1px 0 rgba(255, 255, 255, .13);
+    0 14px 32px rgba(0, 0, 0, .70),
+    0 5px 12px  rgba(0, 0, 0, .45),
+    inset 0 1px 0 rgba(255, 255, 255, .07),
+    inset 0 -2px 5px rgba(0, 0, 0, .35);
+  transform: translateY(-2px);
 }
 
 .metric-icon {
@@ -203,24 +202,26 @@ html, body { height: 100%; overflow: hidden; }
 
 /* ---- Cards ---- */
 .card {
-  border-radius: 10px;
-  background-color: #2b3035;
+  border-radius: 0.9rem;
+  background: #1c1f24;
   box-shadow:
-    0 2px 2px  rgba(0, 0, 0, .45),
-    0 5px 10px  rgba(0, 0, 0, .38),
-    0 12px 28px rgba(0, 0, 0, .28),
-    inset 0 1px 0 rgba(255, 255, 255, .07);
-  transition: transform 0.28s cubic-bezier(.22, 1, .36, 1),
-              box-shadow 0.28s cubic-bezier(.22, 1, .36, 1);
+    0 6px 18px rgba(0, 0, 0, .55),
+    0 2px 6px  rgba(0, 0, 0, .35),
+    inset 0 1px 0 rgba(255, 255, 255, .045),
+    inset 0 -2px 4px rgba(0, 0, 0, .30);
+  border: 1px solid rgba(255, 255, 255, .06);
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .card:hover {
-  transform: translateY(-4px);
   box-shadow:
-    0 4px 4px   rgba(0, 0, 0, .48),
-    0 8px 16px  rgba(0, 0, 0, .42),
-    0 20px 40px rgba(0, 0, 0, .32),
-    inset 0 1px 0 rgba(255, 255, 255, .09);
+    0 10px 28px rgba(0, 0, 0, .65),
+    0 4px 10px  rgba(0, 0, 0, .40),
+    inset 0 1px 0 rgba(255, 255, 255, .06),
+    inset 0 -2px 4px rgba(0, 0, 0, .30);
+  transform: translateY(-2px);
 }
 
 /* ---- Table headers inside cards ---- */
@@ -270,7 +271,7 @@ html, body { height: 100%; overflow: hidden; }
   position: absolute;
   bottom: calc(100% + 14px);
   left: 50%;
-  transform: translateX(-50%) translateY(6px);
+  transform: translateX(-50%);
   background: #3a3f47;
   color: #e9ecef;
   padding: 7px 13px;
@@ -281,10 +282,11 @@ html, body { height: 100%; overflow: hidden; }
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.22s ease, transform 0.22s ease;
+  transition: opacity 0.18s ease;
   box-shadow: 0 6px 22px rgba(0,0,0,.60), 0 2px 6px rgba(0,0,0,.40);
   border: 1px solid rgba(255,255,255,.13);
   z-index: 1050;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Arrow tail pointing down toward the card */
@@ -293,24 +295,23 @@ html, body { height: 100%; overflow: hidden; }
   position: absolute;
   bottom: calc(100% + 8px);
   left: 50%;
-  transform: translateX(-50%) translateY(6px);
+  transform: translateX(-50%);
   border: 6px solid transparent;
   border-top-color: #3a3f47;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.22s ease, transform 0.22s ease;
+  transition: opacity 0.18s ease;
   z-index: 1051;
 }
 
 [data-tooltip]:hover::after,
 [data-tooltip]:hover::before {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
 }
 
-/* Global toggle — button adds this class to <body> */
-body.tooltips-off [data-tooltip]::after,
-body.tooltips-off [data-tooltip]::before {
+/* Hidden when hints are off — tied to the hints button on the toolbar */
+body:not(.hints-on) [data-tooltip]::after,
+body:not(.hints-on) [data-tooltip]::before {
   display: none !important;
 }
 
@@ -319,6 +320,101 @@ body.tooltips-off [data-tooltip]::before {
 ::-webkit-scrollbar-track { background: #1a1a2e; }
 ::-webkit-scrollbar-thumb { background: #495057; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #6c757d; }
+
+/* ============================================================
+   Light mode overrides  (data-bs-theme="light")
+   ============================================================ */
+
+/* ── Card & metric-card surfaces — 3-D bevel on warm off-white ───────────── */
+[data-bs-theme="light"] .card,
+[data-bs-theme="light"] .metric-card {
+  background: linear-gradient(170deg, #fdfcf9 0%, #f2f0eb 100%);
+  border-color: rgba(0,0,0,.13);
+  border-bottom-color: rgba(0,0,0,.20);
+  box-shadow:
+    0 8px 22px  rgba(0,0,0,.13),
+    0 3px 8px   rgba(0,0,0,.08),
+    inset 0  1px 0   rgba(255,255,255,.95),
+    inset 0 -3px 6px rgba(0,0,0,.09);
+}
+[data-bs-theme="light"] .card:hover,
+[data-bs-theme="light"] .metric-card:hover {
+  box-shadow:
+    0 14px 32px rgba(0,0,0,.16),
+    0  5px 12px rgba(0,0,0,.10),
+    inset 0  1px 0   rgba(255,255,255,1),
+    inset 0 -3px 6px rgba(0,0,0,.10);
+  transform: translateY(-3px);
+}
+
+/* ── Table headers inside cards ─────────────────────────────────────────── */
+[data-bs-theme="light"] .card .table thead th,
+[data-bs-theme="light"] .table-scroll thead th {
+  --bs-table-bg: #f0f2f5;
+  background-color: #f0f2f5 !important;
+  border-bottom-color: #ced4da;
+  color: #495057;
+}
+
+/* ── text-white / text-light on white card surfaces ─────────────────────── */
+/* badges and buttons carry their own bg so are excluded */
+[data-bs-theme="light"] .card :is(.text-white, .text-light):not(.badge):not([class*="btn"]),
+[data-bs-theme="light"] .metric-card :is(.text-white, .text-light):not(.badge):not([class*="btn"]) {
+  color: #1a202c !important;
+}
+
+/* ── fw-semibold / fw-bold headings that use text-white ─────────────────── */
+/* Catches headings like <h5 class="text-white fw-bold"> inside cards */
+[data-bs-theme="light"] .card h1, [data-bs-theme="light"] .card h2,
+[data-bs-theme="light"] .card h3, [data-bs-theme="light"] .card h4,
+[data-bs-theme="light"] .card h5, [data-bs-theme="light"] .card h6,
+[data-bs-theme="light"] .metric-card h1, [data-bs-theme="light"] .metric-card h2,
+[data-bs-theme="light"] .metric-card h3, [data-bs-theme="light"] .metric-card h4,
+[data-bs-theme="light"] .metric-card h5, [data-bs-theme="light"] .metric-card h6 {
+  color: #1a202c;
+}
+
+/* ── Job description body text ──────────────────────────────────────────── */
+[data-bs-theme="light"] .job-description {
+  color: #374151;
+}
+
+/* ── Timeline connector ─────────────────────────────────────────────────── */
+[data-bs-theme="light"] .timeline::before {
+  background: #dee2e6;
+}
+
+/* ── Score circle — secondary tier ─────────────────────────────────────── */
+[data-bs-theme="light"] .score-secondary {
+  background: rgba(108,117,125,.12);
+  color: #495057;
+  border-color: #6c757d;
+}
+
+/* ── Company "baby blue" text ───────────────────────────────────────────── */
+[data-bs-theme="light"] .text-baby-blue {
+  color: #0369a1;
+}
+
+/* ── Scan-latest row — amber is fine on white, keep unchanged ───────────── */
+
+/* ── Scrollbars ─────────────────────────────────────────────────────────── */
+[data-bs-theme="light"] ::-webkit-scrollbar-track { background: #e9ecef; }
+[data-bs-theme="light"] ::-webkit-scrollbar-thumb { background: #adb5bd; border-radius: 3px; }
+[data-bs-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #6c757d; }
+
+/* ── pre / code blocks inside cards ────────────────────────────────────── */
+[data-bs-theme="light"] .card pre {
+  background: #f0f2f5;
+  color: #374151;
+  border: 1px solid #dee2e6;
+}
+
+/* ── Sidebar nav hover stays white-tinted (sidebar keeps bg-dark in any theme) */
+
+/* ============================================================
+   End light mode overrides
+   ============================================================ */
 
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
