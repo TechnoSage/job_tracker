@@ -8,34 +8,33 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
 /* ── Base ─────────────────────────────────────────────────────────────────── */
-body { font-size: 0.875rem; background: #1a1d20; }
+body { font-size: 0.875rem; background: #212529; }
 
-/* ── 3-D raised cards (match main app) ───────────────────────────────────── */
+/* ── 3-D raised cards — identical to main app metric-card ────────────────── */
 .card {
-  border: none;
-  border-radius: 10px;
-  background-color: #2b3035;
+  --bs-card-bg: #1c1f24;
+  --bs-card-border-color: rgba(255,255,255,.065);
+  --bs-card-border-radius: 1.1rem;
+  --bs-card-cap-bg: transparent;
+  background-color: #1c1f24;
+  border: 1px solid rgba(255,255,255,.065);
+  border-radius: 1.1rem;
   box-shadow:
-    0 2px 2px  rgba(0,0,0,.45),
-    0 5px 10px rgba(0,0,0,.38),
-    0 12px 28px rgba(0,0,0,.28),
-    inset 0 1px 0 rgba(255,255,255,.07);
-  transition: transform .28s cubic-bezier(.22,1,.36,1),
-              box-shadow .28s cubic-bezier(.22,1,.36,1);
+    0 8px 22px  rgba(0, 0, 0, .60),
+    0 3px 8px   rgba(0, 0, 0, .40),
+    inset 0  1px 0   rgba(255, 255, 255, .055),
+    inset 0 -2px 5px rgba(0, 0, 0, .35);
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 .card:hover {
-  transform: translateY(-4px);
   box-shadow:
-    0 4px 4px  rgba(0,0,0,.48),
-    0 8px 16px rgba(0,0,0,.42),
-    0 20px 40px rgba(0,0,0,.32),
-    inset 0 1px 0 rgba(255,255,255,.09);
-}
-.card-header {
-  background: rgba(255,255,255,.04);
-  border-bottom: 1px solid rgba(255,255,255,.07);
-  font-weight: 600;
-  border-radius: 10px 10px 0 0 !important;
+    0 14px 32px rgba(0, 0, 0, .70),
+    0  5px 12px rgba(0, 0, 0, .45),
+    inset 0  1px 0   rgba(255, 255, 255, .07),
+    inset 0 -2px 5px rgba(0, 0, 0, .35);
+  transform: translateY(-2px);
 }
 
 /* ── Version spinner ─────────────────────────────────────────────────────── */
@@ -59,7 +58,7 @@ body { font-size: 0.875rem; background: #1a1d20; }
   font-size: 0.75rem; line-height: 1.45;
   height: 300px; overflow-y: auto;
   background: #0a0a0a; padding: 0.6rem 0.9rem;
-  border-radius: 0 0 10px 10px;
+  border-radius: 0 0 calc(1.1rem - 1px) calc(1.1rem - 1px);
 }
 .log-error { color: #f87171; }
 .log-warn  { color: #fbbf24; }
@@ -69,6 +68,41 @@ body { font-size: 0.875rem; background: #1a1d20; }
 
 /* ── Dep-check alert ─────────────────────────────────────────────────────── */
 #depPrompt { font-size: 0.8rem; }
+
+/* ── GitHub validation pulse ─────────────────────────────────────────────── */
+@keyframes validPulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(25,200,100,.35); border-color: rgba(25,200,100,.6); }
+  50%       { box-shadow: 0 0 0 5px rgba(25,200,100,.15); border-color: rgba(25,200,100,.9); }
+}
+@keyframes invalidPulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(220,53,69,.35); border-color: rgba(220,53,69,.6); }
+  50%       { box-shadow: 0 0 0 5px rgba(220,53,69,.15); border-color: rgba(220,53,69,.9); }
+}
+.input-valid   { animation: validPulse   2s ease-in-out infinite; }
+.input-invalid { animation: invalidPulse 2s ease-in-out infinite; }
+
+/* ── Inner section cards (inside Build Configuration) ────────────────────── */
+.inner-card {
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.875rem;
+}
+.inner-card-hdr {
+  font-size: 0.7rem; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: rgba(255,255,255,.4);
+  padding-bottom: 0.45rem; margin-bottom: 0.6rem;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  display: flex; align-items: center; gap: 0.35rem;
+}
+
+/* ── Misc component styles ───────────────────────────────────────────────── */
+.btn-xs { font-size: 0.72rem; padding: 0.15rem 0.45rem; line-height: 1.4; }
+.repo-row { cursor: pointer; }
+.repo-row:hover { background: rgba(255,255,255,.06); }
+.pr-row { font-size: 0.82rem; }
+#ghAuthBadge { font-size: 0.75rem; }
 </style>
 </head>
 <body>
@@ -90,154 +124,183 @@ body { font-size: 0.875rem; background: #1a1d20; }
      LEFT: Build Configuration
      ══════════════════════════════════════════════════════════════════════════ -->
 <div class="col-xl-7 col-lg-6">
-<div class="card">
-  <div class="card-header"><i class="bi bi-gear me-1 text-secondary"></i>Build Configuration</div>
-  <div class="card-body" style="max-height:600px;overflow-y:auto">
+<div class="card h-100">
+  <div class="card-header bg-transparent border-0 pb-0">
+    <h6 class="fw-bold mb-0"><i class="bi bi-gear me-1 text-secondary"></i>Build Configuration</h6>
+  </div>
+  <div class="card-body d-flex flex-column gap-3 pt-2">
 
-    <!-- App Identity -->
-    <p class="text-uppercase text-muted small fw-semibold mb-2" style="letter-spacing:.06em;font-size:.7rem">App Identity</p>
-    <div class="row g-2 mb-3">
+    <!-- ── App Identity ──────────────────────────────────────────────────── -->
+    <div class="inner-card">
+      <div class="inner-card-hdr"><i class="bi bi-person-badge"></i>App Identity</div>
+      <div class="row g-2">
 
-      <!-- App Name (col-8) + Version spinner (col-4) -->
-      <div class="col-8">
-        <label class="form-label mb-1 text-muted small" for="APP_NAME">App Name</label>
-        <input id="APP_NAME" class="form-control form-control-sm">
-      </div>
-      <div class="col-4">
-        <label class="form-label mb-1 text-muted small d-block">Version</label>
-        <div class="d-flex align-items-center gap-1">
-          <!-- Major -->
-          <div class="ver-block">
-            <button class="btn btn-outline-secondary ver-btn" onclick="incVer('major')" title="Increment Major (resets Minor + Patch)">+</button>
-            <span id="ver_major" class="ver-num">1</span>
-            <button class="btn btn-outline-secondary ver-btn" onclick="decVer('major')">-</button>
-          </div>
-          <span class="ver-dot">.</span>
-          <!-- Minor -->
-          <div class="ver-block">
-            <button class="btn btn-outline-secondary ver-btn" onclick="incVer('minor')" title="Increment Minor (resets Patch)">+</button>
-            <span id="ver_minor" class="ver-num">0</span>
-            <button class="btn btn-outline-secondary ver-btn" onclick="decVer('minor')">-</button>
-          </div>
-          <span class="ver-dot">.</span>
-          <!-- Patch -->
-          <div class="ver-block">
-            <button class="btn btn-outline-secondary ver-btn" onclick="incVer('patch')" title="Increment Patch">+</button>
-            <span id="ver_patch" class="ver-num">0</span>
-            <button class="btn btn-outline-secondary ver-btn" onclick="decVer('patch')">-</button>
+        <!-- App Name (col-8) + Version spinner (col-4) -->
+        <div class="col-8">
+          <label class="form-label mb-1 text-muted small" for="APP_NAME">App Name</label>
+          <input id="APP_NAME" class="form-control form-control-sm">
+        </div>
+        <div class="col-4">
+          <label class="form-label mb-1 text-muted small d-block">
+            Version
+            <span class="text-secondary ms-1" style="font-size:0.7rem;">
+              main: <span id="versionOnMain" class="text-info">—</span>
+            </span>
+          </label>
+          <div class="d-flex align-items-center gap-1">
+            <!-- Major -->
+            <div class="ver-block">
+              <button class="btn btn-outline-secondary ver-btn" onclick="incVer('major')" title="Increment Major (resets Minor + Patch)">+</button>
+              <span id="ver_major" class="ver-num">1</span>
+              <button class="btn btn-outline-secondary ver-btn" onclick="decVer('major')">-</button>
+            </div>
+            <span class="ver-dot">.</span>
+            <!-- Minor -->
+            <div class="ver-block">
+              <button class="btn btn-outline-secondary ver-btn" onclick="incVer('minor')" title="Increment Minor (resets Patch)">+</button>
+              <span id="ver_minor" class="ver-num">0</span>
+              <button class="btn btn-outline-secondary ver-btn" onclick="decVer('minor')">-</button>
+            </div>
+            <span class="ver-dot">.</span>
+            <!-- Patch -->
+            <div class="ver-block">
+              <button class="btn btn-outline-secondary ver-btn" onclick="incVer('patch')" title="Increment Patch">+</button>
+              <span id="ver_patch" class="ver-num">0</span>
+              <button class="btn btn-outline-secondary ver-btn" onclick="decVer('patch')">-</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="col-12">
-        <label class="form-label mb-1 text-muted small" for="APP_DESCRIPTION">Description</label>
-        <input id="APP_DESCRIPTION" class="form-control form-control-sm">
-      </div>
-      <div class="col-12">
-        <label class="form-label mb-1 text-muted small" for="APP_PUBLISHER">Publisher</label>
-        <input id="APP_PUBLISHER" class="form-control form-control-sm">
-      </div>
-      <div class="col-6">
-        <label class="form-label mb-1 text-muted small" for="APP_URL">App URL</label>
-        <input id="APP_URL" class="form-control form-control-sm">
-      </div>
-      <div class="col-6">
-        <label class="form-label mb-1 text-muted small" for="APP_SUPPORT_URL">Support URL</label>
-        <input id="APP_SUPPORT_URL" class="form-control form-control-sm">
-      </div>
-      <div class="col-6">
-        <label class="form-label mb-1 text-muted small" for="APP_EXE_NAME">Exe Name <span class="text-secondary">(no .exe)</span></label>
-        <input id="APP_EXE_NAME" class="form-control form-control-sm">
-      </div>
-      <div class="col-6">
-        <label class="form-label mb-1 text-muted small" for="OUTPUT_DIR">Output Folder</label>
-        <input id="OUTPUT_DIR" class="form-control form-control-sm">
+        <!-- Version on-build behaviour (full row) -->
+        <div class="col-12">
+          <label class="form-label mb-1 text-muted small">On Full Build — version increment</label>
+          <select id="VERSION_INCREMENT" class="form-select form-select-sm"
+                  onchange="saveSetting('VERSION_INCREMENT', this.value)">
+            <option value="keep">Keep same (no auto-increment)</option>
+            <option value="patch">Bump patch  (1.0.0 → 1.0.1)</option>
+            <option value="minor">Bump minor  (1.0.0 → 1.1.0)</option>
+            <option value="major">Bump major  (1.0.0 → 2.0.0)</option>
+          </select>
+          <div class="form-text text-secondary" style="font-size:0.68rem;">
+            The spinner above sets the manual version. The dropdown controls auto-increment during a Full Build.
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label mb-1 text-muted small" for="APP_DESCRIPTION">Description</label>
+          <input id="APP_DESCRIPTION" class="form-control form-control-sm">
+        </div>
+        <div class="col-12">
+          <label class="form-label mb-1 text-muted small" for="APP_PUBLISHER">Publisher</label>
+          <input id="APP_PUBLISHER" class="form-control form-control-sm">
+        </div>
+        <div class="col-6">
+          <label class="form-label mb-1 text-muted small" for="APP_URL">App URL <span class="text-secondary">(= GitHub Remote)</span></label>
+          <input id="APP_URL" class="form-control form-control-sm" oninput="syncAppUrl(this.value)">
+        </div>
+        <div class="col-6">
+          <label class="form-label mb-1 text-muted small" for="APP_SUPPORT_URL">Support URL <span class="text-secondary">(auto: /issues)</span></label>
+          <input id="APP_SUPPORT_URL" class="form-control form-control-sm" readonly style="opacity:.7">
+        </div>
+        <div class="col-6">
+          <label class="form-label mb-1 text-muted small" for="APP_EXE_NAME">Exe Name <span class="text-secondary">(no .exe)</span></label>
+          <input id="APP_EXE_NAME" class="form-control form-control-sm">
+        </div>
+        <div class="col-6">
+          <label class="form-label mb-1 text-muted small" for="OUTPUT_DIR">Output Folder</label>
+          <input id="OUTPUT_DIR" class="form-control form-control-sm">
+        </div>
       </div>
     </div>
 
-    <hr class="border-secondary my-2">
+    <!-- ── Installer Options ─────────────────────────────────────────────── -->
+    <div class="inner-card">
+      <div class="inner-card-hdr"><i class="bi bi-box-seam"></i>Installer Options</div>
+      <div class="row g-2">
+        <div class="col-12">
+          <label class="form-label mb-1 text-muted small" for="DEFAULT_INSTALL_DIR">
+            Default Install Directory <span class="text-secondary">({autopf} = Program Files)</span>
+          </label>
+          <input id="DEFAULT_INSTALL_DIR" class="form-control form-control-sm">
+        </div>
+        <div class="col-6">
+          <label class="form-label mb-1 text-muted small" for="ICON_FILE">Icon File <span class="text-secondary">(.ico, optional)</span></label>
+          <div class="input-group input-group-sm">
+            <input id="ICON_FILE" class="form-control form-control-sm" placeholder="icons/app.ico">
+            <button class="btn btn-outline-secondary" type="button" onclick="browseIconFile()" title="Browse for icon…">
+              <i class="bi bi-image"></i>
+            </button>
+          </div>
+        </div>
+        <!-- License File + Open button -->
+        <div class="col-6">
+          <label class="form-label mb-1 text-muted small" for="LICENSE_FILE">License File <span class="text-secondary">(optional)</span></label>
+          <div class="input-group input-group-sm">
+            <input id="LICENSE_FILE" class="form-control form-control-sm" placeholder="LICENSE.txt">
+            <button class="btn btn-outline-secondary" id="btnOpenLicense" onclick="openLicenseFile()"
+                    title="Open in Notepad++ (or system default text editor)">
+              <i class="bi bi-file-text"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-6 mt-1">
+          <div class="form-check">
+            <input id="REQUIRE_ADMIN" class="form-check-input" type="checkbox">
+            <label class="form-check-label small" for="REQUIRE_ADMIN">Require Admin rights</label>
+          </div>
+          <div class="form-check">
+            <input id="DESKTOP_ICON" class="form-check-input" type="checkbox">
+            <label class="form-check-label small" for="DESKTOP_ICON">Desktop shortcut</label>
+          </div>
+        </div>
+        <div class="col-6 mt-1">
+          <div class="form-check">
+            <input id="START_MENU_ICON" class="form-check-input" type="checkbox">
+            <label class="form-check-label small" for="START_MENU_ICON">Start Menu entry</label>
+          </div>
+          <div class="form-check">
+            <input id="ADD_TO_STARTUP" class="form-check-input" type="checkbox">
+            <label class="form-check-label small" for="ADD_TO_STARTUP">Auto-start with Windows</label>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <!-- Installer Options -->
-    <p class="text-uppercase text-muted small fw-semibold mb-2" style="letter-spacing:.06em;font-size:.7rem">Installer Options</p>
-    <div class="row g-2 mb-3">
-      <div class="col-12">
-        <label class="form-label mb-1 text-muted small" for="DEFAULT_INSTALL_DIR">
-          Default Install Directory <span class="text-secondary">({autopf} = Program Files)</span>
-        </label>
-        <input id="DEFAULT_INSTALL_DIR" class="form-control form-control-sm">
+    <!-- ── Code Protection ───────────────────────────────────────────────── -->
+    <div class="inner-card">
+      <div class="inner-card-hdr"><i class="bi bi-shield-lock"></i>Code Protection</div>
+      <div class="d-flex flex-wrap gap-4 mb-1">
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="prot" id="prot_plain" value="plain">
+          <label class="form-check-label small" for="prot_plain">Plain PyInstaller</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="prot" id="prot_pyarmor" value="pyarmor">
+          <label class="form-check-label small" for="prot_pyarmor">
+            PyArmor <span class="text-secondary">(AES-256)</span>
+          </label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="prot" id="prot_nuitka" value="nuitka">
+          <label class="form-check-label small" for="prot_nuitka">
+            Nuitka <span class="text-secondary">(native code)</span>
+          </label>
+        </div>
       </div>
-      <div class="col-6">
-        <label class="form-label mb-1 text-muted small" for="ICON_FILE">Icon File <span class="text-secondary">(.ico, optional)</span></label>
-        <input id="ICON_FILE" class="form-control form-control-sm" placeholder="icons/app.ico">
+      <p id="protNote" class="text-secondary small mb-1" style="min-height:1.2em"></p>
+
+      <!-- Dep check feedback -->
+      <div id="depStatus" class="text-info small mb-1" style="display:none">
+        <span class="spinner-border spinner-border-sm me-1"></span><span id="depStatusMsg"></span>
       </div>
-      <!-- License File + Open button -->
-      <div class="col-6">
-        <label class="form-label mb-1 text-muted small" for="LICENSE_FILE">License File <span class="text-secondary">(optional)</span></label>
-        <div class="input-group input-group-sm">
-          <input id="LICENSE_FILE" class="form-control form-control-sm" placeholder="LICENSE.txt">
-          <button class="btn btn-outline-secondary" id="btnOpenLicense" onclick="openLicenseFile()"
-                  title="Open in Notepad++ (or system default text editor)">
-            <i class="bi bi-file-text"></i>
+      <div id="depPrompt" class="alert alert-warning py-2 px-3 mb-0" style="display:none;font-size:.8rem">
+        <span id="depPromptMsg"></span>
+        <div class="mt-2 d-flex gap-2">
+          <button class="btn btn-sm btn-warning" onclick="installDepConfirm()">
+            <i class="bi bi-download me-1"></i>Install Now
           </button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="cancelDepInstall()">Cancel</button>
         </div>
-      </div>
-      <div class="col-6 mt-1">
-        <div class="form-check">
-          <input id="REQUIRE_ADMIN" class="form-check-input" type="checkbox">
-          <label class="form-check-label small" for="REQUIRE_ADMIN">Require Admin rights</label>
-        </div>
-        <div class="form-check">
-          <input id="DESKTOP_ICON" class="form-check-input" type="checkbox">
-          <label class="form-check-label small" for="DESKTOP_ICON">Desktop shortcut</label>
-        </div>
-      </div>
-      <div class="col-6 mt-1">
-        <div class="form-check">
-          <input id="START_MENU_ICON" class="form-check-input" type="checkbox">
-          <label class="form-check-label small" for="START_MENU_ICON">Start Menu entry</label>
-        </div>
-        <div class="form-check">
-          <input id="ADD_TO_STARTUP" class="form-check-input" type="checkbox">
-          <label class="form-check-label small" for="ADD_TO_STARTUP">Auto-start with Windows</label>
-        </div>
-      </div>
-    </div>
-
-    <hr class="border-secondary my-2">
-
-    <!-- Code Protection -->
-    <p class="text-uppercase text-muted small fw-semibold mb-2" style="letter-spacing:.06em;font-size:.7rem">Code Protection</p>
-    <div class="d-flex flex-wrap gap-4 mb-1">
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="prot" id="prot_plain" value="plain">
-        <label class="form-check-label small" for="prot_plain">Plain PyInstaller</label>
-      </div>
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="prot" id="prot_pyarmor" value="pyarmor">
-        <label class="form-check-label small" for="prot_pyarmor">
-          PyArmor <span class="text-secondary">(AES-256)</span>
-        </label>
-      </div>
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="prot" id="prot_nuitka" value="nuitka">
-        <label class="form-check-label small" for="prot_nuitka">
-          Nuitka <span class="text-secondary">(native code)</span>
-        </label>
-      </div>
-    </div>
-    <p id="protNote" class="text-secondary small mb-1" style="min-height:1.2em"></p>
-
-    <!-- Dep check feedback -->
-    <div id="depStatus" class="text-info small mb-1" style="display:none">
-      <span class="spinner-border spinner-border-sm me-1"></span><span id="depStatusMsg"></span>
-    </div>
-    <div id="depPrompt" class="alert alert-warning py-2 px-3 mb-0" style="display:none;font-size:.8rem">
-      <span id="depPromptMsg"></span>
-      <div class="mt-2 d-flex gap-2">
-        <button class="btn btn-sm btn-warning" onclick="installDepConfirm()">
-          <i class="bi bi-download me-1"></i>Install Now
-        </button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="cancelDepInstall()">Cancel</button>
       </div>
     </div>
 
@@ -249,12 +312,16 @@ body { font-size: 0.875rem; background: #1a1d20; }
      RIGHT: Git Panel
      ══════════════════════════════════════════════════════════════════════════ -->
 <div class="col-xl-5 col-lg-6">
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span><i class="bi bi-git me-1 text-secondary"></i>Git</span>
-    <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="refreshGit()" title="Refresh git status">
-      <i class="bi bi-arrow-clockwise"></i>
-    </button>
+<div class="card h-100">
+  <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+    <h6 class="fw-bold mb-0"><i class="bi bi-git me-1 text-secondary"></i>Git — Target Project</h6>
+    <div class="d-flex align-items-center gap-2">
+      <span id="ghAuthBadge" class="badge bg-secondary">GitHub: checking…</span>
+      <button id="ghLoginBtn" class="btn btn-xs btn-outline-secondary d-none" onclick="doGhLogin()">Sign in</button>
+      <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="refreshGit()" title="Refresh git status">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
   </div>
   <div class="card-body">
 
@@ -264,6 +331,9 @@ body { font-size: 0.875rem; background: #1a1d20; }
       <div class="input-group input-group-sm">
         <input id="gitRepoDir" class="form-control form-control-sm font-monospace"
                placeholder="(leave blank to use project root)">
+        <button class="btn btn-outline-secondary" type="button" onclick="browseRepoDir()" title="Browse folder…">
+          <i class="bi bi-folder2-open"></i>
+        </button>
         <button class="btn btn-outline-info btn-sm" onclick="applyGitDir()" title="Save path and refresh">
           <i class="bi bi-arrow-right-circle"></i>
         </button>
@@ -286,8 +356,14 @@ body { font-size: 0.875rem; background: #1a1d20; }
     <!-- Git Remote Configuration -->
     <div class="mb-2">
       <label class="form-label mb-1 text-muted small" for="GIT_REMOTE_URL">GitHub Remote URL</label>
-      <input id="GIT_REMOTE_URL" class="form-control form-control-sm font-monospace"
-             placeholder="https://github.com/yourname/repo.git">
+      <div class="input-group input-group-sm">
+        <input id="GIT_REMOTE_URL" class="form-control form-control-sm font-monospace"
+               placeholder="https://github.com/yourname/repo.git" oninput="syncRemoteUrl(this.value)">
+        <button class="btn btn-outline-secondary" type="button" onclick="openRepoPicker()" title="Pick from GitHub…">
+          <i class="bi bi-github"></i>
+        </button>
+      </div>
+      <div id="remoteValidation" class="form-text mt-1" style="min-height:1.2em;"></div>
     </div>
     <div class="row g-2 mb-2">
       <div class="col-6">
@@ -328,7 +404,23 @@ body { font-size: 0.875rem; background: #1a1d20; }
     <button id="btnMerge" class="btn btn-sm btn-warning w-100 mb-2" onclick="doMerge()">
       <i class="bi bi-diagram-3 me-1"></i>Merge Branch
     </button>
-    <div id="mergeMsg" class="small rounded p-2 mb-3" style="display:none"></div>
+    <div id="mergeMsg" class="small rounded p-2 mb-2" style="display:none"></div>
+
+    <!-- Pull Requests -->
+    <div class="inner-card mb-3">
+      <div class="inner-card-hdr d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-git-pull-request"></i>Pull Requests</span>
+        <div class="d-flex gap-1">
+          <button class="btn btn-xs btn-outline-primary py-0" onclick="openCreatePRModal()" title="New PR">
+            <i class="bi bi-plus"></i>
+          </button>
+          <button class="btn btn-xs btn-outline-secondary py-0" onclick="refreshPRs()" title="Refresh">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+      </div>
+      <div id="prList"><span class="text-secondary small">Loading pull requests…</span></div>
+    </div>
 
     <!-- Recent commits -->
     <div class="text-muted small mb-1">Recent commits:</div>
@@ -340,6 +432,103 @@ body { font-size: 0.875rem; background: #1a1d20; }
 </div><!-- /col -->
 
 </div><!-- /row -->
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     Local Backup & Daemon
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="row mt-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-archive me-1 text-secondary"></i>Local Backup</h6>
+        <span id="backupStatus" class="badge bg-secondary small">Idle</span>
+      </div>
+      <div class="card-body pt-2">
+        <div class="row g-3">
+
+          <!-- ── Backup Settings inner card ─────────────────────────────── -->
+          <div class="col-md-6">
+            <div class="inner-card h-100">
+              <div class="inner-card-hdr"><i class="bi bi-hdd-fill"></i>Backup Settings</div>
+              <div class="row g-2 align-items-end">
+                <div class="col-12">
+                  <label class="form-label form-label-sm mb-1 text-muted small">Backup Destination</label>
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control font-monospace" id="backupDest" placeholder="D:\backups\repo_name"
+                           oninput="saveSetting('BACKUP_DEST', this.value)">
+                    <button class="btn btn-outline-secondary" type="button" onclick="browseBackupDest()" title="Browse…">
+                      <i class="bi bi-folder2-open"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label form-label-sm mb-1 text-muted small">Auto Backup</label>
+                  <select class="form-select form-select-sm" id="backupSchedule" onchange="saveBackupSettings()">
+                    <option value="manual">Manual only</option>
+                    <option value="5">Every 5 min</option>
+                    <option value="10">Every 10 min</option>
+                    <option value="30">Every 30 min</option>
+                    <option value="5_running">Every 5 min (while open)</option>
+                    <option value="10_running">Every 10 min (while open)</option>
+                    <option value="30_running">Every 30 min (while open)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mt-2 d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-success" onclick="runBackupNow()">
+                  <i class="bi bi-play-fill me-1"></i>Backup Now
+                </button>
+                <small id="backupLastRun" class="text-secondary"></small>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Daemon inner card ──────────────────────────────────────── -->
+          <div class="col-md-6">
+            <div class="inner-card h-100">
+              <div class="inner-card-hdr d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-cpu"></i>Build Dash Daemon</span>
+                <span id="daemonBadge" class="badge bg-secondary" style="font-size:.7rem">Checking…</span>
+              </div>
+              <div class="row g-2 align-items-end">
+                <div class="col-8">
+                  <label class="form-label form-label-sm mb-1 text-muted small">Tray Icon (.ico)</label>
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control font-monospace" id="daemonIcon" placeholder="path/to/icon.ico"
+                           oninput="saveSetting('DAEMON_ICON', this.value)">
+                    <button class="btn btn-outline-secondary" type="button" onclick="browseDaemonIcon()" title="Browse…">
+                      <i class="bi bi-image"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <label class="form-label form-label-sm mb-1 text-muted small">App Name</label>
+                  <input type="text" class="form-control form-control-sm" id="daemonName" value="Build_Dash"
+                         oninput="saveSetting('DAEMON_NAME', this.value)">
+                </div>
+              </div>
+              <div class="mt-2 d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-outline-success" id="daemonStartBtn" onclick="startDaemon()">
+                  <i class="bi bi-play-fill me-1"></i>Start Daemon
+                </button>
+                <button class="btn btn-sm btn-outline-danger" id="daemonStopBtn" onclick="stopDaemon()" disabled>
+                  <i class="bi bi-stop-fill me-1"></i>Stop Daemon
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="buildDaemonExe()">
+                  <i class="bi bi-box-arrow-up me-1"></i>Build .exe
+                </button>
+              </div>
+              <p class="text-secondary mb-0 mt-2" style="font-size:.72rem">
+                Runs backups on schedule independently of the browser tab. Build as .exe to place in the system tray.
+              </p>
+            </div>
+          </div>
+
+        </div><!-- /row g-3 -->
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
      Build Actions
@@ -373,18 +562,72 @@ body { font-size: 0.875rem; background: #1a1d20; }
      ══════════════════════════════════════════════════════════════════════════ -->
 <div class="row mt-3 mb-3">
   <div class="col-12">
-    <div class="d-flex justify-content-between align-items-center px-1 mb-0"
-         style="background:#1e293b;border-radius:10px 10px 0 0;padding:.4rem .8rem">
-      <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.06em;font-size:.7rem">Build Log</span>
-      <button class="btn btn-sm btn-link text-secondary p-0" onclick="clearLog()">Clear</button>
-    </div>
-    <div id="log" class="border border-secondary border-top-0">
-      <div class="log-line">Ready. Press a build button above to start.</div>
+    <div class="card">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-terminal me-1 text-secondary"></i>Build Log</h6>
+        <button class="btn btn-sm btn-link text-secondary p-0" onclick="clearLog()">Clear</button>
+      </div>
+      <div id="log">
+        <div class="log-line">Ready. Press a build button above to start.</div>
+      </div>
     </div>
   </div>
 </div>
 
 </div><!-- /container-fluid -->
+
+<!-- ── Repo Picker Modal ────────────────────────────────────────────────────── -->
+<div class="modal fade" id="repoPickerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content border border-secondary" style="background:#1c1f24">
+      <div class="modal-header border-secondary py-2">
+        <h6 class="modal-title mb-0"><i class="bi bi-github me-1"></i>Pick a Repository</h6>
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-2">
+        <input type="text" id="repoSearch" class="form-control form-control-sm mb-2"
+               placeholder="Filter repos…" oninput="filterRepoPicker()">
+        <div id="repoList" style="max-height:360px;overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Create PR Modal ──────────────────────────────────────────────────────── -->
+<div class="modal fade" id="createPRModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content border border-secondary" style="background:#1c1f24">
+      <div class="modal-header border-secondary py-2">
+        <h6 class="modal-title mb-0"><i class="bi bi-git-pull-request me-1"></i>Create Pull Request</h6>
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label form-label-sm">Title</label>
+          <input type="text" id="prTitle" class="form-control form-control-sm" placeholder="PR title">
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <label class="form-label form-label-sm">Base branch</label>
+            <input type="text" id="prBase" class="form-control form-control-sm" value="main">
+          </div>
+          <div class="col-6">
+            <label class="form-label form-label-sm">Head branch <span class="text-secondary">(blank = current)</span></label>
+            <input type="text" id="prHead" class="form-control form-control-sm" placeholder="feature-branch">
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label form-label-sm">Description</label>
+          <textarea id="prBody" class="form-control form-control-sm" rows="3" placeholder="Optional description"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer border-secondary py-2">
+        <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="submitCreatePR()">Create PR</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ── Main-app running warning modal ──────────────────────────────────────── -->
 <div class="modal fade" id="mainAppModal" tabindex="-1" aria-hidden="true">
@@ -444,6 +687,8 @@ var PROT_NOTES = {
 document.addEventListener('DOMContentLoaded', function () {
   loadSettings();
   refreshGit();
+  checkGhAuth();
+  checkDaemonStatus();
 
   document.querySelectorAll('input[name="prot"]').forEach(function (r) {
     r.addEventListener('change', function () {
@@ -460,6 +705,9 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   document.getElementById('LICENSE_FILE').addEventListener('input', updateOpenLicenseBtn);
+
+  // Debounced URL validation on manual input
+  document.getElementById('GIT_REMOTE_URL').addEventListener('input', debouncedValidateUrl);
 });
 
 /* ── Version spinner ───────────────────────────────────────────────────────── */
@@ -510,6 +758,10 @@ function loadSettings() {
         if (el) el.value = (s[k] != null) ? s[k] : '';
       });
 
+      // Derive support URL from app URL if not saved
+      var supEl = document.getElementById('APP_SUPPORT_URL');
+      if (supEl && !supEl.value && s.APP_URL) supEl.value = _deriveSupport(s.APP_URL);
+
       parseVersion(s.APP_VERSION || '1.0.0');
 
       ['REQUIRE_ADMIN', 'DESKTOP_ICON', 'START_MENU_ICON', 'ADD_TO_STARTUP'].forEach(function (k) {
@@ -533,9 +785,49 @@ function loadSettings() {
       var gitMainEl = document.getElementById('GIT_MAIN_BRANCH');
       if (gitMainEl) gitMainEl.value = s.GIT_MAIN_BRANCH || 'main';
 
+      // Backup settings
+      var backupDestEl = document.getElementById('backupDest');
+      if (backupDestEl) backupDestEl.value = s.BACKUP_DEST || '';
+      var backupSchedEl = document.getElementById('backupSchedule');
+      if (backupSchedEl) backupSchedEl.value = s.BACKUP_SCHEDULE || 'manual';
+      var lastRunEl = document.getElementById('backupLastRun');
+      if (lastRunEl && s.BACKUP_LAST_RUN) lastRunEl.textContent = 'Last run: ' + s.BACKUP_LAST_RUN;
+
+      // Daemon settings
+      var daemonIconEl = document.getElementById('daemonIcon');
+      if (daemonIconEl) daemonIconEl.value = s.DAEMON_ICON || '';
+      var daemonNameEl = document.getElementById('daemonName');
+      if (daemonNameEl) daemonNameEl.value = s.DAEMON_NAME || 'Build_Dash';
+
       updateOpenLicenseBtn();
+
+      // Trigger URL validation if URL already set
+      if (s.GIT_REMOTE_URL) { setTimeout(validateRemoteUrl, 600); }
+
+      // Start backup schedule timer
+      startBackupSchedule(s.BACKUP_SCHEDULE || 'manual');
+
+      // VERSION_INCREMENT dropdown
+      var verIncEl = document.getElementById('VERSION_INCREMENT');
+      if (verIncEl) verIncEl.value = s.VERSION_INCREMENT || 'keep';
+
+      // Load PRs
+      refreshPRs();
+
+      // Load current version from main branch
+      loadVersionFromMain();
     })
     .catch(function (e) { showToast('Failed to load settings: ' + e, 'danger'); });
+}
+
+function loadVersionFromMain() {
+  fetch('/api/version')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var el = document.getElementById('versionOnMain');
+      if (el) el.textContent = d.current || '—';
+    })
+    .catch(function () {});
 }
 
 function collectSettings() {
@@ -562,7 +854,12 @@ function collectSettings() {
     GIT_REPO_DIR:        document.getElementById('gitRepoDir').value.trim(),
     GIT_REMOTE_URL:      (document.getElementById('GIT_REMOTE_URL')  || {value: ''}).value.trim(),
     GIT_DEV_BRANCH:      (document.getElementById('GIT_DEV_BRANCH')  || {value: 'development'}).value.trim() || 'development',
-    GIT_MAIN_BRANCH:     (document.getElementById('GIT_MAIN_BRANCH') || {value: 'main'}).value.trim() || 'main'
+    GIT_MAIN_BRANCH:     (document.getElementById('GIT_MAIN_BRANCH') || {value: 'main'}).value.trim() || 'main',
+    BACKUP_DEST:         (document.getElementById('backupDest')       || {value: ''}).value.trim(),
+    BACKUP_SCHEDULE:     (document.getElementById('backupSchedule')   || {value: 'manual'}).value,
+    DAEMON_NAME:         (document.getElementById('daemonName')       || {value: 'Build_Dash'}).value.trim(),
+    DAEMON_ICON:         (document.getElementById('daemonIcon')       || {value: ''}).value.trim(),
+    VERSION_INCREMENT:   (document.getElementById('VERSION_INCREMENT') || {value: 'keep'}).value
   };
 }
 
@@ -621,6 +918,7 @@ function refreshGit() {
       document.getElementById('gitDirty').style.display = dirty ? '' : 'none';
       var note = document.getElementById('gitCwdNote');
       if (note && d.cwd) note.textContent = 'Using: ' + d.cwd;
+      refreshPRs();
     })
     .catch(function () {
       document.getElementById('gitBranch').textContent = 'git unavailable';
@@ -968,6 +1266,372 @@ function showToast(msg, type) {
   toast.className = 'toast align-items-center text-white border-0 bg-' + (type || 'secondary');
   body.textContent = msg;
   new bootstrap.Toast(toast, {delay: 3000}).show();
+}
+
+/* ── Utility ───────────────────────────────────────────────────────────────── */
+function log(text) { appendLines([text]); }
+
+function escHtml(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function saveSetting(key, value) {
+  var obj = {};
+  obj[key] = value;
+  fetch('/api/settings', {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(obj)
+  });
+}
+
+/* ── GitHub Auth ───────────────────────────────────────────────────────────── */
+async function checkGhAuth() {
+  var badge    = document.getElementById('ghAuthBadge');
+  var loginBtn = document.getElementById('ghLoginBtn');
+  try {
+    var r = await fetch('/api/gh/auth-status');
+    var d = await r.json();
+    if (d.logged_in) {
+      badge.className   = 'badge bg-success';
+      badge.textContent = 'GitHub: ' + (d.username || 'signed in');
+      if (loginBtn) loginBtn.classList.add('d-none');
+    } else {
+      badge.className   = 'badge bg-danger';
+      badge.textContent = 'GitHub: not signed in';
+      if (loginBtn) loginBtn.classList.remove('d-none');
+    }
+  } catch (e) {
+    badge.className   = 'badge bg-secondary';
+    badge.textContent = 'GitHub: unknown';
+  }
+}
+
+async function doGhLogin() {
+  await fetch('/api/gh/auth-login', { method: 'POST' });
+  setTimeout(checkGhAuth, 5000);
+}
+
+/* ── Folder Browser ────────────────────────────────────────────────────────── */
+async function browseRepoDir() {
+  var current = document.getElementById('gitRepoDir').value;
+  var r = await fetch('/api/gh/browse-folder', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ initial: current || 'C:\\Users\\User\\OneDrive\\GitHub Repositories' })
+  });
+  var d = await r.json();
+  if (d.ok && d.path) {
+    document.getElementById('gitRepoDir').value = d.path;
+    saveSetting('GIT_REPO_DIR', d.path);
+    refreshGit();
+    showToast('Working tree path updated.', 'success');
+  }
+}
+
+async function browseBackupDest() {
+  var current = document.getElementById('backupDest').value;
+  var r = await fetch('/api/gh/browse-folder', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ initial: current || 'D:\\backups' })
+  });
+  var d = await r.json();
+  if (d.ok && d.path) {
+    document.getElementById('backupDest').value = d.path;
+    saveSetting('BACKUP_DEST', d.path);
+  }
+}
+
+async function browseDaemonIcon() {
+  var current = document.getElementById('daemonIcon').value;
+  var r = await fetch('/api/gh/browse-file', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ filter_desc: 'Icon Files', filter_ext: '*.ico', initial: current || '' })
+  });
+  var d = await r.json();
+  if (d.ok && d.path) {
+    document.getElementById('daemonIcon').value = d.path;
+    saveSetting('DAEMON_ICON', d.path);
+  }
+}
+
+async function browseIconFile() {
+  var current = document.getElementById('ICON_FILE').value;
+  var r = await fetch('/api/gh/browse-file', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ filter_desc: 'Icon Files', filter_ext: '*.ico', initial: current || '' })
+  });
+  var d = await r.json();
+  if (d.ok && d.path) {
+    document.getElementById('ICON_FILE').value = d.path;
+    saveSetting('ICON_FILE', d.path);
+  }
+}
+
+/* ── URL sync (App URL ↔ GitHub Remote URL ↔ Support URL) ──────────────────── */
+function _deriveSupport(url) {
+  return url ? url.replace(/\/+$/, '').replace(/\.git$/, '') + '/issues' : '';
+}
+function syncAppUrl(val) {
+  saveSetting('APP_URL', val);
+  var remoteEl = document.getElementById('GIT_REMOTE_URL');
+  if (remoteEl && remoteEl.value !== val) { remoteEl.value = val; saveSetting('GIT_REMOTE_URL', val); debouncedValidateUrl(); }
+  var supEl = document.getElementById('APP_SUPPORT_URL');
+  if (supEl) { supEl.value = _deriveSupport(val); saveSetting('APP_SUPPORT_URL', supEl.value); }
+}
+function syncRemoteUrl(val) {
+  saveSetting('GIT_REMOTE_URL', val);
+  debouncedValidateUrl();
+  var appEl = document.getElementById('APP_URL');
+  if (appEl && appEl.value !== val) { appEl.value = val; saveSetting('APP_URL', val); }
+  var supEl = document.getElementById('APP_SUPPORT_URL');
+  if (supEl) { supEl.value = _deriveSupport(val); saveSetting('APP_SUPPORT_URL', supEl.value); }
+}
+
+/* ── Remote URL Validation ─────────────────────────────────────────────────── */
+var _validateUrlTimer = null;
+function debouncedValidateUrl() {
+  clearTimeout(_validateUrlTimer);
+  _validateUrlTimer = setTimeout(validateRemoteUrl, 800);
+}
+
+async function validateRemoteUrl() {
+  var input    = document.getElementById('GIT_REMOTE_URL');
+  var feedback = document.getElementById('remoteValidation');
+  if (!input || !feedback) return;
+  var url = input.value.trim();
+  input.classList.remove('input-valid', 'input-invalid');
+  feedback.textContent = '';
+  if (!url) return;
+  feedback.textContent = 'Checking…';
+  try {
+    var r = await fetch('/api/gh/validate-repo', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ url: url })
+    });
+    var d = await r.json();
+    if (d.exists) {
+      input.classList.add('input-valid');
+      feedback.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Repository found</span>';
+    } else {
+      input.classList.add('input-invalid');
+      feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Repository not found</span>';
+    }
+  } catch (e) {
+    feedback.textContent = '';
+  }
+}
+
+/* ── Repo Picker ───────────────────────────────────────────────────────────── */
+var _allRepos = [];
+
+async function openRepoPicker() {
+  var modal = new bootstrap.Modal(document.getElementById('repoPickerModal'));
+  document.getElementById('repoList').innerHTML = '<span class="text-secondary small">Loading…</span>';
+  document.getElementById('repoSearch').value = '';
+  modal.show();
+  try {
+    var r = await fetch('/api/gh/repos');
+    var d = await r.json();
+    _allRepos = d.repos || [];
+    renderRepoPicker(_allRepos);
+  } catch (e) {
+    document.getElementById('repoList').innerHTML = '<span class="text-danger small">Failed to load repos.</span>';
+  }
+}
+
+function filterRepoPicker() {
+  var q = document.getElementById('repoSearch').value.toLowerCase();
+  renderRepoPicker(_allRepos.filter(function (r) { return r.name.toLowerCase().includes(q); }));
+}
+
+function renderRepoPicker(repos) {
+  var el = document.getElementById('repoList');
+  if (!repos.length) { el.innerHTML = '<span class="text-secondary small">No repos found.</span>'; return; }
+  el.innerHTML = repos.map(function (r) {
+    var icon = r.isPrivate ? 'lock' : 'globe2';
+    var desc = r.description ? '<small class="text-secondary text-truncate ms-1">' + escHtml(r.description) + '</small>' : '';
+    return '<div class="repo-row d-flex align-items-center gap-2 p-2 rounded" onclick="selectRepo(\'' + escHtml(r.url) + '\')">'
+         + '<i class="bi bi-' + icon + ' text-secondary"></i>'
+         + '<span>' + escHtml(r.name) + '</span>' + desc
+         + '</div>';
+  }).join('');
+}
+
+async function selectRepo(url) {
+  document.getElementById('GIT_REMOTE_URL').value = url;
+  saveSetting('GIT_REMOTE_URL', url);
+  bootstrap.Modal.getInstance(document.getElementById('repoPickerModal')).hide();
+  validateRemoteUrl();
+  // Auto-sync local working tree path if matching directory exists
+  var m = url.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
+  if (m) {
+    var repoName = m[2];
+    try {
+      var r = await fetch('/api/gh/find-local-repo', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ repo_name: repoName })
+      });
+      var d = await r.json();
+      if (d.ok && d.path) {
+        document.getElementById('gitRepoDir').value = d.path;
+        saveSetting('GIT_REPO_DIR', d.path);
+        refreshPRs();
+      }
+    } catch (e) { /* ignore */ }
+  }
+}
+
+/* ── Pull Requests ─────────────────────────────────────────────────────────── */
+async function refreshPRs() {
+  var el = document.getElementById('prList');
+  if (!el) return;
+  el.innerHTML = '<span class="text-secondary small">Loading…</span>';
+  try {
+    var r = await fetch('/api/gh/prs');
+    var d = await r.json();
+    renderPRs(d.prs || []);
+  } catch (e) {
+    el.innerHTML = '<span class="text-secondary small">No repo configured — set Working Tree Path first.</span>';
+  }
+}
+
+function renderPRs(prs) {
+  var el = document.getElementById('prList');
+  if (!prs.length) { el.innerHTML = '<span class="text-secondary small">No open pull requests.</span>'; return; }
+  el.innerHTML = prs.map(function (p) {
+    return '<div class="pr-row d-flex align-items-center gap-2 py-1 border-bottom border-secondary border-opacity-25">'
+         + '<i class="bi bi-git-pull-request text-success"></i>'
+         + '<a href="' + escHtml(p.url) + '" target="_blank" class="text-info text-decoration-none">'
+         + '#' + p.number + ' ' + escHtml(p.title) + '</a>'
+         + '<span class="text-secondary ms-auto small">' + escHtml(p.headRefName) + ' → ' + escHtml(p.baseRefName) + '</span>'
+         + '</div>';
+  }).join('');
+}
+
+function openCreatePRModal() {
+  new bootstrap.Modal(document.getElementById('createPRModal')).show();
+}
+
+async function submitCreatePR() {
+  var title = document.getElementById('prTitle').value.trim();
+  var base  = document.getElementById('prBase').value.trim()  || 'main';
+  var head  = document.getElementById('prHead').value.trim();
+  var body  = document.getElementById('prBody').value.trim();
+  if (!title) { showToast('Title is required.', 'danger'); return; }
+  var r = await fetch('/api/gh/pr/create', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ title: title, base: base, head: head, body: body })
+  });
+  var d = await r.json();
+  bootstrap.Modal.getInstance(document.getElementById('createPRModal')).hide();
+  if (d.ok) { refreshPRs(); log('PR created: ' + d.output); showToast('Pull request created!', 'success'); }
+  else { log('PR creation failed: ' + (d.error || d.output)); showToast('PR creation failed.', 'danger'); }
+}
+
+/* ── Local Backup ──────────────────────────────────────────────────────────── */
+var _backupTimer = null;
+
+function startBackupSchedule(schedule) {
+  if (_backupTimer) { clearInterval(_backupTimer); _backupTimer = null; }
+  var map = { '5': 300000, '10': 600000, '30': 1800000,
+              '5_running': 300000, '10_running': 600000, '30_running': 1800000 };
+  var ms = map[schedule];
+  if (ms) { _backupTimer = setInterval(runBackupNow, ms); }
+}
+
+function saveBackupSettings() {
+  var sched = document.getElementById('backupSchedule').value;
+  saveSetting('BACKUP_SCHEDULE', sched);
+  startBackupSchedule(sched);
+}
+
+async function runBackupNow() {
+  var statusEl = document.getElementById('backupStatus');
+  var btn = document.querySelector('[onclick="runBackupNow()"]');
+  if (btn) btn.disabled = true;
+  statusEl.className   = 'badge bg-warning small';
+  statusEl.textContent = 'Running…';
+  try {
+    var r = await fetch('/api/backup/run', { method: 'POST' });
+    var d = await r.json();
+    if (d.ok) {
+      statusEl.className   = 'badge bg-success small';
+      statusEl.textContent = 'Success';
+      var now = new Date().toLocaleTimeString();
+      document.getElementById('backupLastRun').textContent = 'Last run: ' + now;
+      saveSetting('BACKUP_LAST_RUN', now);
+    } else {
+      statusEl.className   = 'badge bg-danger small';
+      statusEl.textContent = 'Failed';
+      log('Backup error: ' + (d.error || d.output));
+    }
+  } catch (e) {
+    statusEl.className   = 'badge bg-danger small';
+    statusEl.textContent = 'Failed';
+    log('Backup request error: ' + e);
+  }
+  if (btn) btn.disabled = false;
+}
+
+/* ── Build Dash Daemon ─────────────────────────────────────────────────────── */
+async function checkDaemonStatus() {
+  var badge    = document.getElementById('daemonBadge');
+  var startBtn = document.getElementById('daemonStartBtn');
+  var stopBtn  = document.getElementById('daemonStopBtn');
+  try {
+    var r = await fetch('/api/daemon/status');
+    var d = await r.json();
+    if (d.running) {
+      badge.className   = 'badge bg-success';
+      badge.textContent = 'Running (PID ' + d.pid + ')';
+      if (startBtn) startBtn.disabled = true;
+      if (stopBtn)  stopBtn.disabled  = false;
+    } else {
+      badge.className   = 'badge bg-secondary';
+      badge.textContent = 'Stopped';
+      if (startBtn) startBtn.disabled = false;
+      if (stopBtn)  stopBtn.disabled  = true;
+    }
+  } catch (e) {
+    if (badge) { badge.className = 'badge bg-secondary'; badge.textContent = 'Unknown'; }
+  }
+}
+
+async function startDaemon() {
+  var r = await fetch('/api/daemon/start', { method: 'POST' });
+  var d = await r.json();
+  if (!d.ok) { showToast('Failed to start daemon: ' + d.error, 'danger'); return; }
+  showToast('Daemon started.', 'success');
+  setTimeout(checkDaemonStatus, 1500);
+}
+
+async function stopDaemon() {
+  await fetch('/api/daemon/stop', { method: 'POST' });
+  showToast('Daemon stopped.', 'secondary');
+  setTimeout(checkDaemonStatus, 1000);
+}
+
+async function buildDaemonExe() {
+  setBuildBtns(true);
+  logOffset  = 0;
+  autoScroll = true;
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('buildMsg').textContent = 'Building daemon exe...';
+  updateBadge('running');
+  var r = await fetch('/api/daemon/build-exe', { method: 'POST' });
+  var d = await r.json();
+  if (!d.ok) {
+    setBuildBtns(false);
+    updateBadge('error');
+    document.getElementById('buildMsg').textContent = d.error || 'Build .exe failed.';
+    return;
+  }
+  pollLog(function (status) {
+    setBuildBtns(false);
+    updateBadge(status);
+    document.getElementById('buildMsg').textContent =
+      status === 'done' ? 'Daemon exe built successfully.' : 'Daemon exe build finished with errors.';
+  });
 }
 </script>
 </body>

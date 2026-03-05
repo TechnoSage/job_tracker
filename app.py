@@ -4,6 +4,7 @@ app.py — Main Flask application: routes, views, and app factory
 import json
 import logging
 import os
+import subprocess
 import sys
 import threading
 import uuid
@@ -56,6 +57,31 @@ def _data_dir() -> str:
 # Capture all log output in-memory so it can be viewed in the browser
 from server_log import init_server_log
 init_server_log()
+
+
+# ---------------------------------------------------------------------------
+# Version helper
+# ---------------------------------------------------------------------------
+
+def _read_app_version() -> str:
+    """Read version from main branch VERSION file; fall back to local file; default 1.0.0."""
+    root = os.path.dirname(os.path.abspath(__file__))
+    try:
+        result = subprocess.run(
+            ["git", "show", "main:VERSION"],
+            capture_output=True, text=True, cwd=root, timeout=5
+        )
+        if result.returncode == 0:
+            return result.stdout.strip() or "1.0.0"
+    except Exception:
+        pass
+    version_file = os.path.join(root, "VERSION")
+    if os.path.isfile(version_file):
+        try:
+            return open(version_file).read().strip() or "1.0.0"
+        except Exception:
+            pass
+    return "1.0.0"
 
 
 # ---------------------------------------------------------------------------
@@ -135,7 +161,8 @@ def create_app(config_class=Config):
                     unemp_enabled=unemp_enabled,
                     unemp_url=unemp_url,
                     unemp_state=unemp_state,
-                    posted_date_colors=_pdc)
+                    posted_date_colors=_pdc,
+                    app_version=_read_app_version())
 
     _register_routes(app)
     return app
