@@ -94,12 +94,6 @@
           <i class="bi bi-gear me-2"></i>Settings
         </a>
       </li>
-      <li class="nav-item">
-        <a href="{{ url_for('changelog_page') }}"
-           class="nav-link {% if request.endpoint == 'changelog_page' %}active{% else %}text-white{% endif %}">
-          <i class="bi bi-clock-history me-2"></i>Change Log
-        </a>
-      </li>
     </ul>
 
     <!-- Quick scan button -->
@@ -219,6 +213,9 @@
         <a href="{{ url_for('help_page') }}" target="_blank" class="btn btn-sm btn-outline-info" title="Help & Documentation">
           <i class="bi bi-journal-text"></i>
         </a>
+        <button class="btn btn-sm btn-outline-secondary" onclick="toggleChangelogPopup()" title="Change Log">
+          <i class="bi bi-clock-history"></i>
+        </button>
         <div class="border-start border-secondary" style="height:1.5rem;opacity:.35"></div>
         <a href="{{ url_for('support_page') }}" target="_blank" class="btn btn-sm btn-outline-warning" title="Customer Support">
           <i class="bi bi-headset"></i>
@@ -653,6 +650,123 @@
     localStorage.setItem('app-hints', nowOn ? 'on' : 'off');
     applyState(nowOn);
   });
+}());
+</script>
+
+<!-- ── Change Log popup ──────────────────────────────────────────── -->
+<div id="clPopup" style="display:none;position:fixed;z-index:8000;width:660px;max-width:94vw;top:72px;right:24px;border-radius:1.1rem;overflow:hidden;box-shadow:0 20px 56px rgba(0,0,0,.75),0 6px 20px rgba(0,0,0,.50);">
+  <div id="clPopupDrag" style="padding:.65rem 1rem;cursor:move;user-select:none;display:flex;align-items:center;justify-content:space-between;background:#23272b;border-bottom:1px solid rgba(255,255,255,.08);">
+    <span class="fw-bold text-white" style="font-size:.9rem;pointer-events:none;">
+      <i class="bi bi-clock-history me-2 text-secondary"></i>Change Log
+    </span>
+    <button class="btn-close btn-close-white btn-sm" onclick="toggleChangelogPopup()" title="Close"></button>
+  </div>
+  <div id="clPopupBody" style="max-height:62vh;overflow-y:auto;background:#1c1f24;">
+    <div class="text-center py-5 text-muted small"><i class="bi bi-arrow-repeat me-1"></i>Loading…</div>
+  </div>
+  <div style="padding:.5rem 1rem;display:flex;justify-content:flex-end;background:#1c1f24;border-top:1px solid rgba(255,255,255,.08);">
+    <button class="btn btn-sm btn-secondary" onclick="toggleChangelogPopup()">
+      <i class="bi bi-x-lg me-1"></i>Close
+    </button>
+  </div>
+</div>
+<script>
+(function () {
+  var popup   = null;
+  var drag    = null;
+  var _loaded = false;
+
+  document.addEventListener('DOMContentLoaded', function () {
+    popup = document.getElementById('clPopup');
+    drag  = document.getElementById('clPopupDrag');
+    if (!popup || !drag) return;
+
+    var dragging = false, sx, sy, startLeft, startTop;
+
+    drag.addEventListener('mousedown', function (e) {
+      if (e.target.closest('.btn-close')) return;
+      dragging  = true;
+      sx        = e.clientX;
+      sy        = e.clientY;
+      var rect  = popup.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop  = rect.top;
+      popup.style.right = 'auto';
+      popup.style.left  = startLeft + 'px';
+      popup.style.top   = startTop  + 'px';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function (e) {
+      if (!dragging) return;
+      popup.style.left = (startLeft + e.clientX - sx) + 'px';
+      popup.style.top  = (startTop  + e.clientY - sy) + 'px';
+    });
+
+    document.addEventListener('mouseup', function () { dragging = false; });
+  });
+
+  window.toggleChangelogPopup = function () {
+    if (!popup) popup = document.getElementById('clPopup');
+    if (!popup) return;
+    if (popup.style.display === 'none' || !popup.style.display) {
+      popup.style.display = 'block';
+      if (!_loaded) _fetchChangelog();
+    } else {
+      popup.style.display = 'none';
+    }
+  };
+
+  function _esc(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function _fetchChangelog() {
+    var body = document.getElementById('clPopupBody');
+    fetch('/api/changelog/data')
+      .then(function (r) { return r.json(); })
+      .then(function (entries) {
+        _loaded = true;
+        if (!entries || !entries.length) {
+          body.innerHTML = '<div class="text-center py-5 text-muted small">No changelog entries yet.</div>';
+          return;
+        }
+        var html = '<div class="accordion accordion-flush" id="clPopupAcc">';
+        entries.forEach(function (entry, i) {
+          var isLatest = i === 0;
+          var cnt      = entry.changes ? entry.changes.length : 0;
+          var verBadge = isLatest
+            ? '<span class="badge fw-bold" style="min-width:5rem;background:#39ff14;color:#000;font-size:.78rem;">v' + _esc(entry.version) + '</span>'
+              + '<span class="badge bg-info text-dark ms-1" style="font-size:.72rem;">Latest</span>'
+            : '<span class="badge fw-bold bg-dark border border-secondary text-secondary" style="min-width:5rem;font-size:.78rem;">v' + _esc(entry.version) + '</span>';
+          var cntBadge = '<span class="badge ' + (isLatest ? 'text-bg-success' : 'text-bg-secondary') + ' opacity-75" style="font-size:.7rem;">'
+            + cnt + ' change' + (cnt !== 1 ? 's' : '') + '</span>';
+          var changeHtml = cnt
+            ? '<ul class="mb-0 text-light" style="line-height:2.0;">'
+              + entry.changes.map(function (c) { return '<li class="small">' + _esc(c) + '</li>'; }).join('')
+              + '</ul>'
+            : '<p class="text-muted small mb-0 fst-italic">No changes recorded.</p>';
+
+          html += '<div class="accordion-item" style="background:transparent;border-color:rgba(255,255,255,.08);">'
+            + '<h2 class="accordion-header">'
+            + '<button class="accordion-button ' + (isLatest ? '' : 'collapsed') + '"'
+            + ' type="button" data-bs-toggle="collapse" data-bs-target="#clpa' + i + '"'
+            + ' aria-expanded="' + (isLatest ? 'true' : 'false') + '"'
+            + ' style="background:transparent;color:#fff;border-radius:0;box-shadow:none;">'
+            + '<div class="d-flex align-items-center gap-2 w-100 me-2 flex-wrap">'
+            + verBadge + '<span class="small fw-semibold">' + _esc(entry.date) + '</span>' + cntBadge
+            + '</div></button></h2>'
+            + '<div id="clpa' + i + '" class="accordion-collapse collapse ' + (isLatest ? 'show' : '') + '">'
+            + '<div class="accordion-body py-3 px-4" style="background:#161920;">' + changeHtml + '</div>'
+            + '</div></div>';
+        });
+        html += '</div>';
+        body.innerHTML = html;
+      })
+      .catch(function () {
+        body.innerHTML = '<div class="text-center py-5 text-danger small">Failed to load changelog.</div>';
+      });
+  }
 }());
 </script>
 

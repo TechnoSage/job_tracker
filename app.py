@@ -1747,46 +1747,25 @@ def _register_routes(app):
 
     @app.route("/changelog")
     def changelog_page():
+        return render_template("changelog.html", entries=_changelog_entries())
+
+    def _changelog_entries():
         changelog_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "CHANGELOG.json")
         try:
             with open(changelog_file, encoding="utf-8") as f:
                 entries = json.load(f)
         except Exception:
             entries = []
-        # Sort newest version first
         def _ver_key(e):
             try:
                 return tuple(int(x) for x in e.get("version", "0").split("."))
             except Exception:
                 return (0,)
-        entries = sorted(entries, key=_ver_key, reverse=True)
-        return render_template("changelog.html", entries=entries)
+        return sorted(entries, key=_ver_key, reverse=True)
 
-    @app.route("/api/changelog/save", methods=["POST"])
-    def api_changelog_save():
-        """Save edited change notes for a single version entry."""
-        data    = request.get_json(silent=True) or {}
-        version = data.get("version", "").strip()
-        changes = data.get("changes", [])
-        if not version:
-            return jsonify({"ok": False, "error": "No version"})
-        changelog_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "CHANGELOG.json")
-        try:
-            with open(changelog_file, encoding="utf-8") as f:
-                entries = json.load(f)
-        except Exception:
-            entries = []
-        found = False
-        for e in entries:
-            if e.get("version") == version:
-                e["changes"] = changes
-                found = True
-                break
-        if not found:
-            return jsonify({"ok": False, "error": "Version not found"})
-        with open(changelog_file, "w", encoding="utf-8") as f:
-            json.dump(entries, f, indent=2)
-        return jsonify({"ok": True})
+    @app.route("/api/changelog/data")
+    def api_changelog_data():
+        return jsonify(_changelog_entries())
 
     # ------------------------------------------------------------------
     # Server Log page
