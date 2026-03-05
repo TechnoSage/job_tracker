@@ -28,7 +28,7 @@
       <i class="bi bi-briefcase-fill text-primary fs-4 me-2"></i>
       <div class="lh-1">
         <div class="fw-bold fs-5">Job Tracker</div>
-        <div class="text-secondary" style="font-size:0.65rem;letter-spacing:.04em;">v{{ app_version }}</div>
+        <div style="font-size:0.65rem;letter-spacing:.04em;color:#39ff14;">v{{ app_version }}</div>
       </div>
     </a>
     <div class="mb-4"></div>
@@ -92,6 +92,12 @@
         <a href="{{ url_for('settings') }}"
            class="nav-link {% if request.endpoint == 'settings' %}active{% else %}text-white{% endif %}">
           <i class="bi bi-gear me-2"></i>Settings
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('changelog_page') }}"
+           class="nav-link {% if request.endpoint == 'changelog_page' %}active{% else %}text-white{% endif %}">
+          <i class="bi bi-clock-history me-2"></i>Change Log
         </a>
       </li>
     </ul>

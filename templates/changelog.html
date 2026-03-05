@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Change Log — Job Tracker{% endblock %}
+
+{% block content %}
+<script>
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  (function () { var e = document.getElementById('page-content'); if (e) e.scrollTop = 0; }());
+</script>
+
+<div class="d-flex align-items-center justify-content-between mt-3 mb-4 flex-wrap gap-2">
+  <h2 class="fw-bold mb-0">
+    <i class="bi bi-clock-history me-2 text-secondary"></i>Change Log
+  </h2>
+  <span class="text-muted small">{{ entries|length }} version{{ 's' if entries|length != 1 else '' }}</span>
+</div>
+
+{% if not entries %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-journal-x fs-2 mb-3 d-block"></i>
+    No changelog entries yet. Run a Full Build from the Build Dashboard to generate the first entry.
+  </div>
+</div>
+{% else %}
+
+<div class="card">
+  <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between pb-0">
+    <h6 class="fw-bold mb-0">
+      <i class="bi bi-list-check me-1 text-secondary"></i>Release History
+    </h6>
+    <span class="text-muted small">
+      <i class="bi bi-info-circle me-1"></i>Click a row to expand. Click
+      <i class="bi bi-pencil mx-1"></i>to edit change notes.
+    </span>
+  </div>
+  <div class="card-body p-0 pt-2">
+
+    <div class="accordion accordion-flush" id="changelogAccordion">
+      {% for entry in entries %}
+      {% set is_latest = loop.first %}
+      <div class="accordion-item bg-transparent border-bottom border-secondary border-opacity-25">
+
+        <h2 class="accordion-header" id="clh{{ loop.index }}" style="display:flex;align-items:stretch;">
+
+          <!-- Expand toggle -->
+          <button class="accordion-button {% if not is_latest %}collapsed{% endif %} bg-transparent text-white py-2 px-3"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#clb{{ loop.index }}"
+                  aria-expanded="{{ 'true' if is_latest else 'false' }}"
+                  style="flex:1 1 auto;width:auto;">
+
+            <div class="d-flex align-items-center gap-3 w-100 me-2 flex-wrap">
+
+              <!-- Version badge -->
+              {% if is_latest %}
+                <span class="badge fw-bold"
+                      style="min-width:5rem;background:#39ff14;color:#000;font-size:0.78rem;">
+                  v{{ entry.version }}
+                </span>
+                <span class="badge bg-info text-dark">Latest</span>
+              {% else %}
+                <span class="badge fw-bold bg-dark border border-secondary text-secondary"
+                      style="min-width:5rem;font-size:0.78rem;">
+                  v{{ entry.version }}
+                </span>
+              {% endif %}
+
+              <!-- Date -->
+              <span class="small fw-semibold">{{ entry.date }}</span>
+
+              <!-- Change count -->
+              <span class="badge {% if is_latest %}text-bg-success{% else %}text-bg-secondary{% endif %} opacity-75">
+                {{ entry.changes|length }} change{{ 's' if entry.changes|length != 1 else '' }}
+              </span>
+
+            </div>
+          </button>
+
+          <!-- Edit button — outside toggle -->
+          <div class="d-flex align-items-center px-3 flex-shrink-0 border-start border-secondary border-opacity-25">
+            <button class="btn btn-sm"
+                    style="background:transparent;border:1px solid rgba(255,255,255,.18);color:#ccc;font-size:.72rem;padding:2px 8px;"
+                    onclick="openEditModal('{{ entry.version|e }}', {{ loop.index }})"
+                    title="Edit change notes">
+              <i class="bi bi-pencil me-1"></i>Edit
+            </button>
+          </div>
+
+        </h2><!-- /accordion-header -->
+
+        <!-- Expanded body -->
+        <div id="clb{{ loop.index }}"
+             class="accordion-collapse collapse {% if is_latest %}show{% endif %}"
+             data-bs-parent="#changelogAccordion">
+          <div class="accordion-body py-3 px-4">
+
+            {% if entry.changes %}
+            <ul class="mb-0" style="line-height:2.0;" id="changeList{{ loop.index }}">
+              {% for change in entry.changes %}
+              <li class="small">{{ change }}</li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted small mb-0 fst-italic" id="changeList{{ loop.index }}">
+              No changes recorded. Click Edit to add notes.
+            </p>
+            {% endif %}
+
+          </div>
+        </div>
+
+      </div><!-- /accordion-item -->
+      {% endfor %}
+    </div><!-- /accordion -->
+
+  </div>
+</div>
+
+{% endif %}
+
+
+<!-- ── Edit Modal ─────────────────────────────────────────────────────────── -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark text-light border border-secondary">
+      <div class="modal-header border-secondary py-2">
+        <h6 class="modal-title mb-0">
+          <i class="bi bi-pencil me-1"></i>Edit Change Notes —
+          <span id="editModalVersion" class="text-info ms-1"></span>
+        </h6>
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-2">One change per line. Blank lines are ignored.</p>
+        <textarea id="editChangesArea" class="form-control form-control-sm font-monospace"
+                  rows="14" style="font-size:0.82rem;resize:vertical;"></textarea>
+      </div>
+      <div class="modal-footer border-secondary py-2">
+        <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="saveEditModal()">
+          <i class="bi bi-floppy me-1"></i>Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var _editVersion = null;
+var _editIndex   = null;
+
+function openEditModal(version, idx) {
+  _editVersion = version;
+  _editIndex   = idx;
+  document.getElementById('editModalVersion').textContent = 'v' + version;
+
+  // Collect current change lines from the rendered list
+  var listEl = document.getElementById('changeList' + idx);
+  var lines  = [];
+  if (listEl && listEl.tagName === 'UL') {
+    listEl.querySelectorAll('li').forEach(function (li) {
+      lines.push(li.textContent.trim());
+    });
+  }
+  document.getElementById('editChangesArea').value = lines.join('\n');
+
+  new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+
+function saveEditModal() {
+  var raw     = document.getElementById('editChangesArea').value;
+  var changes = raw.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+
+  fetch('/api/changelog/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ version: _editVersion, changes: changes })
+  })
+  .then(function (r) { return r.json(); })
+  .then(function (d) {
+    bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+    if (d.ok) {
+      // Refresh the visible list without a full page reload
+      var listEl = document.getElementById('changeList' + _editIndex);
+      if (listEl) {
+        if (changes.length) {
+          var html = changes.map(function (c) {
+            return '<li class="small">' + _esc(c) + '</li>';
+          }).join('');
+          listEl.outerHTML = '<ul class="mb-0" style="line-height:2.0;" id="changeList' + _editIndex + '">' + html + '</ul>';
+        } else {
+          listEl.outerHTML = '<p class="text-muted small mb-0 fst-italic" id="changeList' + _editIndex + '">No changes recorded. Click Edit to add notes.</p>';
+        }
+      }
+    } else {
+      alert('Save failed: ' + (d.error || 'unknown error'));
+    }
+  })
+  .catch(function (e) { alert('Error: ' + e); });
+}
+
+function _esc(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+{% endblock %}

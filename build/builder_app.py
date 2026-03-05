@@ -621,6 +621,22 @@ def create_builder_app() -> Flask:
                 settings_now = _load_settings()
                 settings_now["APP_VERSION"] = new_ver
                 _save_settings(settings_now)
+                # ── Append entry to CHANGELOG.json if version changed ──
+                cl_file = Path(cwd) / "CHANGELOG.json"
+                try:
+                    cl_entries = json.loads(cl_file.read_text(encoding="utf-8")) if cl_file.exists() else []
+                    existing_versions = {e.get("version") for e in cl_entries}
+                    if new_ver not in existing_versions:
+                        import datetime as _dt
+                        cl_entries.append({
+                            "version": new_ver,
+                            "date": _dt.date.today().isoformat(),
+                            "changes": []
+                        })
+                        cl_file.write_text(json.dumps(cl_entries, indent=2), encoding="utf-8")
+                        _append(f"CHANGELOG.json: added entry for v{new_ver}")
+                except Exception as cl_exc:
+                    _append(f"[WARN] Could not update CHANGELOG.json: {cl_exc}")
             except Exception as exc:
                 _append(f"[WARN] Could not write VERSION file: {exc}")
 
