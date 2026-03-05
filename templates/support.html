@@ -75,8 +75,9 @@
     [data-bs-theme="light"] #sysInfo { background: #f0f2f5; color: #374151; border: 1px solid #dee2e6; }
 
     /* Right-panel cards fill height evenly */
-    #rightPanelCol { display: none; }
-    #rightPanelCol .panel-card { flex: 1 1 0; min-height: 0; }
+    #rightPanelCol { display: none; align-self: stretch; }
+    #bugPanel { flex: 1 1 auto; }
+    #rightPanelCol .panel-card { flex: 1 1 0; min-height: 0; overflow-y: auto; }
   </style>
 </head>
 <body>
