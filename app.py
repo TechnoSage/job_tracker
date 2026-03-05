@@ -1708,7 +1708,11 @@ def _register_routes(app):
 
     @app.route("/support")
     def support_page():
-        return render_template("support.html")
+        applicant_name  = Setting.get("applicant_name", "")
+        applicant_email = Setting.get("applicant_email", "")
+        return render_template("support.html",
+                               applicant_name=applicant_name,
+                               applicant_email=applicant_email)
 
     # ------------------------------------------------------------------
     # Server Log page
