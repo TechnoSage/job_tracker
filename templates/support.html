@@ -255,10 +255,6 @@
                 <li>Any error messages or screenshots</li>
                 <li>Browser, OS, and app version</li>
               </ul>
-              <a href="https://github.com/TechnoSage/job_tracker/issues/new?labels=bug&title=%5BBug%5D+"
-                 target="_blank" class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-github me-1"></i>Open on GitHub
-              </a>
             </div>
           </div>
 
@@ -366,10 +362,6 @@
                 <li>Examples from other tools you've seen</li>
                 <li>How often you'd use it</li>
               </ul>
-              <a href="https://github.com/TechnoSage/job_tracker/issues/new?labels=enhancement&title=%5BFeature%5D+"
-                 target="_blank" class="btn btn-sm btn-outline-warning text-dark">
-                <i class="bi bi-github me-1"></i>Submit on GitHub
-              </a>
             </div>
           </div>
         </div><!-- /featurePanel -->
@@ -604,23 +596,23 @@ function _configureMode(mode) {
 
   } else if (mode === 'bug') {
     select.style.display = 'none';
-    locked.style.display = '';
+    locked.style.display = 'block';
     locked.textContent   = 'Bug Report';
     locked.className     = 'badge bg-danger w-100 text-start';
     bugPanel.style.setProperty('display', 'flex', 'important');
     bugPanel.style.flexDirection = 'column';
-    rightCol.style.display = '';
-    sysRow.style.display   = '';
-    sysCheck.style.display = '';
+    rightCol.style.display = 'flex';
+    sysRow.style.display   = 'block';
+    sysCheck.style.display = 'block';
     document.getElementById('includeSysInfo').checked = true;
 
   } else if (mode === 'feature') {
     select.style.display = 'none';
-    locked.style.display = '';
+    locked.style.display = 'block';
     locked.textContent   = 'Feature Request';
     locked.className     = 'badge bg-warning text-dark w-100 text-start';
     featPanel.style.setProperty('display', 'block', 'important');
-    rightCol.style.display = '';
+    rightCol.style.display = 'flex';
   }
 }
 
