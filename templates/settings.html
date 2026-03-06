@@ -27,7 +27,7 @@
   <div class="col-lg-6 settings-col" id="settingsColLeft">
 
     <!-- Applicant Profile -->
-    <div class="card border-0 shadow-sm mb-4" id="section-profile" data-section="profile">
+    <div class="card mb-4" id="section-profile" data-section="profile">
       <div class="card-header bg-transparent border-0 d-flex align-items-center">
         <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
         <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-person-fill me-2 text-primary"></i>Your Profile</h6>
@@ -181,7 +181,7 @@
     </div>
 
     <!-- Response Email Monitoring -->
-    <div class="card border-0 shadow-sm mb-4" id="section-response-emails" data-section="response-emails">
+    <div class="card mb-4" id="section-response-emails" data-section="response-emails">
       <div class="card-header bg-transparent border-0 d-flex align-items-center">
         <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
         <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-envelope-check me-2 text-success"></i>Response Email Monitoring</h6>
@@ -365,7 +365,7 @@
     </div>
 
     <!-- Cover Letter -->
-    <div class="card border-0 shadow-sm mb-4" id="section-cover-letters" data-section="cover-letters">
+    <div class="card mb-4" id="section-cover-letters" data-section="cover-letters">
       <div class="card-header bg-transparent border-0 d-flex align-items-center">
         <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
         <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-file-earmark-richtext me-2 text-info"></i>Cover Letters</h6>
@@ -388,7 +388,7 @@
     </div>
 
     <!-- Notifications -->
-    <div class="card border-0 shadow-sm mb-4" id="section-notifications" data-section="notifications">
+    <div class="card mb-4" id="section-notifications" data-section="notifications">
       <div class="card-header bg-transparent border-0 d-flex align-items-center">
         <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
         <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-bell me-2 text-primary"></i>Notifications</h6>
@@ -441,7 +441,7 @@
     </div>
 
     <!-- Calendar Integration -->
-    <div class="card border-0 shadow-sm mb-4" id="section-calendar" data-section="calendar">
+    <div class="card mb-4" id="section-calendar" data-section="calendar">
       <div class="card-header bg-transparent border-0 d-flex align-items-center">
         <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
         <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-calendar3 me-2 text-info"></i>Calendar Integration</h6>
@@ -548,7 +548,7 @@
   <div class="col-lg-6 settings-col" id="settingsColRight">
 
     <!-- Job Search Preferences -->
-    <div class="card border-0 shadow-sm mb-4" id="section-job-filtering" data-section="job-filtering">
+    <div class="card mb-4" id="section-job-filtering" data-section="job-filtering">
       <div class="card-header bg-transparent border-0 d-flex align-items-center">
         <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
         <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-search me-2 text-success"></i>Job Filtering</h6>
@@ -685,7 +685,7 @@
     </div>
 
     <!-- Scheduling -->
-    <div class="card border-0 shadow-sm mb-4" id="section-scheduled-scans" data-section="scheduled-scans">
+    <div class="card mb-4" id="section-scheduled-scans" data-section="scheduled-scans">
       <div class="card-header bg-transparent border-0 d-flex align-items-center">
         <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
         <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-clock me-2 text-warning"></i>Scheduled Scans</h6>
@@ -816,6 +816,37 @@
                  value="{{ settings.get('follow_up_days','7') }}" min="1" max="30">
         </div>
 
+        <!-- Scan Timeout Card -->
+        <div class="card border mb-3 scan-timeout-card">
+          <div class="card-header bg-transparent py-2 d-flex align-items-center gap-2" style="border-color:rgba(255,140,0,0.4);">
+            <i class="bi bi-hourglass-split" style="color:#ff8c00;"></i>
+            <span class="fw-semibold small" style="color:#ff8c00;">Scan Timeout</span>
+          </div>
+          <div class="card-body py-3 px-3" style="border-top:1px solid rgba(255,140,0,0.2);">
+            <div class="row align-items-center g-3">
+              <div class="col-auto">
+                <label class="form-label small fw-semibold mb-1" for="scanTimeoutInput">Maximum scan duration</label>
+                <div class="input-group input-group-sm">
+                  <input type="number" name="scan_timeout_minutes" id="scanTimeoutInput"
+                         class="form-control" style="width:85px;"
+                         value="{{ settings.get('scan_timeout_minutes', '30') }}"
+                         min="0" max="480">
+                  <span class="input-group-text">min</span>
+                </div>
+              </div>
+              <div class="col">
+                <div class="small text-muted">
+                  If the Background Daemon's scan runs longer than this, the scan is marked
+                  <strong style="color:#ff4444;">failed</strong> in Scan History, an error
+                  <strong>Notification</strong> is recorded, a warning is written to the
+                  <strong>Server Log</strong>, and the daemon is automatically
+                  <strong>restarted</strong>. Set to <code>0</code> to disable the timeout.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Background Daemon panel -->
         <div class="rounded-3 p-3 mt-1" style="background:rgba(255,255,255,.04);box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);">
           <div class="fw-semibold small text-uppercase text-secondary mb-3">
@@ -939,7 +970,7 @@
 <!-- ================================================================
      Posted Date Color Coding  (full-width)
      ================================================================ -->
-<div class="card border-0 shadow-sm mb-4" id="section-posted-date-colors" data-section="posted-date-colors">
+<div class="card mb-4" id="section-posted-date-colors" data-section="posted-date-colors">
   <div class="card-header bg-transparent border-0 d-flex align-items-center">
     <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
     <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-palette me-2 text-warning"></i>Posted Date Color Coding</h6>
@@ -1058,7 +1089,7 @@
 <!-- ================================================================
      Unemployment Settings  (full-width)
      ================================================================ -->
-<div class="card border-0 shadow-sm mb-4" id="section-unemployment" data-section="unemployment">
+<div class="card mb-4" id="section-unemployment" data-section="unemployment">
   <div class="card-header bg-transparent border-0 d-flex align-items-center">
     <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
     <h6 class="fw-bold mb-0 flex-grow-1"><i class="bi bi-building-check me-2 text-info"></i>Unemployment</h6>
@@ -1271,7 +1302,7 @@
 <!-- ================================================================
      Database Management  (full-width, outside the two-column grid)
      ================================================================ -->
-<div class="card border-0 shadow-sm mb-4" id="section-database" data-section="database">
+<div class="card mb-4" id="section-database" data-section="database">
   <div class="card-header bg-transparent border-0 d-flex align-items-center">
     <span class="section-drag-handle me-2" title="Drag to reorder"><i class="bi bi-grip-vertical text-muted"></i></span>
     <i class="bi bi-database-gear me-2 text-muted"></i>
@@ -1502,6 +1533,19 @@
   animation: neonGreenPulse 2.4s ease-in-out infinite;
 }
 .daemon-control-card .card-header {
+  border-radius: calc(.5rem - 1px) calc(.5rem - 1px) 0 0 !important;
+}
+@keyframes orangePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255,140,0,0.0), 0 0 6px 1px rgba(255,140,0,0.55); }
+  50%  { box-shadow: 0 0 0 3px rgba(255,140,0,0.25), 0 0 18px 4px rgba(255,140,0,0.85); }
+  100% { box-shadow: 0 0 0 0 rgba(255,140,0,0.0), 0 0 6px 1px rgba(255,140,0,0.55); }
+}
+.scan-timeout-card {
+  border-color: rgba(255,140,0,0.6) !important;
+  border-radius: .5rem !important;
+  animation: orangePulse 2.4s ease-in-out infinite;
+}
+.scan-timeout-card .card-header {
   border-radius: calc(.5rem - 1px) calc(.5rem - 1px) 0 0 !important;
 }
 </style>

@@ -36,10 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => el.classList.remove('show'), 4000);
   });
 
-  // ---- Bootstrap tooltips ----
-  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-    new bootstrap.Tooltip(el);
-  });
+  // ---- Bootstrap tooltips (only when hints are enabled) ----
+  if (document.body.classList.contains('hints-on')) {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+      new bootstrap.Tooltip(el);
+    });
+  }
 
   // ---- Confirm destructive actions ----
   document.querySelectorAll('[data-confirm]').forEach(el => {
@@ -86,30 +88,6 @@ async function pollScanStatus(intervalMs = 5000) {
   setTimeout(() => clearInterval(id), 180_000);
 }
 
-// ---- Tooltip toggle ----
-(function () {
-  const KEY = 'jt_tooltips';
-  const btn = document.getElementById('tooltipToggleBtn');
-
-  // Restore saved preference on every page load
-  if (localStorage.getItem(KEY) === 'off') {
-    document.body.classList.add('tooltips-off');
-    if (btn) {
-      btn.classList.replace('btn-outline-info', 'btn-outline-secondary');
-      btn.title = 'Hints off — click to enable';
-    }
-  }
-
-  if (btn) {
-    btn.addEventListener('click', () => {
-      const isOff = document.body.classList.toggle('tooltips-off');
-      localStorage.setItem(KEY, isOff ? 'off' : 'on');
-      btn.classList.toggle('btn-outline-info', !isOff);
-      btn.classList.toggle('btn-outline-secondary', isOff);
-      btn.title = isOff ? 'Hints off — click to enable' : 'Hints on — click to disable';
-    });
-  }
-}());
 
 // ---- Score range display (settings page) ----
 const scoreRange = document.querySelector('input[name="min_match_score"]');

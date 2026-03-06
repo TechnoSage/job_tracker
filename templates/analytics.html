@@ -19,7 +19,7 @@
   ] %}
   {% for label, value, icon, color in metric_cards %}
   <div class="col-6 col-md-4 col-xl-3">
-    <div class="card border-0 shadow-sm">
+    <div class="card">
       <div class="card-body d-flex align-items-center gap-3 py-3">
         <i class="bi bi-{{ icon }} text-{{ color }} fs-4"></i>
         <div>
@@ -37,7 +37,7 @@
 
   <!-- Application Funnel -->
   <div class="col-lg-6">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card h-100">
       <div class="card-header bg-transparent border-0">
         <h6 class="fw-bold mb-0"><i class="bi bi-funnel me-2 text-primary"></i>Application Pipeline</h6>
         <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;margin-top:2px;">How many applications are at each stage of the hiring process</div>
@@ -50,7 +50,7 @@
 
   <!-- Jobs by Source -->
   <div class="col-lg-6">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card h-100">
       <div class="card-header bg-transparent border-0">
         <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2 text-info"></i>Jobs by Source</h6>
         <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;margin-top:2px;">Which job boards have provided the most listings in your database</div>
@@ -67,7 +67,7 @@
 
   <!-- Weekly Activity -->
   <div class="col-lg-8">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card h-100">
       <div class="card-header bg-transparent border-0">
         <h6 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-success"></i>Weekly Activity (8 weeks)</h6>
         <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;margin-top:2px;">Applications submitted and new jobs found each week over the past 8 weeks</div>
@@ -80,7 +80,7 @@
 
   <!-- Category distribution -->
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card h-100">
       <div class="card-header bg-transparent border-0">
         <h6 class="fw-bold mb-0"><i class="bi bi-layers me-2 text-warning"></i>Jobs by Category</h6>
         <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;margin-top:2px;">Breakdown of all found jobs by role type (software, IT, customer service, general)</div>
@@ -95,7 +95,7 @@
 <!-- Score distribution -->
 <div class="row g-4">
   <div class="col-12">
-    <div class="card border-0 shadow-sm">
+    <div class="card">
       <div class="card-header bg-transparent border-0">
         <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart me-2 text-secondary"></i>Match Score Distribution</h6>
         <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;margin-top:2px;">How many jobs fall into each score band (0–100%). Higher scores = more of your skills matched in the posting</div>

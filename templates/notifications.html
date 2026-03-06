@@ -2,6 +2,67 @@
 {% block title %}Notifications — Job Tracker{% endblock %}
 
 {% block content %}
+<style>
+/* ── Error / Warning pulse animations ───────────────────────── */
+@keyframes notifPulseError {
+  0%, 100% {
+    box-shadow:
+      0 0 6px 1px rgba(220,53,69,0.20),
+      0 6px 18px rgba(0,0,0,.55),
+      0 2px 6px  rgba(0,0,0,.35),
+      inset 0  1px 0   rgba(255,255,255,.045),
+      inset 0 -2px 4px rgba(0,0,0,.30);
+  }
+  50% {
+    box-shadow:
+      0 0 22px 7px rgba(220,53,69,0.55),
+      0 6px 18px rgba(0,0,0,.55),
+      0 2px 6px  rgba(0,0,0,.35),
+      inset 0  1px 0   rgba(255,255,255,.045),
+      inset 0 -2px 4px rgba(0,0,0,.30);
+  }
+}
+
+@keyframes notifPulseWarning {
+  0%, 100% {
+    box-shadow:
+      0 0 6px 1px rgba(253,126,20,0.20),
+      0 6px 18px rgba(0,0,0,.55),
+      0 2px 6px  rgba(0,0,0,.35),
+      inset 0  1px 0   rgba(255,255,255,.045),
+      inset 0 -2px 4px rgba(0,0,0,.30);
+  }
+  50% {
+    box-shadow:
+      0 0 22px 7px rgba(253,126,20,0.55),
+      0 6px 18px rgba(0,0,0,.55),
+      0 2px 6px  rgba(0,0,0,.35),
+      inset 0  1px 0   rgba(255,255,255,.045),
+      inset 0 -2px 4px rgba(0,0,0,.30);
+  }
+}
+
+.notif-pulse-error {
+  border: 1px solid rgba(220,53,69,0.65) !important;
+  animation: notifPulseError 1.8s ease-in-out infinite;
+}
+
+.notif-pulse-warning {
+  border: 1px solid rgba(253,126,20,0.65) !important;
+  animation: notifPulseWarning 1.8s ease-in-out infinite;
+}
+
+.notif-acknowledged-error {
+  border: 1px solid rgba(220,53,69,0.65) !important;
+  animation: none !important;
+}
+
+.notif-acknowledged-warning {
+  border: 1px solid rgba(253,126,20,0.65) !important;
+  animation: none !important;
+}
+</style>
+
 <div class="d-flex align-items-center justify-content-between mt-3 mb-4">
   <h2 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-primary"></i>Notifications</h2>
   <form method="POST" action="{{ url_for('mark_notifications_read') }}">
@@ -14,7 +75,16 @@
 {% if notifications %}
 <div class="d-flex flex-column gap-3">
   {% for notif in notifications %}
-  <div class="card border-0 shadow-sm {% if not notif.is_read %}border-start border-3 border-{{ notif.color() }}{% endif %}">
+  {% set is_error   = notif.color() == 'danger' %}
+  {% set is_warning = notif.color() == 'warning' %}
+  <div class="card
+    {% if is_error %}
+      {% if notif.is_acknowledged %}notif-acknowledged-error{% else %}notif-pulse-error{% endif %}
+    {% elif is_warning %}
+      {% if notif.is_acknowledged %}notif-acknowledged-warning{% else %}notif-pulse-warning{% endif %}
+    {% elif not notif.is_read %}border-start border-3 border-{{ notif.color() }}{% endif %}"
+    data-notif-id="{{ notif.id }}"
+    data-notif-type="{% if is_error %}error{% elif is_warning %}warning{% endif %}">
     <div class="card-body d-flex align-items-start gap-3">
       <div class="flex-shrink-0 mt-1">
         <i class="bi {{ notif.icon() }} text-{{ notif.color() }} fs-5"></i>
@@ -53,14 +123,27 @@
           {% endif %}
         </div>
       </div>
-      <div class="flex-shrink-0 d-flex gap-2">
-        {% if notif.job_id %}
-        <a href="{{ url_for('job_detail', job_id=notif.job_id) }}"
-           class="btn btn-sm btn-outline-primary">View Job</a>
-        {% endif %}
-        {% if notif.application_id %}
-        <a href="{{ url_for('application_detail', app_id=notif.application_id) }}"
-           class="btn btn-sm btn-outline-info">View App</a>
+      <div class="flex-shrink-0 d-flex flex-column align-items-end gap-2">
+        <div class="d-flex gap-2">
+          {% if notif.job_id %}
+          <a href="{{ url_for('job_detail', job_id=notif.job_id) }}"
+             class="btn btn-sm btn-outline-primary">View Job</a>
+          {% endif %}
+          {% if notif.application_id %}
+          <a href="{{ url_for('application_detail', app_id=notif.application_id) }}"
+             class="btn btn-sm btn-outline-info">View App</a>
+          {% endif %}
+        </div>
+        {% if is_error or is_warning %}
+        <div class="form-check d-flex align-items-center gap-1 mb-0">
+          <input class="form-check-input notif-ack-cb" type="checkbox"
+                 id="ack-{{ notif.id }}"
+                 data-notif-id="{{ notif.id }}"
+                 {% if notif.is_acknowledged %}checked{% endif %}>
+          <label class="form-check-label small text-muted" for="ack-{{ notif.id }}">
+            Acknowledged
+          </label>
+        </div>
         {% endif %}
       </div>
     </div>
@@ -74,4 +157,34 @@
   <p class="small">Notifications appear here when new matching jobs are found.</p>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.notif-ack-cb').forEach(function (cb) {
+  cb.addEventListener('change', function () {
+    var id    = this.dataset.notifId;
+    var acked = this.checked;
+    var card  = document.querySelector('.card[data-notif-id="' + id + '"]');
+    var type  = card ? card.dataset.notifType : '';
+
+    fetch('/api/notifications/' + id + '/acknowledge', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ acknowledged: acked }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function () {
+        if (!card) return;
+        if (acked) {
+          card.classList.remove('notif-pulse-error', 'notif-pulse-warning');
+          card.classList.add(type === 'error' ? 'notif-acknowledged-error' : 'notif-acknowledged-warning');
+        } else {
+          card.classList.remove('notif-acknowledged-error', 'notif-acknowledged-warning');
+          card.classList.add(type === 'error' ? 'notif-pulse-error' : 'notif-pulse-warning');
+        }
+      });
+  });
+});
+</script>
 {% endblock %}

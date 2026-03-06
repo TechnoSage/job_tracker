@@ -33,6 +33,7 @@ instance/
 
 # Build Dashboard local settings (contains machine-specific paths)
 build/build_settings.json
+build/build_projects.json
 
 # Embedded Python runtime (not source code)
 DLLs/

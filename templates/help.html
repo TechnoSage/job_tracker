@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="en" id="htmlRoot" data-bs-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Tracker — Help & Documentation</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+html { scroll-behavior: smooth; }
+
+/* ── Top navbar ─────────────────────────────────────────────────────────── */
+#helpNav {
+  background: var(--bs-body-bg);
+  border-bottom: 1px solid var(--bs-border-color);
+  z-index: 1030;
+}
+
+/* ── TOC sidebar ─────────────────────────────────────────────────────────── */
+#tocSidebar {
+  position: sticky;
+  top: 57px;
+  height: calc(100vh - 57px);
+  overflow-y: auto;
+  border-right: 1px solid var(--bs-border-color);
+  padding: 1.25rem 0.75rem;
+  scrollbar-width: thin;
+}
+#tocSidebar .toc-section { font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--bs-secondary-color); margin: 1rem 0 0.25rem 0; }
+#tocSidebar .nav-link { font-size: 0.8rem; padding: 0.2rem 0.5rem; color: var(--bs-body-color);
+  border-radius: 4px; line-height: 1.4; }
+#tocSidebar .nav-link:hover { background: rgba(255,255,255,.06); color: var(--bs-body-color); }
+#tocSidebar .nav-link.active { background: rgba(13,110,253,.18); color: #6ea8fe; font-weight: 600; }
+#tocSidebar .nav-link.sub { padding-left: 1.1rem; }
+#tocSidebar .nav-link.sub2 { padding-left: 1.9rem; }
+
+/* ── Main content ────────────────────────────────────────────────────────── */
+#helpContent { max-width: 860px; padding: 2rem 2.5rem 4rem; }
+#helpContent h2 { font-size: 1.45rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 0.5rem;
+  padding-top: 0.5rem; border-bottom: 1px solid var(--bs-border-color); padding-bottom: 0.5rem; }
+#helpContent h3 { font-size: 1.05rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.4rem; }
+#helpContent h4 { font-size: 0.875rem; font-weight: 600; margin-top: 1.25rem; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--bs-secondary-color); }
+#helpContent p { line-height: 1.7; }
+#helpContent ul li { line-height: 1.7; margin-bottom: 0.2rem; }
+
+/* ── Mockup containers ───────────────────────────────────────────────────── */
+.mockup {
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin: 0.75rem 0 1.25rem;
+  font-size: 0.82rem;
+}
+[data-bs-theme="light"] .mockup { background: rgba(0,0,0,.03); }
+.mockup-label {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--bs-secondary-color); margin-bottom: 0.6rem;
+}
+.mockup-card {
+  background: #1c1f24;
+  border: 1px solid rgba(255,255,255,.065);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);
+}
+[data-bs-theme="light"] .mockup-card { background: #fff; border-color: rgba(0,0,0,.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,.12); color: #212529; }
+.mockup-topbar {
+  background: #212529; border: 1px solid rgba(255,255,255,.1); border-radius: 0.5rem;
+  padding: 0.5rem 0.875rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+}
+[data-bs-theme="light"] .mockup-topbar { background: #f8f9fa; border-color: rgba(0,0,0,.12); }
+
+/* ── Score badges (matching live app) ───────────────────────────────────── */
+.score-hi  { background:#0a2a0a; color:#39ff14; border:1px solid #39ff14; border-radius:.35rem;
+  font-size:.72rem; font-weight:700; padding:2px 7px; white-space:nowrap; }
+.score-med { background:#0c1a2e; color:#58a6ff; border:1px solid #1f6feb; border-radius:.35rem;
+  font-size:.72rem; font-weight:700; padding:2px 7px; white-space:nowrap; }
+.score-lo  { background:#1c1c1c; color:#6c757d; border:1px solid #444; border-radius:.35rem;
+  font-size:.72rem; font-weight:700; padding:2px 7px; white-space:nowrap; }
+[data-bs-theme="light"] .score-hi  { background:#d4ffd4; color:#155724; border-color:#28a745; }
+[data-bs-theme="light"] .score-med { background:#d0e8ff; color:#084298; border-color:#0d6efd; }
+[data-bs-theme="light"] .score-lo  { background:#f0f0f0; color:#6c757d; border-color:#ced4da; }
+
+/* ── Key term callouts ───────────────────────────────────────────────────── */
+.key-term { background: rgba(13,110,253,.12); border-left: 3px solid #0d6efd;
+  border-radius: 0 .4rem .4rem 0; padding: .6rem 1rem; margin: .75rem 0; font-size:.875rem; }
+.tip-box  { background: rgba(25,135,84,.1); border-left: 3px solid #198754;
+  border-radius: 0 .4rem .4rem 0; padding: .6rem 1rem; margin: .75rem 0; font-size:.875rem; }
+.warn-box { background: rgba(255,193,7,.1); border-left: 3px solid #ffc107;
+  border-radius: 0 .4rem .4rem 0; padding: .6rem 1rem; margin: .75rem 0; font-size:.875rem; }
+
+/* ── Pipeline visual ────────────────────────────────────────────────────── */
+.pipeline-step {
+  flex: 1; text-align: center; padding: .5rem .25rem; font-size: .75rem; font-weight: 600;
+  border-radius: .4rem; border: 1px solid var(--bs-border-color);
+  background: rgba(255,255,255,.03);
+}
+.pipeline-arrow { color: var(--bs-secondary-color); font-size: 1rem; align-self: center; padding: 0 .15rem; }
+</style>
+</head>
+<body>
+
+<!-- ── Top navbar ──────────────────────────────────────────────────────────── -->
+<nav id="helpNav" class="navbar sticky-top px-4 py-2">
+  <span class="navbar-brand fw-bold mb-0">
+    <i class="bi bi-question-circle-fill me-2 text-info"></i>Job Tracker &mdash; Help &amp; Documentation
+  </span>
+  <div class="d-flex align-items-center gap-2">
+    <button class="btn btn-sm btn-outline-secondary" onclick="toggleTheme()" title="Toggle dark / light mode">
+      <i id="themeIcon" class="bi bi-moon-fill me-1"></i><span id="themeLabel">Dark mode</span>
+    </button>
+    <a href="/" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Back to App
+    </a>
+  </div>
+</nav>
+
+<div class="d-flex">
+
+<!-- ── TOC sidebar ─────────────────────────────────────────────────────────── -->
+<nav id="tocSidebar" class="d-none d-lg-block" style="width:230px;min-width:230px">
+  <div class="toc-section">Getting Started</div>
+  <a class="nav-link" href="#overview">Overview</a>
+  <a class="nav-link" href="#navigation">Navigation</a>
+
+  <div class="toc-section">Pages</div>
+  <a class="nav-link fw-semibold" href="#dashboard">Dashboard</a>
+  <a class="nav-link sub" href="#dash-metrics">Metric Cards</a>
+  <a class="nav-link sub" href="#dash-matches">Recent Matches</a>
+  <a class="nav-link sub" href="#dash-pipeline">Application Pipeline</a>
+  <a class="nav-link sub" href="#dash-followups">Follow-ups Due</a>
+  <a class="nav-link sub" href="#dash-scan-history">Scan History</a>
+  <a class="nav-link sub" href="#dash-email-reviews">Email Reviews</a>
+
+  <a class="nav-link fw-semibold" href="#job-listings">Job Listings</a>
+  <a class="nav-link sub" href="#score-system">Score System</a>
+  <a class="nav-link sub" href="#job-filters">Filtering Jobs</a>
+  <a class="nav-link sub" href="#applying">Applying for a Job</a>
+
+  <a class="nav-link fw-semibold" href="#applications">Applications</a>
+  <a class="nav-link sub" href="#app-status">Status Pipeline</a>
+  <a class="nav-link sub" href="#app-tracking">Tracking &amp; Follow-ups</a>
+
+  <a class="nav-link fw-semibold" href="#analytics">Analytics</a>
+  <a class="nav-link fw-semibold" href="#sources">Job Sources</a>
+  <a class="nav-link fw-semibold" href="#notifications">Notifications</a>
+  <a class="nav-link fw-semibold" href="#settings">Settings</a>
+
+  <div class="toc-section">Features</div>
+  <a class="nav-link" href="#running-scan">Running a Scan</a>
+  <a class="nav-link" href="#daemon">Scheduler Daemon</a>
+  <a class="nav-link" href="#hints">Hints System</a>
+  <a class="nav-link" href="#tips">Tips &amp; Tricks</a>
+</nav>
+
+<!-- ── Main content ────────────────────────────────────────────────────────── -->
+<main id="helpContent">
+
+<!-- ══════════════════════════════════════════════════════════ OVERVIEW -->
+<section id="overview">
+  <h2><i class="bi bi-info-circle me-2 text-info"></i>Overview</h2>
+  <p>
+    <strong>Job Tracker</strong> is a self-hosted job search management system that automates the repetitive parts of job hunting.
+    It scrapes listings from configured sources, scores each job against your resume and skills, lets you track applications
+    through the full hiring pipeline, and monitors your inbox for employer replies.
+  </p>
+  <div class="row g-3 mb-3">
+    <div class="col-sm-6">
+      <div class="mockup-card p-3 h-100">
+        <div class="fw-semibold mb-2"><i class="bi bi-robot me-1 text-info"></i>What it does automatically</div>
+        <ul class="mb-0 ps-3">
+          <li>Scrapes job boards on a configurable schedule</li>
+          <li>Scores every job 0–100 against your skills</li>
+          <li>Detects duplicate listings across sources</li>
+          <li>Monitors email for recruiter responses</li>
+          <li>Sends follow-up reminders</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-sm-6">
+      <div class="mockup-card p-3 h-100">
+        <div class="fw-semibold mb-2"><i class="bi bi-person me-1 text-success"></i>What you do</div>
+        <ul class="mb-0 ps-3">
+          <li>Configure sources and your skill profile</li>
+          <li>Review high-scoring matches each day</li>
+          <li>Apply and log the outcome</li>
+          <li>Track status (phone screen → interview → offer)</li>
+          <li>Confirm email-to-job matches</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ NAVIGATION -->
+<section id="navigation">
+  <h2><i class="bi bi-layout-sidebar me-2 text-secondary"></i>Navigation</h2>
+
+  <h3>Sidebar</h3>
+  <p>The left sidebar is always visible and gives you one-click access to every major page.
+  The active page is highlighted in blue.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Sidebar</div>
+    <div style="width:190px; background:#1a1d21; border:1px solid rgba(255,255,255,.08); border-radius:.6rem; padding:.75rem .6rem; font-size:.8rem">
+      <div class="d-flex align-items-center gap-2 mb-3 fw-bold"><i class="bi bi-briefcase-fill text-primary"></i> Job Tracker</div>
+      <div class="d-flex align-items-center gap-2 mb-1 rounded px-2 py-1" style="background:#0d6efd;color:#fff"><i class="bi bi-speedometer2"></i> Dashboard</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-search"></i> Job Listings</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-file-earmark-text"></i> Applications</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-bar-chart-line"></i> Analytics</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-broadcast"></i> Sources</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-bell"></i> Notifications</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-terminal"></i> Server Log</div>
+      <div class="d-flex align-items-center gap-2 px-2 py-1 text-white-50"><i class="bi bi-gear"></i> Settings</div>
+      <hr style="border-color:rgba(255,255,255,.1)">
+      <div class="d-grid"><button class="btn btn-sm btn-outline-primary w-100" style="font-size:.75rem"><i class="bi bi-play-fill me-1"></i>Run Scan Now</button></div>
+    </div>
+  </div>
+
+  <h3>Topbar</h3>
+  <p>The topbar at the top of every page shows live status information and quick-action buttons.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Topbar — right section</div>
+    <div class="mockup-topbar">
+      <div style="font-size:.72rem">
+        <div class="text-muted" style="font-size:.62rem;text-transform:uppercase;letter-spacing:.05em">Last Scan</div>
+        <span class="badge bg-success me-1">OK</span><span class="text-white-50">Mar 04 09:15</span>
+      </div>
+      <div class="vr mx-1" style="opacity:.3;height:30px"></div>
+      <div style="font-size:.72rem">
+        <div class="text-muted" style="font-size:.62rem;text-transform:uppercase;letter-spacing:.05em">Current Date/Time</div>
+        <div class="text-white fw-semibold">Tue 2026-03-04 &nbsp;09:45:22</div>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary ms-2"><i class="bi bi-question-circle"></i></button>
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-bell"></i></button>
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-gear"></i></button>
+      <button class="btn btn-sm btn-outline-info"><i class="bi bi-question-circle-fill"></i></button>
+    </div>
+  </div>
+
+  <h4>Topbar controls</h4>
+  <ul>
+    <li><strong>Last Scan</strong> — Badge turns green when the last scan completed without errors; red if errors occurred. Shows the date and time it last ran.</li>
+    <li><strong>Current Date/Time</strong> — Live clock updated every second.</li>
+    <li><i class="bi bi-question-circle"></i> <strong>Hints toggle</strong> — Shows or hides contextual hint text throughout the app. State is remembered between sessions. See <a href="#hints">Hints System</a>.</li>
+    <li><i class="bi bi-bell"></i> <strong>Notifications</strong> — Opens the Notifications page. A red badge shows how many unread notifications you have.</li>
+    <li><i class="bi bi-gear"></i> <strong>Settings</strong> — Opens the Settings page.</li>
+    <li><i class="bi bi-question-circle-fill text-info"></i> <strong>Help</strong> — Opens this documentation page in a new tab.</li>
+  </ul>
+
+  <h3>Run Scan Now</h3>
+  <p>The blue <strong>Run Scan Now</strong> button at the bottom of the sidebar immediately triggers a full job scan across all enabled sources. A progress modal opens showing real-time results. See <a href="#running-scan">Running a Scan</a> for details.</p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ DASHBOARD -->
+<section id="dashboard">
+  <h2><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h2>
+  <p>The Dashboard is your home base. It shows an at-a-glance summary of your entire job search: new matches, active applications, upcoming follow-ups, and recent scan history.</p>
+</section>
+
+<section id="dash-metrics">
+  <h3>Metric Cards</h3>
+  <p>Seven metric cards across the top of the dashboard give you a snapshot of your search progress.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Primary metrics (top row)</div>
+    <div class="row g-2">
+      <div class="col-6 col-sm-3">
+        <div class="mockup-card text-center">
+          <div class="text-muted small">Total Jobs Found</div>
+          <div class="fw-bold" style="font-size:1.6rem;color:#6ea8fe">847</div>
+          <div><i class="bi bi-briefcase text-primary"></i></div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="mockup-card text-center">
+          <div class="text-muted small">Applications Sent</div>
+          <div class="fw-bold" style="font-size:1.6rem;color:#ffc107">34</div>
+          <div><i class="bi bi-send text-warning"></i></div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="mockup-card text-center">
+          <div class="text-muted small">Interviews</div>
+          <div class="fw-bold" style="font-size:1.6rem;color:#0dcaf0">6</div>
+          <div><i class="bi bi-camera-video text-info"></i></div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="mockup-card text-center">
+          <div class="text-muted small">Offers Received</div>
+          <div class="fw-bold" style="font-size:1.6rem;color:#198754">2</div>
+          <div><i class="bi bi-trophy text-success"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-2 mt-1">
+      <div class="col-4">
+        <div class="mockup-card text-center">
+          <div class="text-muted" style="font-size:.7rem">New Unreviewed</div>
+          <div class="fw-bold text-warning">12</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="mockup-card text-center">
+          <div class="text-muted" style="font-size:.7rem">Response Rate</div>
+          <div class="fw-bold text-info">17.6%</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="mockup-card text-center">
+          <div class="text-muted" style="font-size:.7rem">Offer Rate</div>
+          <div class="fw-bold text-success">5.9%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Total Jobs Found</strong> — Cumulative count of all jobs fetched by all scrapers.</li>
+    <li><strong>Applications Sent</strong> — Jobs you have marked as "Applied" in any status.</li>
+    <li><strong>Interviews</strong> — Applications that reached Phone Screen or Interview status.</li>
+    <li><strong>Offers Received</strong> — Applications with an Offer status.</li>
+    <li><strong>New Unreviewed</strong> — Jobs fetched recently that you haven't opened yet.</li>
+    <li><strong>Response Rate</strong> — (Phone Screen + Interview + Offer) ÷ Applications Sent.</li>
+    <li><strong>Offer Rate</strong> — Offers ÷ Applications Sent.</li>
+  </ul>
+</section>
+
+<section id="dash-matches">
+  <h3>Recent Matches</h3>
+  <p>A table showing the most recently fetched high-scoring jobs. Each row links to the full job detail page.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Recent Matches table (sample rows)</div>
+    <div class="table-responsive">
+      <table class="table table-sm table-dark table-hover mb-0" style="font-size:.78rem">
+        <thead><tr class="text-muted">
+          <th>Score</th><th>Position</th><th>Company</th><th>Type</th><th>Posted</th><th>Source</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="score-hi">87</span></td>
+            <td>Senior Python Developer</td>
+            <td class="text-muted">Acme Corp</td>
+            <td><span class="badge bg-secondary">Full Time</span></td>
+            <td style="color:#4ade80">Today</td>
+            <td><span class="badge bg-primary" style="font-size:.65rem">LinkedIn</span></td>
+            <td><span class="badge bg-warning text-dark">New</span></td>
+            <td><a href="#" class="text-info"><i class="bi bi-arrow-right-circle"></i></a></td>
+          </tr>
+          <tr>
+            <td><span class="score-med">64</span></td>
+            <td>Backend Engineer</td>
+            <td class="text-muted">Tech Inc</td>
+            <td><span class="badge bg-secondary">Full Time</span></td>
+            <td style="color:#fb923c">3 days ago</td>
+            <td><span class="badge bg-info text-dark" style="font-size:.65rem">Indeed</span></td>
+            <td><span class="badge bg-secondary">Viewed</span></td>
+            <td><a href="#" class="text-info"><i class="bi bi-arrow-right-circle"></i></a></td>
+          </tr>
+          <tr>
+            <td><span class="score-lo">28</span></td>
+            <td>IT Support Specialist</td>
+            <td class="text-muted">Help Co</td>
+            <td><span class="badge bg-secondary">Contract</span></td>
+            <td class="text-muted">1 wk ago</td>
+            <td><span class="badge bg-secondary" style="font-size:.65rem">Glassdoor</span></td>
+            <td><span class="badge bg-secondary">New</span></td>
+            <td><a href="#" class="text-info"><i class="bi bi-arrow-right-circle"></i></a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Score badge</strong> — Color-coded skill match score. See <a href="#score-system">Score System</a>.</li>
+    <li><strong>Posted date</strong> — Color-coded by age: <span style="color:#4ade80">green</span> = today/yesterday, <span style="color:#fb923c">orange</span> = a few days old, grey = over a week old.</li>
+    <li><strong>Source badge</strong> — Which scraper fetched this job.</li>
+    <li><strong>Status badge</strong> — New, Viewed, Saved, Applied, etc.</li>
+    <li><strong>Arrow button</strong> — Opens the full job detail page.</li>
+  </ul>
+</section>
+
+<section id="dash-pipeline">
+  <h3>Application Pipeline</h3>
+  <p>A compact card on the right side showing how many applications are at each stage of the hiring process.</p>
+
+  <div class="mockup" style="max-width:340px">
+    <div class="mockup-label">Pipeline card</div>
+    <div class="mockup-card">
+      <div class="fw-semibold mb-2 small">Application Pipeline</div>
+      <div class="d-flex align-items-center gap-1 flex-wrap">
+        <div class="pipeline-step" style="border-color:#6ea8fe;color:#6ea8fe">Submitted<br><span style="font-size:1.1rem">28</span></div>
+        <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
+        <div class="pipeline-step" style="border-color:#0dcaf0;color:#0dcaf0">Phone<br><span style="font-size:1.1rem">5</span></div>
+        <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
+        <div class="pipeline-step" style="border-color:#ffc107;color:#ffc107">Interview<br><span style="font-size:1.1rem">2</span></div>
+        <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
+        <div class="pipeline-step" style="border-color:#198754;color:#198754">Offer<br><span style="font-size:1.1rem">1</span></div>
+        <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
+        <div class="pipeline-step" style="border-color:#dc3545;color:#dc3545">Rejected<br><span style="font-size:1.1rem">8</span></div>
+      </div>
+    </div>
+  </div>
+
+  <p>Each stage count links to the Applications page filtered to that status. Use this to spot bottlenecks — for example, many submitted but few phone screens may mean your cover letter needs work.</p>
+</section>
+
+<section id="dash-followups">
+  <h3>Follow-ups Due</h3>
+  <p>A list of applications whose follow-up date has arrived or passed. Sorted by urgency — overdue items appear in red, due today in orange.</p>
+
+  <div class="mockup" style="max-width:360px">
+    <div class="mockup-label">Follow-ups Due card</div>
+    <div class="mockup-card">
+      <div class="fw-semibold mb-2 small">Follow-ups Due</div>
+      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(220,53,69,.15);border:1px solid rgba(220,53,69,.3);font-size:.78rem">
+        <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+        <div><div class="fw-semibold">Senior Python Dev — Acme Corp</div><div class="text-danger" style="font-size:.7rem">Overdue by 2 days</div></div>
+      </div>
+      <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:rgba(255,193,7,.12);border:1px solid rgba(255,193,7,.3);font-size:.78rem">
+        <i class="bi bi-clock-fill text-warning"></i>
+        <div><div class="fw-semibold">Backend Engineer — Tech Inc</div><div class="text-warning" style="font-size:.7rem">Due today</div></div>
+      </div>
+    </div>
+  </div>
+
+  <p>Click any item to open the application detail where you can log your follow-up and set the next reminder date.</p>
+</section>
+
+<section id="dash-scan-history">
+  <h3>Scan History</h3>
+  <p>A table of your last 20 scans, showing when each ran, whether it succeeded, and how many jobs were fetched, added, and matched.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Scan History table</div>
+    <table class="table table-sm table-dark table-hover mb-0" style="font-size:.77rem">
+      <thead><tr class="text-muted"><th>Date/Time</th><th>Status</th><th>Fetched</th><th>New</th><th>Matched</th></tr></thead>
+      <tbody>
+        <tr><td>Mar 04 09:15</td><td><span class="badge bg-success">OK</span></td><td>142</td><td>8</td><td>3</td></tr>
+        <tr><td>Mar 04 03:00</td><td><span class="badge bg-success">OK</span></td><td>137</td><td>2</td><td>1</td></tr>
+        <tr><td>Mar 03 21:00</td><td><span class="badge bg-danger">Error</span></td><td>0</td><td>0</td><td>0</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <ul>
+    <li><strong>Fetched</strong> — Total job listings downloaded from all sources.</li>
+    <li><strong>New</strong> — Listings not previously seen (deduplication applied).</li>
+    <li><strong>Matched</strong> — Jobs that scored above your minimum match score threshold.</li>
+    <li><strong>Error status</strong> — Click the row to see which source failed in the Server Log.</li>
+  </ul>
+</section>
+
+<section id="dash-email-reviews">
+  <h3>Email Response Reviews</h3>
+  <p>When the email checker detects a message that looks like a job response, it shows up here for you to confirm or reject the match. The system suggests which job in your tracker the email is about — you verify it.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Email review row (before confirmation)</div>
+    <div class="mockup-card" style="font-size:.8rem">
+      <div class="d-flex gap-3 align-items-start">
+        <div style="flex:1">
+          <span class="badge bg-info text-dark me-1">Interview Invite</span>
+          <span class="fw-semibold">From: recruiter@acme.com</span>
+          <div class="text-muted mt-1">Subject: "Congratulations! Interview for Senior Python Developer"</div>
+        </div>
+        <div class="text-end">
+          <div class="text-muted small mb-1">Suggested match:</div>
+          <div class="fw-semibold">Senior Python Developer</div>
+          <div class="text-muted small">Acme Corp</div>
+          <div class="mt-2 d-flex gap-1">
+            <button class="btn btn-sm btn-success py-0"><i class="bi bi-check me-1"></i>Confirm</button>
+            <button class="btn btn-sm btn-outline-danger py-0"><i class="bi bi-x me-1"></i>Reject</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Classification badge</strong> — The type of response detected (Interview Invite, Rejection, Follow-up, Offer, etc.).</li>
+    <li><strong>Confirm</strong> — Links the email to the suggested job and updates the application status automatically.</li>
+    <li><strong>Reject</strong> — Dismisses the match (the email will not appear again).</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ JOB LISTINGS -->
+<section id="job-listings">
+  <h2><i class="bi bi-search me-2 text-secondary"></i>Job Listings</h2>
+  <p>The Job Listings page shows every job fetched by your scrapers. Use filters to narrow by score, source, category, type, and status. You can also toggle expanded descriptions for all jobs at once.</p>
+</section>
+
+<section id="score-system">
+  <h3>Score System</h3>
+  <p>Every job is automatically scored 0–100 based on how well the job description matches your skills profile. The score is calculated from required skills, preferred skills, and keywords found in your resume.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Score badge examples</div>
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <div class="text-center">
+        <div class="mb-1"><span class="score-hi">87</span></div>
+        <div style="font-size:.72rem;color:#39ff14">Strong match</div>
+        <div class="text-muted" style="font-size:.68rem">Score ≥ 70</div>
+      </div>
+      <div class="text-center">
+        <div class="mb-1"><span class="score-med">55</span></div>
+        <div style="font-size:.72rem;color:#58a6ff">Moderate match</div>
+        <div class="text-muted" style="font-size:.68rem">Score 40–69</div>
+      </div>
+      <div class="text-center">
+        <div class="mb-1"><span class="score-lo">22</span></div>
+        <div style="font-size:.72rem;color:#6c757d">Low match</div>
+        <div class="text-muted" style="font-size:.68rem">Score &lt; 40</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Set your <strong>Minimum Match Score</strong> in Settings to filter out low-scoring jobs from scan results automatically.
+    A value of 50–60 is a good starting point for most searches.
+  </div>
+
+  <p>The Job Listings header shows three badge counts — one for each score tier — so you can see the distribution of today's matches at a glance.</p>
+</section>
+
+<section id="job-filters">
+  <h3>Filtering Jobs</h3>
+  <p>The filter card above the table lets you narrow results across multiple dimensions simultaneously.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Filter card</div>
+    <div class="mockup-card">
+      <div class="row g-2" style="font-size:.78rem">
+        <div class="col-6 col-sm-4 col-md-2">
+          <label class="text-muted d-block" style="font-size:.68rem">Category</label>
+          <select class="form-select form-select-sm bg-dark text-light border-secondary">
+            <option>All</option><option>Software Dev</option><option>IT</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-4 col-md-2">
+          <label class="text-muted d-block" style="font-size:.68rem">Source</label>
+          <select class="form-select form-select-sm bg-dark text-light border-secondary">
+            <option>All</option><option>LinkedIn</option><option>Indeed</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-4 col-md-2">
+          <label class="text-muted d-block" style="font-size:.68rem">Status</label>
+          <select class="form-select form-select-sm bg-dark text-light border-secondary">
+            <option>All</option><option>New</option><option>Saved</option><option>Viewed</option>
+          </select>
+        </div>
+        <div class="col-6 col-sm-4 col-md-2">
+          <label class="text-muted d-block" style="font-size:.68rem">Min Score</label>
+          <input class="form-control form-control-sm bg-dark text-light border-secondary" value="60" type="number">
+        </div>
+        <div class="col-6 col-sm-4 col-md-2">
+          <label class="text-muted d-block" style="font-size:.68rem">Job Type</label>
+          <select class="form-select form-select-sm bg-dark text-light border-secondary">
+            <option>All</option><option>Full Time</option><option>Contract</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-1 align-items-end">
+          <button class="btn btn-sm btn-primary w-100">Filter</button>
+          <button class="btn btn-sm btn-outline-secondary w-100">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Category</strong> — Broad job category (Software Dev, IT, Customer Service, General, etc.).</li>
+    <li><strong>Source</strong> — Which scraper the job came from.</li>
+    <li><strong>Status</strong> — Lifecycle state (New, Viewed, Saved, Applied). Hidden in the Archived Jobs view.</li>
+    <li><strong>Min Score</strong> — Only show jobs scoring at or above this number.</li>
+    <li><strong>Job Type</strong> — Full Time, Part Time, Contract, Internship, etc.</li>
+    <li><strong>Filter</strong> — Apply current selections.</li>
+    <li><strong>Reset</strong> — Clear all filters and show all jobs.</li>
+  </ul>
+
+  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
+    <strong>Archived Jobs</strong> — Toggle to the archived view (top-right of page header) to browse jobs you have applied to, rejected, or archived.
+  </div>
+</section>
+
+<section id="applying">
+  <h3>Applying for a Job</h3>
+  <p>From any job detail page, click <strong>Apply</strong> to start a 3-step wizard.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Apply wizard — Step 1</div>
+    <div class="mockup-card" style="font-size:.82rem;max-width:400px">
+      <div class="fw-semibold mb-2">How would you like to apply?</div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-primary flex-fill"><i class="bi bi-file-earmark-text me-1"></i>Use Template</button>
+        <button class="btn btn-sm btn-outline-secondary flex-fill"><i class="bi bi-globe me-1"></i>Company Website</button>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Step 1 — Choose method</strong>: Apply via a pre-filled template (uses your profile data) or link out to the company website.</li>
+    <li><strong>Step 2 — Confirm</strong>: After applying externally, confirm whether you actually submitted the application.</li>
+    <li><strong>Step 3 (optional) — Reason</strong>: If you chose not to apply, log a reason (salary too low, not the right fit, etc.) so you can review later.</li>
+  </ul>
+
+  <p>Confirmed applications immediately appear in your Applications page and are removed from the "New" job list.</p>
+</section>
+
+<!-- ══════════════════════════════════════════════════ APPLICATIONS -->
+<section id="applications">
+  <h2><i class="bi bi-file-earmark-text me-2 text-secondary"></i>Applications</h2>
+  <p>The Applications page shows every job you have applied to, with full lifecycle tracking from submission through offer or rejection.</p>
+</section>
+
+<section id="app-status">
+  <h3>Status Pipeline</h3>
+  <p>Filter pills at the top let you view applications in each stage of the process.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Status filter pills</div>
+    <div class="d-flex flex-wrap gap-2">
+      <button class="btn btn-sm btn-primary">All <span class="badge bg-white text-primary ms-1">34</span></button>
+      <button class="btn btn-sm btn-outline-secondary">Draft <span class="badge bg-secondary ms-1">2</span></button>
+      <button class="btn btn-sm btn-outline-primary">Submitted <span class="badge bg-primary ms-1">18</span></button>
+      <button class="btn btn-sm btn-outline-info">Phone Screen <span class="badge bg-info text-dark ms-1">5</span></button>
+      <button class="btn btn-sm btn-outline-warning">Interview <span class="badge bg-warning text-dark ms-1">3</span></button>
+      <button class="btn btn-sm btn-outline-success">Offer <span class="badge bg-success ms-1">1</span></button>
+      <button class="btn btn-sm btn-outline-danger">Rejected <span class="badge bg-danger ms-1">5</span></button>
+    </div>
+  </div>
+
+  <p>The full pipeline, in order:</p>
+  <ol>
+    <li><strong>Draft</strong> — Started but not yet submitted.</li>
+    <li><strong>Submitted</strong> — Application sent; waiting for a response.</li>
+    <li><strong>Phone Screen</strong> — Recruiter has reached out for an initial call.</li>
+    <li><strong>Interview</strong> — A formal interview has been scheduled.</li>
+    <li><strong>Offer</strong> — You have received a job offer.</li>
+    <li><strong>Rejected</strong> — The employer has passed on your application.</li>
+  </ol>
+</section>
+
+<section id="app-tracking">
+  <h3>Tracking &amp; Follow-ups</h3>
+  <p>Each application card shows all the key dates and lets you set reminders.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Application card example</div>
+    <div class="mockup-card" style="border-left:4px solid #0dcaf0;font-size:.82rem">
+      <div class="d-flex justify-content-between align-items-start mb-1">
+        <div>
+          <a href="#" class="fw-semibold text-info text-decoration-none">Senior Python Developer</a>
+          <span class="badge bg-info text-dark ms-2">Phone Screen</span>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary py-0"><i class="bi bi-pencil"></i></button>
+      </div>
+      <div class="text-muted mb-1">Acme Corp</div>
+      <div class="row g-1" style="font-size:.72rem">
+        <div class="col-6"><span class="text-muted">Applied:</span> Feb 28, 2026</div>
+        <div class="col-6"><span class="text-muted">Follow-up:</span> <span class="text-warning">Mar 07, 2026</span></div>
+        <div class="col-6"><span class="text-muted">Interview:</span> Mar 10, 2026</div>
+        <div class="col-6"><span class="text-muted">Notes:</span> Asked about remote policy</div>
+      </div>
+      <div class="mt-2 d-flex gap-1">
+        <a href="#" class="btn btn-xs btn-outline-secondary py-0" style="font-size:.7rem"><i class="bi bi-calendar me-1"></i>Add to Calendar</a>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Left border color</strong> — Matches the application status (blue=phone screen, yellow=interview, green=offer, red=rejected).</li>
+    <li><strong>Follow-up date</strong> — When to follow up if you haven't heard back. Shown in orange when approaching, red when overdue.</li>
+    <li><strong>Interview date</strong> — When the interview is scheduled. Visible on the card and triggers a calendar download option.</li>
+    <li><strong>Add to Calendar</strong> — Downloads an .ics file compatible with Google Calendar, Outlook, and Apple Calendar.</li>
+    <li><strong>Edit button</strong> — Opens the full application detail page to update status, add notes, change dates, or write a cover letter.</li>
+  </ul>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Set a <strong>Follow-up Date</strong> of 5–7 days after applying. The Dashboard will surface it when the date arrives so you remember to send a polite follow-up email.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ ANALYTICS -->
+<section id="analytics">
+  <h2><i class="bi bi-bar-chart-line me-2 text-secondary"></i>Analytics</h2>
+  <p>The Analytics page visualizes your job search data with charts covering your full application history.</p>
+  <ul>
+    <li><strong>Application Pipeline chart</strong> — Bar chart showing count at each status stage. Quickly see where applications are stalling.</li>
+    <li><strong>Jobs by Source chart</strong> — Pie/donut chart showing which scrapers are producing the most jobs for you.</li>
+    <li><strong>Application trend</strong> — Timeline of when you applied, helping you see if your activity is consistent.</li>
+    <li><strong>Response rate by source</strong> — Which job boards produce the most replies relative to applications sent.</li>
+  </ul>
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    If the Application Pipeline shows a big drop between Submitted and Phone Screen, try refining your cover letter or increasing the minimum score threshold so you focus on better-matching jobs.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════== SOURCES -->
+<section id="sources">
+  <h2><i class="bi bi-broadcast me-2 text-secondary"></i>Job Sources (Scrapers)</h2>
+  <p>Sources are the web scrapers that pull job listings into the tracker. Each source targets a specific job board or company careers page.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Source row example</div>
+    <div class="mockup-card d-flex align-items-center gap-3" style="font-size:.82rem">
+      <div style="flex:1">
+        <div class="fw-semibold">LinkedIn — Software Developer</div>
+        <div class="text-muted small">https://linkedin.com/jobs/search/?keywords=python&amp;location=remote</div>
+      </div>
+      <span class="badge bg-success">Active</span>
+      <div class="d-flex gap-1">
+        <button class="btn btn-sm btn-outline-primary py-0"><i class="bi bi-play-fill"></i></button>
+        <button class="btn btn-sm btn-outline-secondary py-0"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-sm btn-outline-danger py-0"><i class="bi bi-trash"></i></button>
+      </div>
+      <div class="form-check form-switch mb-0">
+        <input class="form-check-input" type="checkbox" checked>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Toggle switch</strong> — Enable or disable a source. Disabled sources are skipped during scans.</li>
+    <li><strong>Run button</strong> <i class="bi bi-play-fill"></i> — Run this single source immediately without running a full scan.</li>
+    <li><strong>Edit button</strong> <i class="bi bi-pencil"></i> — Change the source URL, name, or category.</li>
+    <li><strong>Delete button</strong> <i class="bi bi-trash"></i> — Permanently remove this source. Jobs already fetched are kept.</li>
+  </ul>
+
+  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
+    Add a new source by pasting a job search URL into the <strong>Add Source</strong> form at the top of the page. Job Tracker will detect the board type and configure the scraper automatically.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ NOTIFICATIONS -->
+<section id="notifications">
+  <h2><i class="bi bi-bell me-2 text-secondary"></i>Notifications</h2>
+  <p>Notifications are generated automatically when important events happen — new high-scoring matches, follow-up reminders, scheduler errors, and more. The bell icon in the topbar shows your unread count.</p>
+  <ul>
+    <li><strong>Mark as read</strong> — Click the checkmark on any notification to mark it read. The topbar count decreases.</li>
+    <li><strong>Dismiss all</strong> — Clears all notifications at once.</li>
+    <li>Notification types include: <em>New Matches</em>, <em>Follow-up Due</em>, <em>Email Response Detected</em>, <em>Scan Completed</em>, <em>Scan Error</em>.</li>
+  </ul>
+</section>
+
+<!-- ═════════════════════════════════════════════════════= SETTINGS -->
+<section id="settings">
+  <h2><i class="bi bi-gear me-2 text-secondary"></i>Settings</h2>
+  <p>Settings stores your personal profile and controls how the app behaves. Changes take effect immediately — no restart needed.</p>
+
+  <h4>Your Profile</h4>
+  <ul>
+    <li><strong>Name, Email, Phone</strong> — Used to pre-fill application forms and cover letters.</li>
+    <li><strong>Location &amp; Miles</strong> — Sets the default job search radius for location-based scrapers.</li>
+    <li><strong>LinkedIn &amp; GitHub URLs</strong> — Included in application templates.</li>
+    <li><strong>Resume Path</strong> — Absolute path to your resume file, used for skill extraction and cover letter AI.</li>
+  </ul>
+
+  <h4>Skills Configuration</h4>
+  <ul>
+    <li><strong>Required Skills</strong> — Skills that must appear in a job description to score well. Missing required skills significantly lower the score.</li>
+    <li><strong>Preferred Skills</strong> — Nice-to-have skills that boost the score if present.</li>
+    <li><strong>Resume Skills</strong> — Skills extracted from your resume (auto-populated, or edit manually).</li>
+    <li><strong>Minimum Match Score</strong> — Jobs below this score are excluded from scan notifications and the Recent Matches list.</li>
+  </ul>
+
+  <h4>Email Settings</h4>
+  <ul>
+    <li><strong>IMAP / SMTP settings</strong> — Configure your email account so the tracker can monitor your inbox for job responses.</li>
+    <li><strong>Check interval</strong> — How often the scheduler checks for new emails.</li>
+  </ul>
+
+  <h4>Scheduler (Daemon)</h4>
+  <p>Start or stop the background scheduler from the Daemon section in Settings. See <a href="#daemon">Scheduler Daemon</a> for full details.</p>
+
+  <h4>Other Settings</h4>
+  <ul>
+    <li><strong>Follow-up Days</strong> — Default number of days after applying before a follow-up reminder is triggered.</li>
+    <li><strong>Timezone</strong> — Used for scan scheduling and date display.</li>
+    <li><strong>AI Cover Letters</strong> — Toggle AI-assisted cover letter generation on or off.</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ RUNNING SCAN -->
+<section id="running-scan">
+  <h2><i class="bi bi-play-circle me-2 text-secondary"></i>Running a Scan</h2>
+  <p>A scan downloads fresh job listings from all enabled sources, deduplicates them, scores them against your skills, and saves new matches to the database.</p>
+
+  <h3>How to start a scan</h3>
+  <ul>
+    <li>Click <strong>Run Scan Now</strong> in the sidebar — scans all enabled sources immediately.</li>
+    <li>The scheduler daemon runs scans automatically on the configured schedule (see <a href="#daemon">Scheduler Daemon</a>).</li>
+  </ul>
+
+  <div class="mockup" style="max-width:420px">
+    <div class="mockup-label">Scan progress modal</div>
+    <div class="mockup-card">
+      <div class="fw-semibold mb-2">Scanning job sources…</div>
+      <div class="progress mb-2" style="height:6px">
+        <div class="progress-bar bg-info" style="width:60%"></div>
+      </div>
+      <div class="d-flex justify-content-between text-muted small mb-2">
+        <span>Source 3 / 5</span>
+        <span>Currently: <strong class="text-light">Indeed — Python</strong></span>
+      </div>
+      <div class="row g-1" style="font-size:.78rem">
+        <div class="col-4 text-center"><div class="text-muted small">Fetched</div><div class="fw-bold">284</div></div>
+        <div class="col-4 text-center"><div class="text-muted small">New</div><div class="fw-bold text-success">14</div></div>
+        <div class="col-4 text-center"><div class="text-muted small">Matched</div><div class="fw-bold" style="color:#39ff14">6</div></div>
+      </div>
+      <hr style="border-color:rgba(255,255,255,.1)">
+      <div style="font-size:.72rem">
+        <div class="d-flex gap-2 mb-1"><span class="badge bg-success">Done</span> LinkedIn — Software Dev (87 jobs)</div>
+        <div class="d-flex gap-2 mb-1"><span class="badge bg-success">Done</span> Indeed — Python (197 jobs)</div>
+        <div class="d-flex gap-2"><span class="spinner-border spinner-border-sm text-info"></span> Indeed — Remote Dev…</div>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Progress bar</strong> — Advances as each source completes.</li>
+    <li><strong>Fetched</strong> — Total listings downloaded so far.</li>
+    <li><strong>New</strong> — Listings not previously in the database (duplicates excluded).</li>
+    <li><strong>Matched</strong> — New jobs scoring above your minimum match threshold.</li>
+    <li><strong>Source list</strong> — Shows each source with a Done badge when complete, or a spinner while running.</li>
+  </ul>
+
+  <div class="warn-box"><i class="bi bi-exclamation-triangle me-2"></i>
+    Scans can take 1–5 minutes depending on the number of sources and network speed. The modal stays open until the scan is complete. You can navigate the app while it runs.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════== DAEMON -->
+<section id="daemon">
+  <h2><i class="bi bi-clock-history me-2 text-secondary"></i>Scheduler Daemon</h2>
+  <p>The Scheduler Daemon is a background process that runs scans and email checks on a configurable schedule — without you needing to manually trigger them. It runs independently of the browser.</p>
+
+  <h3>Starting and stopping the daemon</h3>
+  <p>Go to <strong>Settings → Scheduler</strong> to control the daemon:</p>
+
+  <div class="mockup" style="max-width:400px">
+    <div class="mockup-label">Daemon control in Settings</div>
+    <div class="mockup-card" style="font-size:.82rem">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="fw-semibold">Scheduler Daemon</span>
+        <span class="badge bg-success">Running (PID 4821)</span>
+      </div>
+      <div class="text-muted small mb-2">Scans every 6 hours · Email check every 30 min</div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-stop-fill me-1"></i>Stop Daemon</button>
+        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-play-fill me-1"></i>Start Daemon</button>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Start Daemon</strong> — Launches the background scheduler process. The badge turns green and shows the PID.</li>
+    <li><strong>Stop Daemon</strong> — Terminates the scheduler. Scans will not run until you start it again.</li>
+    <li>The daemon writes a <code>scheduler_daemon.pid</code> file so the app can detect if it is still running after a system restart.</li>
+  </ul>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Start the daemon once after setting up Job Tracker and leave it running. It will handle scans and email monitoring automatically in the background.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════== HINTS -->
+<section id="hints">
+  <h2><i class="bi bi-question-circle me-2 text-secondary"></i>Hints System</h2>
+  <p>The Hints System surfaces short contextual tips directly in the app interface. Hints are hidden by default but can be toggled on at any time.</p>
+
+  <div class="mockup" style="max-width:340px">
+    <div class="mockup-label">Hints toggle button (topbar)</div>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-question-circle"></i></button>
+      <span class="text-muted small">Hints off — click to turn on</span>
+    </div>
+    <div class="d-flex gap-2 align-items-center mt-2">
+      <button class="btn btn-sm btn-info"><i class="bi bi-question-circle-fill"></i></button>
+      <span class="text-muted small">Hints on — click to turn off</span>
+    </div>
+  </div>
+
+  <ul>
+    <li>Click the <i class="bi bi-question-circle"></i> button in the topbar to turn hints on. It turns solid blue <i class="bi bi-question-circle-fill text-info"></i> when active.</li>
+    <li>Hint text appears as small grey labels beneath controls and cards throughout the app.</li>
+    <li>Your preference (on/off) is saved in browser localStorage and persists across sessions.</li>
+    <li>Hints do not affect app functionality — they can safely be left on or off.</li>
+  </ul>
+</section>
+
+<!-- ══════════════════════════════════════════════════════= TIPS -->
+<section id="tips">
+  <h2><i class="bi bi-star me-2 text-warning"></i>Tips &amp; Tricks</h2>
+
+  <h3>Getting the most from scoring</h3>
+  <ul>
+    <li>Add all your technical skills to <strong>Required Skills</strong> and <strong>Preferred Skills</strong> in Settings — the more specific, the better the matching.</li>
+    <li>Keep your <strong>Minimum Match Score</strong> between 50 and 65 to balance volume with quality.</li>
+    <li>If you are getting too few results, lower the minimum score. If you are overwhelmed, raise it.</li>
+  </ul>
+
+  <h3>Staying organised</h3>
+  <ul>
+    <li>Set a <strong>Follow-up Date</strong> every time you apply. A week with no response is a good time to send a brief, polite email.</li>
+    <li>Use the <strong>Notes</strong> field on applications to record anything said on a call, questions you want to ask, or your impressions of the company.</li>
+    <li>Add interview times to your calendar using the <strong>Add to Calendar</strong> button — it works with Google, Outlook, and Apple Calendar.</li>
+  </ul>
+
+  <h3>Managing sources</h3>
+  <ul>
+    <li>Disable sources that are producing mostly low-score results — this speeds up scans and reduces noise.</li>
+    <li>Add very specific search URLs (e.g., <code>python developer remote senior</code>) rather than broad ones. Quality beats quantity.</li>
+    <li>Run a single source with the <i class="bi bi-play-fill"></i> button after adding it to verify it works before your next scheduled scan.</li>
+  </ul>
+
+  <h3>Email integration</h3>
+  <ul>
+    <li>Configure IMAP credentials in Settings for automated email monitoring — the system classifies responses as Interview Invite, Rejection, Offer, etc.</li>
+    <li>Always review Email Response cards on the Dashboard — the auto-matcher occasionally needs correction, and accurate data improves your analytics.</li>
+  </ul>
+
+  <div class="tip-box mt-3"><i class="bi bi-lightbulb me-2"></i>
+    <strong>Daily workflow:</strong> Open the Dashboard each morning, review new matches in the Recent Matches table, check Follow-ups Due, confirm any email reviews, then spend 20–30 minutes applying to your top matches.
+  </div>
+
+  <div style="height:3rem"></div>
+</section>
+
+</main>
+</div><!-- /d-flex -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ── Theme toggle ─────────────────────────────────────────────────────────── */
+(function () {
+  var saved = localStorage.getItem('helpTheme') || 'dark';
+  document.getElementById('htmlRoot').setAttribute('data-bs-theme', saved);
+  updateThemeBtn(saved);
+})();
+
+function toggleTheme() {
+  var html = document.getElementById('htmlRoot');
+  var next = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-bs-theme', next);
+  localStorage.setItem('helpTheme', next);
+  updateThemeBtn(next);
+}
+
+function updateThemeBtn(theme) {
+  var icon  = document.getElementById('themeIcon');
+  var label = document.getElementById('themeLabel');
+  if (theme === 'dark') {
+    icon.className  = 'bi bi-moon-fill me-1';
+    label.textContent = 'Dark mode';
+  } else {
+    icon.className  = 'bi bi-sun-fill me-1';
+    label.textContent = 'Light mode';
+  }
+}
+
+/* ── TOC active-link highlighting on scroll ───────────────────────────────── */
+(function () {
+  var links    = document.querySelectorAll('#tocSidebar .nav-link');
+  var sections = [];
+  links.forEach(function (a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: a });
+  });
+
+  function onScroll() {
+    var top = window.scrollY + 90;
+    var active = null;
+    sections.forEach(function (s) {
+      if (s.el.offsetTop <= top) active = s;
+    });
+    links.forEach(function (a) { a.classList.remove('active'); });
+    if (active) active.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+</body>
+</html>

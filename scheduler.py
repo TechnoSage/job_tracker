@@ -135,6 +135,7 @@ def run_job_scan(app):
 
                 new_count = 0
                 matched_count = 0
+                per_source_new: dict = {}  # ScraperSource.name -> new matching job count
 
                 for raw in raw_jobs:
                     ext_id = raw.get("external_id", "")
@@ -198,8 +199,23 @@ def run_job_scan(app):
                     db.session.add(job)
                     new_count += 1
                     new_matches.append(job)
+                    raw_src = raw.get("source", "")
+                    if raw_src:
+                        per_source_new[raw_src] = per_source_new.get(raw_src, 0) + 1
 
                 db.session.flush()   # assign IDs before notifications
+
+                # Update each source's last_jobs_found to reflect only criteria-matching new jobs
+                for src_name, cnt in per_source_new.items():
+                    src_row = ScraperSource.query.filter_by(name=src_name).first()
+                    if src_row is not None:
+                        src_row.last_jobs_found = cnt
+                # Sources that ran successfully but had 0 new matching jobs → reset to 0
+                for src_name, status in _statuses.items():
+                    if status == "" and src_name not in per_source_new:
+                        src_row = ScraperSource.query.filter_by(name=src_name).first()
+                        if src_row is not None:
+                            src_row.last_jobs_found = 0
 
                 # Create in-app notifications for new matches
                 for job in new_matches:

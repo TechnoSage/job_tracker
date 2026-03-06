@@ -27,7 +27,7 @@
 
 {% if not start_date %}
 <!-- No start date configured -->
-<div class="card border-0 shadow-sm">
+<div class="card">
   <div class="card-body text-center py-5 text-muted">
     <i class="bi bi-calendar-x fs-1 d-block mb-3 opacity-25"></i>
     <h5>No Benefits Start Date Set</h5>
@@ -43,7 +43,7 @@
 <!-- ── Summary cards ─────────────────────────────────────────────── -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm text-center py-3">
+    <div class="card text-center py-3">
       <div class="card-body p-2">
         <div class="text-success fw-bold fs-5">{{ start_date.strftime('%b %d, %Y') }}</div>
         <div class="small text-muted mt-1"><i class="bi bi-calendar-event me-1"></i>Benefits Start</div>
@@ -51,7 +51,7 @@
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm text-center py-3">
+    <div class="card text-center py-3">
       <div class="card-body p-2">
         <div class="text-danger fw-bold fs-5">{{ end_date.strftime('%b %d, %Y') if end_date else '—' }}</div>
         <div class="small text-muted mt-1"><i class="bi bi-calendar-check me-1"></i>Benefits End</div>
@@ -59,7 +59,7 @@
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm text-center py-3">
+    <div class="card text-center py-3">
       <div class="card-body p-2">
         <div class="text-primary fw-bold fs-5">{{ periods|length }}</div>
         <div class="small text-muted mt-1">
@@ -71,7 +71,7 @@
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm text-center py-3">
+    <div class="card text-center py-3">
       <div class="card-body p-2">
         <div class="text-warning fw-bold fs-5">{{ total_applied }}</div>
         <div class="small text-muted mt-1"><i class="bi bi-send me-1"></i>Jobs Applied</div>
@@ -80,23 +80,29 @@
   </div>
 </div>
 
+{# Split periods: most recent 4 shown in main section, older ones archived #}
+{% set recent_periods = periods[-4:] %}
+{% set archived_periods = periods[:-4] if periods|length > 4 else [] %}
+
 <!-- ── Weekly claim periods ───────────────────────────────────────── -->
-<div class="card border-0 shadow-sm mb-4">
+<div class="card mb-4">
   <div class="card-header bg-transparent border-0 d-flex align-items-center flex-wrap gap-2">
     <h6 class="fw-bold mb-0 flex-grow-1">
       <i class="bi bi-list-check me-2 text-primary"></i>Claim Weeks
       <span class="text-muted fw-normal small ms-2">— required: {{ required_per_week }} application{{ 's' if required_per_week != 1 else '' }} / week</span>
     </h6>
-    <span class="badge bg-secondary">{{ periods|length }} weeks</span>
+    <span class="badge bg-secondary">
+      {% if archived_periods %}{{ recent_periods|length }} of {{ periods|length }} weeks{% else %}{{ periods|length }} weeks{% endif %}
+    </span>
     <div class="app-hint text-info w-100" style="font-size:.72rem;font-style:italic;">
       <i class="bi bi-info-circle me-1"></i>Each row = one claim period. Click a row to expand and see individual applications. Count badge turns neon ✓ when the weekly requirement is met. <strong>View</strong> opens a printable summary · <strong>Export</strong> downloads as CSV or Excel.
     </div>
   </div>
 
-  {% if periods %}
-  <div class="card-body p-0" style="max-height:55vh;overflow-y:auto;">
+  {% if recent_periods %}
+  <div class="card-body p-0">
     <div class="accordion accordion-flush" id="periodsAccordion">
-      {% for period in periods|reverse %}
+      {% for period in recent_periods|reverse %}
       {% set app_count = period.counted_count %}
       <div class="accordion-item bg-transparent border-bottom border-secondary border-opacity-25">
         <h2 class="accordion-header" id="heading{{ period.num }}" style="display:flex;align-items:stretch;">
@@ -279,13 +285,191 @@
   {% endif %}
 </div>
 
+<!-- ── Archived Weeks ─────────────────────────────────────────────── -->
+{% if archived_periods %}
+<div class="card mb-4">
+  <div class="card-header bg-transparent border-0 d-flex align-items-center flex-wrap gap-2">
+    <h6 class="fw-bold mb-0 flex-grow-1">
+      <i class="bi bi-archive me-2 text-secondary"></i>Archived Weeks
+      <span class="text-muted fw-normal small ms-2">— {{ archived_periods|length }} older week{{ 's' if archived_periods|length != 1 else '' }}</span>
+    </h6>
+    <button class="btn btn-sm btn-outline-secondary" type="button"
+            id="archivedWeeksToggleBtn"
+            data-bs-toggle="collapse" data-bs-target="#archivedWeeksBody"
+            aria-expanded="false" aria-controls="archivedWeeksBody">
+      <i class="bi bi-chevron-down me-1" id="archivedWeeksChevron"></i>Show Archived
+    </button>
+  </div>
+  <div id="archivedWeeksBody" class="collapse">
+    <div class="card-body p-0">
+      <div class="accordion accordion-flush" id="archivedAccordion">
+        {% for period in archived_periods|reverse %}
+        {% set app_count = period.counted_count %}
+        <div class="accordion-item bg-transparent border-bottom border-secondary border-opacity-25">
+          <h2 class="accordion-header" id="archheading{{ period.num }}" style="display:flex;align-items:stretch;">
+            <button class="accordion-button collapsed bg-transparent text-white py-2 px-3"
+                    type="button" data-bs-toggle="collapse"
+                    data-bs-target="#archperiod{{ period.num }}"
+                    aria-expanded="false"
+                    aria-controls="archperiod{{ period.num }}"
+                    style="flex:1 1 auto;width:auto;">
+              <div class="d-flex align-items-center gap-3 w-100 me-2 flex-wrap">
+
+                {# ── Week N badge ──────────────────────────────────── #}
+                {% if period.color_override %}
+                  <span class="badge fw-bold week-num-badge"
+                        data-week="{{ period.num }}"
+                        style="min-width:4.5rem;background:{{ period.color_override }};color:#fff;">
+                    Week {{ period.num }}
+                  </span>
+                {% elif period.is_past and not period.met %}
+                  <span class="badge fw-bold week-num-badge"
+                        data-week="{{ period.num }}"
+                        style="min-width:4.5rem;background:#ff8c00;color:#000;">
+                    Week {{ period.num }}
+                  </span>
+                {% else %}
+                  <span class="badge week-num-badge bg-dark border border-secondary text-secondary"
+                        data-week="{{ period.num }}"
+                        style="min-width:4.5rem;">
+                    Week {{ period.num }}
+                  </span>
+                {% endif %}
+
+                {# ── Manual color override picker ────────────────── #}
+                <span class="week-color-wrap d-inline-flex align-items-center gap-1"
+                      title="Override week color" onclick="event.stopPropagation()">
+                  <input type="color" class="week-color-input"
+                         data-week="{{ period.num }}"
+                         value="{{ period.color_override or '#6c757d' }}"
+                         style="width:16px;height:16px;padding:0;border:none;border-radius:50%;cursor:pointer;background:none;">
+                  {% if period.color_override %}
+                  <button type="button" class="btn-close btn-close-white week-color-clear p-0"
+                          data-week="{{ period.num }}"
+                          style="font-size:.55rem;"
+                          title="Clear color override"
+                          onclick="event.stopPropagation()"></button>
+                  {% endif %}
+                </span>
+
+                <span class="small fw-semibold">
+                  {{ period.start.strftime('%a %b') }} {{ period.start.day }} &ndash; {{ period.end.strftime('%a %b') }} {{ period.end.day }}, {{ period.end.year }}
+                </span>
+                <span class="badge bg-secondary opacity-50">Past</span>
+
+              </div>
+            </button>
+
+            {# ── Action buttons + count badge ─────────────────────── #}
+            <div class="d-flex align-items-center gap-2 px-3 flex-shrink-0 border-start border-secondary border-opacity-25">
+
+              <a href="{{ url_for('unemployment_week_jobs', start=period.start.isoformat(), end=period.end.isoformat(), week=period.num) }}"
+                 target="_blank"
+                 class="btn fw-bold"
+                 style="background:#39ff14;color:#000;border:none;font-size:.72rem;padding:2px 8px;"
+                 title="View jobs applied this week in a new tab">
+                <i class="bi bi-eye me-1"></i>View
+              </a>
+
+              <span role="button"
+                    class="btn btn-outline-secondary"
+                    style="font-size:.72rem;padding:2px 8px;"
+                    title="Export this week's jobs to CSV or Excel"
+                    data-week="{{ period.num }}"
+                    data-start="{{ period.start.isoformat() }}"
+                    data-end="{{ period.end.isoformat() }}"
+                    onclick="openExportModal(this)">
+                <i class="bi bi-download me-1"></i>Export
+              </span>
+
+              {% if app_count >= required_per_week %}
+                <span class="badge fw-bold fs-5 py-1 px-2" style="background:#39ff14;color:#000;min-width:4rem;">
+                  {{ app_count }} / {{ required_per_week }} ✓
+                </span>
+              {% elif app_count > 0 %}
+                <span class="badge bg-success" style="font-size:.8rem;min-width:4rem;">
+                  {{ app_count }} / {{ required_per_week }}
+                </span>
+              {% else %}
+                <span class="badge bg-dark text-secondary border border-secondary" style="font-size:.8rem;min-width:4rem;">
+                  0 / {{ required_per_week }}
+                </span>
+              {% endif %}
+
+            </div>
+          </h2>
+          <div id="archperiod{{ period.num }}"
+               class="accordion-collapse collapse"
+               data-bs-parent="">
+            <div class="accordion-body pt-1 pb-2 px-3">
+              {% if period.applications %}
+              <div class="table-responsive">
+                <table class="table table-sm table-dark table-hover mb-0 align-middle">
+                  <thead>
+                    <tr class="text-muted small border-secondary">
+                      <th style="width:110px;">Applied</th>
+                      <th>Job Title</th>
+                      <th>Company</th>
+                      <th style="width:110px;">Posted On</th>
+                      <th style="width:110px;">Status</th>
+                      <th style="width:40px;"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for app in period.applications %}
+                    <tr{% if app.status == 'withdrawn' %} class="opacity-50"{% endif %}>
+                      <td class="small text-muted">
+                        {% set _d = app.applied_date or app.created_at %}{{ (_d.strftime('%a %b') ~ ' ' ~ _d.day) if _d else '—' }}
+                      </td>
+                      <td>
+                        <a href="{{ url_for('job_detail', job_id=app.job_id) }}"
+                           class="text-decoration-none {% if app.status == 'withdrawn' %}text-muted{% else %}text-white fw-semibold{% endif %} small">
+                          {{ app.job.title if app.job else '—' }}
+                          {% if app.status == 'withdrawn' %}<span class="ms-1 small fst-italic">(not counted)</span>{% endif %}
+                        </a>
+                      </td>
+                      <td class="small text-muted">{{ app.job.company if app.job else '—' }}</td>
+                      <td class="small">
+                        {% if app.job and app.job.posted_date %}
+                          <span data-posted-date="{{ app.job.posted_date.strftime('%Y-%m-%d') }}">{{ app.job.posted_date.strftime('%b %d, %Y') }}</span>
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                      </td>
+                      <td>
+                        <span class="badge bg-{{ app.status_color() }}">{{ app.status_label() }}</span>
+                      </td>
+                      <td>
+                        <a href="{{ url_for('application_detail', app_id=app.id) }}"
+                           class="btn btn-xs btn-outline-secondary">
+                          <i class="bi bi-arrow-right"></i>
+                        </a>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+              <p class="text-muted small mb-0 py-1">
+                <i class="bi bi-inbox me-1"></i>No job applications recorded this week.
+              </p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- ── Calendar (pure JS — no page navigation) ───────────────────── -->
 {# Embed period metadata + applied-date counts as safe JSON for the JS renderer #}
 <script id="unemp-cal-data" type="application/json">
 {{ {"startDate": start_date.strftime('%Y-%m-%d'), "endDate": (end_date.strftime('%Y-%m-%d') if end_date else ''), "today": today.strftime('%Y-%m-%d'), "uploadDate": (upload_date.strftime('%Y-%m-%d') if upload_date else ''), "periods": cal_periods_data, "appliedDates": cal_applied_data} | tojson }}
 </script>
 
-<div class="card border-0 shadow-sm mb-4">
+<div class="card mb-4">
   <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
     <div>
       <h6 class="fw-bold mb-0">
@@ -362,6 +546,20 @@
 
 {% block scripts %}
 <script>
+// ── Archived Weeks toggle button label + chevron ──────────────────────────
+(function () {
+  var collapseEl = document.getElementById('archivedWeeksBody');
+  var btn        = document.getElementById('archivedWeeksToggleBtn');
+  var chevron    = document.getElementById('archivedWeeksChevron');
+  if (!collapseEl || !btn) return;
+  collapseEl.addEventListener('show.bs.collapse', function () {
+    btn.innerHTML = '<i class="bi bi-chevron-up me-1" id="archivedWeeksChevron"></i>Hide Archived';
+  });
+  collapseEl.addEventListener('hide.bs.collapse', function () {
+    btn.innerHTML = '<i class="bi bi-chevron-down me-1" id="archivedWeeksChevron"></i>Show Archived';
+  });
+}());
+
 // ── Export modal helper ───────────────────────────────────────────────────
 function openExportModal(btn) {
   var weekNum = btn.dataset.week || '';

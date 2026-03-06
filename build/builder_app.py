@@ -29,7 +29,8 @@ from flask import Flask, jsonify, render_template, request
 
 BUILD_DIR     = Path(__file__).parent.resolve()
 PROJECT_ROOT  = BUILD_DIR.parent
-SETTINGS_FILE = BUILD_DIR / "build_settings.json"
+SETTINGS_FILE  = BUILD_DIR / "build_settings.json"
+PROJECTS_FILE  = BUILD_DIR / "build_projects.json"
 
 # ── Settings helpers ──────────────────────────────────────────────────────────
 
@@ -75,6 +76,21 @@ def _load_settings() -> dict:
 def _save_settings(data: dict) -> None:
     merged = {k: data.get(k, v) for k, v in _DEFAULTS.items()}
     SETTINGS_FILE.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+
+
+# ── Project profile helpers ────────────────────────────────────────────────────
+
+def _load_projects() -> dict:
+    if PROJECTS_FILE.exists():
+        try:
+            return json.loads(PROJECTS_FILE.read_text("utf-8"))
+        except Exception:
+            pass
+    return {"active": None, "projects": {}, "recent": []}
+
+
+def _save_projects(data: dict) -> None:
+    PROJECTS_FILE.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 def _git_cwd() -> str:
@@ -377,6 +393,75 @@ def create_builder_app() -> Flask:
     def api_settings_post():
         data = request.get_json(silent=True) or {}
         _save_settings(data)
+        return jsonify({"ok": True})
+
+    # ── Project profiles ──────────────────────────────────────────────────────
+
+    @app.route("/api/projects")
+    def api_projects_list():
+        from datetime import datetime as _dt
+        data = _load_projects()
+        result = []
+        for name in data.get("recent", []):
+            p = data["projects"].get(name, {})
+            result.append({
+                "name": name,
+                "last_saved": p.get("last_saved", ""),
+            })
+        return jsonify({"ok": True, "projects": result, "active": data.get("active")})
+
+    @app.route("/api/projects/save", methods=["POST"])
+    def api_projects_save():
+        from datetime import datetime as _dt
+        body = request.get_json(silent=True) or {}
+        name = body.get("name", "").strip()
+        settings = body.get("settings", {})
+        if not name:
+            return jsonify({"ok": False, "error": "Name required"})
+        data = _load_projects()
+        data["projects"][name] = {
+            "name": name,
+            "last_saved": _dt.now().strftime("%Y-%m-%d %H:%M"),
+            "settings": settings,
+        }
+        recent = [r for r in data.get("recent", []) if r != name]
+        recent.insert(0, name)
+        data["recent"] = recent[:20]
+        data["active"] = name
+        _save_projects(data)
+        # Mirror to build_settings.json so the dashboard opens with this project
+        _save_settings(settings)
+        return jsonify({"ok": True})
+
+    @app.route("/api/projects/load", methods=["POST"])
+    def api_projects_load():
+        body = request.get_json(silent=True) or {}
+        name = body.get("name", "").strip()
+        data = _load_projects()
+        p = data["projects"].get(name)
+        if not p:
+            return jsonify({"ok": False, "error": "Project not found"})
+        settings = {**_DEFAULTS, **p.get("settings", {})}
+        # Bump to front of recent list
+        recent = [r for r in data.get("recent", []) if r != name]
+        recent.insert(0, name)
+        data["recent"] = recent
+        data["active"] = name
+        _save_projects(data)
+        # Mirror to build_settings.json
+        _save_settings(settings)
+        return jsonify({"ok": True, "settings": settings})
+
+    @app.route("/api/projects/delete", methods=["POST"])
+    def api_projects_delete():
+        body = request.get_json(silent=True) or {}
+        name = body.get("name", "").strip()
+        data = _load_projects()
+        data["projects"].pop(name, None)
+        data["recent"] = [r for r in data.get("recent", []) if r != name]
+        if data.get("active") == name:
+            data["active"] = data["recent"][0] if data["recent"] else None
+        _save_projects(data)
         return jsonify({"ok": True})
 
     # ── Git ───────────────────────────────────────────────────────────────────
@@ -823,14 +908,18 @@ def create_builder_app() -> Flask:
         try:
             ps_script = (
                 "Add-Type -AssemblyName System.Windows.Forms; "
+                "$o = New-Object System.Windows.Forms.Form; "
+                "$o.TopMost = $true; $o.Size = '0,0'; $o.StartPosition = 'Manual'; $o.Location = '-2000,-2000'; $o.Show(); "
                 "$d = New-Object System.Windows.Forms.FolderBrowserDialog; "
                 f"$d.SelectedPath = '{initial_safe}'; "
                 "$d.Description = 'Select Working Tree Directory'; "
-                "$null = $d.ShowDialog(); "
+                "$d.ShowNewFolderButton = $true; "
+                "$null = $d.ShowDialog($o); "
+                "$o.Dispose(); "
                 "Write-Output $d.SelectedPath"
             )
             result = subprocess.run(
-                ["powershell", "-Command", ps_script],
+                ["powershell", "-STA", "-Command", ps_script],
                 capture_output=True, text=True, timeout=60,
             )
             path = result.stdout.strip()
@@ -849,14 +938,17 @@ def create_builder_app() -> Flask:
         try:
             ps_script = (
                 "Add-Type -AssemblyName System.Windows.Forms; "
+                "$o = New-Object System.Windows.Forms.Form; "
+                "$o.TopMost = $true; $o.Size = '0,0'; $o.StartPosition = 'Manual'; $o.Location = '-2000,-2000'; $o.Show(); "
                 "$d = New-Object System.Windows.Forms.OpenFileDialog; "
                 f"$d.Filter = '{filter_desc}|{filter_ext}'; "
                 f"$d.InitialDirectory = '{initial}'; "
-                "$null = $d.ShowDialog(); "
+                "$null = $d.ShowDialog($o); "
+                "$o.Dispose(); "
                 "Write-Output $d.FileName"
             )
             result = subprocess.run(
-                ["powershell", "-Command", ps_script],
+                ["powershell", "-STA", "-Command", ps_script],
                 capture_output=True, text=True, timeout=60,
             )
             path = result.stdout.strip()

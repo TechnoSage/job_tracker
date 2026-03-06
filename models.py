@@ -142,6 +142,7 @@ class Notification(db.Model):
     )
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_archived = db.Column(db.Boolean, default=False)
+    is_acknowledged = db.Column(db.Boolean, default=False)
 
     job = db.relationship("Job", foreign_keys=[job_id])
 
@@ -153,6 +154,7 @@ class Notification(db.Model):
             "offer": "bi-star-fill",
             "reminder": "bi-bell-fill",
             "unemployment_alarm": "bi-exclamation-triangle-fill",
+            "scan_error": "bi-x-circle-fill",
         }
         return icons.get(self.type, "bi-info-circle-fill")
 
@@ -164,6 +166,7 @@ class Notification(db.Model):
             "offer": "success",
             "reminder": "secondary",
             "unemployment_alarm": "danger",
+            "scan_error": "danger",
         }
         return colors.get(self.type, "secondary")
 

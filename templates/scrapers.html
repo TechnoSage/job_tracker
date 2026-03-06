@@ -48,6 +48,18 @@
 
 /* ── Tiny buttons ───────────────────────────────────────────────────── */
 .btn-xs { padding: 0.2rem 0.45rem; font-size: 0.75rem; line-height: 1.4; }
+
+/* ── Neon jobs-found flash ──────────────────────────────────────────── */
+@keyframes neonJobsGlow {
+  0%   { text-shadow: 0 0 4px rgba(57,255,20,.65), 0 0 10px rgba(57,255,20,.4); }
+  50%  { text-shadow: 0 0 10px rgba(57,255,20,1),  0 0 22px rgba(57,255,20,.9), 0 0 36px rgba(57,255,20,.5); }
+  100% { text-shadow: 0 0 4px rgba(57,255,20,.65), 0 0 10px rgba(57,255,20,.4); }
+}
+.jobs-found-neon {
+  color: #39ff14;
+  font-weight: 700;
+  animation: neonJobsGlow 1.8s ease-in-out infinite;
+}
 </style>
 
 <div class="d-flex align-items-center justify-content-between mt-3 mb-4 flex-wrap gap-2">
@@ -105,7 +117,7 @@
 <div class="row g-3" id="sourceCardsGrid">
   {% for src in sources %}
   <div class="col-md-6 col-xl-4 source-col" id="col-{{ src.name }}">
-    <div class="source-card card border-0 h-100 {% if not src.is_enabled %}opacity-50{% endif %}"
+    <div class="source-card card h-100 {% if not src.is_enabled %}opacity-50{% endif %}"
          id="card-{{ src.name }}" data-name="{{ src.name }}">
       <div class="card-body p-3 d-flex flex-column">
 
@@ -123,12 +135,14 @@
             </span>
           </div>
           <!-- Toggle switch -->
-          <div class="form-check form-switch mb-0 ms-2 flex-shrink-0 d-flex align-items-center gap-2">
-            <small class="app-hint text-info fst-italic" style="font-size:.68rem;">include in scans</small>
-            <input class="form-check-input" type="checkbox" role="switch"
-                   id="toggle-{{ src.name }}"
-                   {% if src.is_enabled %}checked{% endif %}
-                   onchange="toggleSource(this, '{{ src.name }}')">
+          <div class="ms-2 flex-shrink-0 text-end">
+            <div class="form-check form-switch mb-0 d-flex justify-content-end">
+              <input class="form-check-input" type="checkbox" role="switch"
+                     id="toggle-{{ src.name }}"
+                     {% if src.is_enabled %}checked{% endif %}
+                     onchange="toggleSource(this, '{{ src.name }}')">
+            </div>
+            <small class="app-hint text-info fst-italic" style="font-size:.68rem;display:block;margin-top:2px;">include in scans</small>
           </div>
         </div>
 
@@ -170,7 +184,11 @@
           </span>
           <span>
             <i class="bi bi-briefcase me-1"></i>
-            {{ src.last_jobs_found if src.last_jobs_found is not none else '0' }} jobs
+            {% if src.last_jobs_found and src.last_jobs_found > 0 %}
+              <span class="jobs-found-neon">{{ src.last_jobs_found }}</span>
+            {% else %}
+              {{ src.last_jobs_found if src.last_jobs_found is not none else '0' }}
+            {% endif %} jobs
           </span>
         </div>
 

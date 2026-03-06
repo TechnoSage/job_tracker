@@ -117,6 +117,34 @@ body { font-size: 0.875rem; background: #212529; }
   </div>
 </nav>
 
+<div class="container-fluid px-3 pt-3 pb-0">
+  <div class="card">
+    <div class="card-body py-2 px-3">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <i class="bi bi-folder2 text-secondary"></i>
+        <span class="text-muted small fw-semibold text-nowrap">Project Profile:</span>
+        <select id="projectSelect" class="form-select form-select-sm" style="max-width:280px;"
+                onchange="onProjectSelectChange()">
+          <option value="">— no saved profiles —</option>
+        </select>
+        <button class="btn btn-sm btn-outline-info" id="btnLoadProject"
+                onclick="loadSelectedProject()" disabled title="Load selected profile">
+          <i class="bi bi-box-arrow-in-down me-1"></i>Load
+        </button>
+        <button class="btn btn-sm btn-outline-success" onclick="saveCurrentProject()"
+                title="Save current settings as a profile (name = App Name)">
+          <i class="bi bi-floppy me-1"></i>Save Project
+        </button>
+        <button class="btn btn-sm btn-outline-danger" id="btnDeleteProject"
+                onclick="deleteSelectedProject()" disabled title="Remove selected profile">
+          <i class="bi bi-trash3 me-1"></i>Delete
+        </button>
+        <span id="projectMsg" class="small ms-auto" style="display:none;"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="container-fluid p-3">
 <div class="row g-3">
 
@@ -196,11 +224,19 @@ body { font-size: 0.875rem; background: #212529; }
         </div>
         <div class="col-6">
           <label class="form-label mb-1 text-muted small" for="APP_URL">App URL <span class="text-secondary">(= GitHub Remote)</span></label>
-          <input id="APP_URL" class="form-control form-control-sm" oninput="syncAppUrl(this.value)">
+          <div class="input-group input-group-sm">
+            <input id="APP_URL" class="form-control" oninput="syncAppUrl(this.value)">
+            <button class="btn btn-outline-secondary" type="button" onclick="syncAppUrl(document.getElementById('GIT_REMOTE_URL').value||'')" title="Use GitHub Remote URL"><i class="bi bi-github"></i></button>
+            <button class="btn btn-outline-secondary" type="button" onclick="browseAppUrl()" title="Browse folder…"><i class="bi bi-folder2-open"></i></button>
+          </div>
         </div>
         <div class="col-6">
           <label class="form-label mb-1 text-muted small" for="APP_SUPPORT_URL">Support URL <span class="text-secondary">(auto: /issues)</span></label>
-          <input id="APP_SUPPORT_URL" class="form-control form-control-sm" readonly style="opacity:.7">
+          <div class="input-group input-group-sm">
+            <input id="APP_SUPPORT_URL" class="form-control" oninput="saveSetting('APP_SUPPORT_URL', this.value)">
+            <button class="btn btn-outline-secondary" type="button" onclick="var u=_deriveSupport(document.getElementById('GIT_REMOTE_URL').value||'');document.getElementById('APP_SUPPORT_URL').value=u;saveSetting('APP_SUPPORT_URL',u);" title="Use GitHub Remote URL + /issues"><i class="bi bi-github"></i></button>
+            <button class="btn btn-outline-secondary" type="button" onclick="browseSupportUrl()" title="Browse folder…"><i class="bi bi-folder2-open"></i></button>
+          </div>
         </div>
         <div class="col-6">
           <label class="form-label mb-1 text-muted small" for="APP_EXE_NAME">Exe Name <span class="text-secondary">(no .exe)</span></label>
@@ -686,6 +722,7 @@ var PROT_NOTES = {
 /* ── Init ──────────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', function () {
   loadSettings();
+  loadProjectsList();
   refreshGit();
   checkGhAuth();
   checkDaemonStatus();
@@ -744,79 +781,68 @@ function getVersion() {
 }
 
 /* ── Settings ──────────────────────────────────────────────────────────────── */
+function applySettings(s) {
+  var textFields = [
+    'APP_NAME', 'APP_DESCRIPTION', 'APP_PUBLISHER',
+    'APP_URL', 'APP_SUPPORT_URL', 'APP_EXE_NAME', 'OUTPUT_DIR',
+    'DEFAULT_INSTALL_DIR', 'ICON_FILE', 'LICENSE_FILE'
+  ];
+  textFields.forEach(function (k) {
+    var el = document.getElementById(k);
+    if (el) el.value = (s[k] != null) ? s[k] : '';
+  });
+
+  // Derive support URL from app URL if not saved
+  var supEl = document.getElementById('APP_SUPPORT_URL');
+  if (supEl && !supEl.value && s.APP_URL) supEl.value = _deriveSupport(s.APP_URL);
+
+  parseVersion(s.APP_VERSION || '1.0.0');
+
+  ['REQUIRE_ADMIN', 'DESKTOP_ICON', 'START_MENU_ICON', 'ADD_TO_STARTUP'].forEach(function (k) {
+    var el = document.getElementById(k);
+    if (el) el.checked = !!s[k];
+  });
+
+  var prot = s.USE_NUITKA ? 'nuitka' : s.USE_PYARMOR ? 'pyarmor' : 'plain';
+  var rb   = document.getElementById('prot_' + prot);
+  if (rb) { rb.checked = true; document.getElementById('protNote').textContent = PROT_NOTES[prot] || ''; }
+
+  var gitEl = document.getElementById('gitRepoDir');
+  if (gitEl) gitEl.value = s.GIT_REPO_DIR || '';
+
+  var gitRemoteEl = document.getElementById('GIT_REMOTE_URL');
+  if (gitRemoteEl) gitRemoteEl.value = s.GIT_REMOTE_URL || '';
+  var gitDevEl = document.getElementById('GIT_DEV_BRANCH');
+  if (gitDevEl) gitDevEl.value = s.GIT_DEV_BRANCH || 'development';
+  var gitMainEl = document.getElementById('GIT_MAIN_BRANCH');
+  if (gitMainEl) gitMainEl.value = s.GIT_MAIN_BRANCH || 'main';
+
+  var backupDestEl = document.getElementById('backupDest');
+  if (backupDestEl) backupDestEl.value = s.BACKUP_DEST || '';
+  var backupSchedEl = document.getElementById('backupSchedule');
+  if (backupSchedEl) backupSchedEl.value = s.BACKUP_SCHEDULE || 'manual';
+  var lastRunEl = document.getElementById('backupLastRun');
+  if (lastRunEl && s.BACKUP_LAST_RUN) lastRunEl.textContent = 'Last run: ' + s.BACKUP_LAST_RUN;
+
+  var daemonIconEl = document.getElementById('daemonIcon');
+  if (daemonIconEl) daemonIconEl.value = s.DAEMON_ICON || '';
+  var daemonNameEl = document.getElementById('daemonName');
+  if (daemonNameEl) daemonNameEl.value = s.DAEMON_NAME || 'Build_Dash';
+
+  var verIncEl = document.getElementById('VERSION_INCREMENT');
+  if (verIncEl) verIncEl.value = s.VERSION_INCREMENT || 'keep';
+
+  updateOpenLicenseBtn();
+  if (s.GIT_REMOTE_URL) { setTimeout(validateRemoteUrl, 600); }
+  startBackupSchedule(s.BACKUP_SCHEDULE || 'manual');
+  refreshPRs();
+  loadVersionFromMain();
+}
+
 function loadSettings() {
   fetch('/api/settings')
     .then(function (r) { return r.json(); })
-    .then(function (s) {
-      var textFields = [
-        'APP_NAME', 'APP_DESCRIPTION', 'APP_PUBLISHER',
-        'APP_URL', 'APP_SUPPORT_URL', 'APP_EXE_NAME', 'OUTPUT_DIR',
-        'DEFAULT_INSTALL_DIR', 'ICON_FILE', 'LICENSE_FILE'
-      ];
-      textFields.forEach(function (k) {
-        var el = document.getElementById(k);
-        if (el) el.value = (s[k] != null) ? s[k] : '';
-      });
-
-      // Derive support URL from app URL if not saved
-      var supEl = document.getElementById('APP_SUPPORT_URL');
-      if (supEl && !supEl.value && s.APP_URL) supEl.value = _deriveSupport(s.APP_URL);
-
-      parseVersion(s.APP_VERSION || '1.0.0');
-
-      ['REQUIRE_ADMIN', 'DESKTOP_ICON', 'START_MENU_ICON', 'ADD_TO_STARTUP'].forEach(function (k) {
-        var el = document.getElementById(k);
-        if (el) el.checked = !!s[k];
-      });
-
-      var prot = s.USE_NUITKA ? 'nuitka' : s.USE_PYARMOR ? 'pyarmor' : 'plain';
-      var rb   = document.getElementById('prot_' + prot);
-      if (rb) { rb.checked = true; document.getElementById('protNote').textContent = PROT_NOTES[prot] || ''; }
-
-      // Git repo dir
-      var gitEl = document.getElementById('gitRepoDir');
-      if (gitEl) gitEl.value = s.GIT_REPO_DIR || '';
-
-      // Git remote / branch settings
-      var gitRemoteEl = document.getElementById('GIT_REMOTE_URL');
-      if (gitRemoteEl) gitRemoteEl.value = s.GIT_REMOTE_URL || '';
-      var gitDevEl = document.getElementById('GIT_DEV_BRANCH');
-      if (gitDevEl) gitDevEl.value = s.GIT_DEV_BRANCH || 'development';
-      var gitMainEl = document.getElementById('GIT_MAIN_BRANCH');
-      if (gitMainEl) gitMainEl.value = s.GIT_MAIN_BRANCH || 'main';
-
-      // Backup settings
-      var backupDestEl = document.getElementById('backupDest');
-      if (backupDestEl) backupDestEl.value = s.BACKUP_DEST || '';
-      var backupSchedEl = document.getElementById('backupSchedule');
-      if (backupSchedEl) backupSchedEl.value = s.BACKUP_SCHEDULE || 'manual';
-      var lastRunEl = document.getElementById('backupLastRun');
-      if (lastRunEl && s.BACKUP_LAST_RUN) lastRunEl.textContent = 'Last run: ' + s.BACKUP_LAST_RUN;
-
-      // Daemon settings
-      var daemonIconEl = document.getElementById('daemonIcon');
-      if (daemonIconEl) daemonIconEl.value = s.DAEMON_ICON || '';
-      var daemonNameEl = document.getElementById('daemonName');
-      if (daemonNameEl) daemonNameEl.value = s.DAEMON_NAME || 'Build_Dash';
-
-      updateOpenLicenseBtn();
-
-      // Trigger URL validation if URL already set
-      if (s.GIT_REMOTE_URL) { setTimeout(validateRemoteUrl, 600); }
-
-      // Start backup schedule timer
-      startBackupSchedule(s.BACKUP_SCHEDULE || 'manual');
-
-      // VERSION_INCREMENT dropdown
-      var verIncEl = document.getElementById('VERSION_INCREMENT');
-      if (verIncEl) verIncEl.value = s.VERSION_INCREMENT || 'keep';
-
-      // Load PRs
-      refreshPRs();
-
-      // Load current version from main branch
-      loadVersionFromMain();
-    })
+    .then(applySettings)
     .catch(function (e) { showToast('Failed to load settings: ' + e, 'danger'); });
 }
 
@@ -871,6 +897,105 @@ function saveSettings() {
   })
   .then(function () { showToast('Settings saved.', 'success'); })
   .catch(function (e) { showToast('Save failed: ' + e, 'danger'); });
+}
+
+/* ── Project profiles ──────────────────────────────────────────────────────── */
+function _projectMsg(text, cls) {
+  var el = document.getElementById('projectMsg');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'small ms-auto ' + (cls || 'text-success');
+  el.style.display = 'inline';
+  setTimeout(function () { el.style.display = 'none'; }, 3000);
+}
+
+async function loadProjectsList(selectName) {
+  try {
+    var r = await fetch('/api/projects');
+    var d = await r.json();
+    var sel = document.getElementById('projectSelect');
+    sel.innerHTML = '<option value="">— no saved profiles —</option>';
+    (d.projects || []).forEach(function (p) {
+      var opt = document.createElement('option');
+      opt.value = p.name;
+      opt.textContent = p.name + (p.last_saved ? '  (' + p.last_saved + ')' : '');
+      sel.appendChild(opt);
+    });
+    // Select either the requested name or the active project
+    var target = selectName || d.active || '';
+    if (target) sel.value = target;
+    onProjectSelectChange();
+  } catch (e) { /* silently ignore — projects file may not exist yet */ }
+}
+
+function onProjectSelectChange() {
+  var has = !!document.getElementById('projectSelect').value;
+  document.getElementById('btnLoadProject').disabled  = !has;
+  document.getElementById('btnDeleteProject').disabled = !has;
+}
+
+async function loadSelectedProject() {
+  var name = document.getElementById('projectSelect').value;
+  if (!name) return;
+  try {
+    var r = await fetch('/api/projects/load', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: name})
+    });
+    var d = await r.json();
+    if (d.ok) {
+      applySettings(d.settings);
+      _projectMsg('Loaded: ' + name, 'text-info');
+    } else {
+      _projectMsg('Load failed: ' + (d.error || ''), 'text-danger');
+    }
+  } catch (e) {
+    _projectMsg('Load error', 'text-danger');
+  }
+}
+
+async function saveCurrentProject() {
+  var settings = collectSettings();
+  var name = (settings.APP_NAME || '').trim();
+  if (!name) {
+    showToast('Set an App Name before saving a project profile.', 'warning');
+    return;
+  }
+  try {
+    var r = await fetch('/api/projects/save', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: name, settings: settings})
+    });
+    var d = await r.json();
+    if (d.ok) {
+      await loadProjectsList(name);
+      _projectMsg('Saved: ' + name, 'text-success');
+    } else {
+      _projectMsg('Save failed: ' + (d.error || ''), 'text-danger');
+    }
+  } catch (e) {
+    _projectMsg('Save error', 'text-danger');
+  }
+}
+
+async function deleteSelectedProject() {
+  var name = document.getElementById('projectSelect').value;
+  if (!name) return;
+  if (!confirm('Remove project profile "' + name + '" from the list?\n\nThis only removes it from the saved profiles — it does not delete any files.')) return;
+  try {
+    var r = await fetch('/api/projects/delete', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: name})
+    });
+    var d = await r.json();
+    if (d.ok) {
+      await loadProjectsList();
+      _projectMsg('Removed: ' + name, 'text-warning');
+    }
+  } catch (e) { /* ignore */ }
 }
 
 /* ── License file opener ───────────────────────────────────────────────────── */
@@ -1325,6 +1450,32 @@ async function browseRepoDir() {
     saveSetting('GIT_REPO_DIR', d.path);
     refreshGit();
     showToast('Working tree path updated.', 'success');
+  }
+}
+
+async function browseAppUrl() {
+  var current = document.getElementById('APP_URL').value;
+  var r = await fetch('/api/gh/browse-folder', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ initial: current || 'C:\\Users\\User\\OneDrive\\GitHub Repositories' })
+  });
+  var d = await r.json();
+  if (d.ok && d.path) {
+    document.getElementById('APP_URL').value = d.path;
+    saveSetting('APP_URL', d.path);
+  }
+}
+
+async function browseSupportUrl() {
+  var current = document.getElementById('APP_SUPPORT_URL').value;
+  var r = await fetch('/api/gh/browse-folder', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ initial: current || 'C:\\Users\\User\\OneDrive\\GitHub Repositories' })
+  });
+  var d = await r.json();
+  if (d.ok && d.path) {
+    document.getElementById('APP_SUPPORT_URL').value = d.path;
+    saveSetting('APP_SUPPORT_URL', d.path);
   }
 }
 

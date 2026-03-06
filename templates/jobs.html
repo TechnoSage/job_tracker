@@ -31,86 +31,85 @@
     {% set n_blue = jobs|selectattr('match_score','ge',score_t1)|selectattr('match_score','lt',score_t2)|list|length %}
     {% set n_grey = jobs|selectattr('match_score','lt',score_t1)|list|length %}
     {% if n_neon %}<span class="badge score-badge score-neon"
-      data-bs-toggle="tooltip" data-bs-placement="top"
-      data-bs-title="High match — score {{ t2 + 1 }}–100">{{ n_neon }}</span>{% endif %}
+      data-tooltip="High match — score {{ t2 + 1 }}–100">{{ n_neon }}</span>{% endif %}
     {% if n_blue %}<span class="badge score-badge score-blue"
-      data-bs-toggle="tooltip" data-bs-placement="top"
-      data-bs-title="Mid match — score {{ t1 + 1 }}–{{ t2 }}">{{ n_blue }}</span>{% endif %}
+      data-tooltip="Mid match — score {{ t1 + 1 }}–{{ t2 }}">{{ n_blue }}</span>{% endif %}
     {% if n_grey %}<span class="badge score-badge score-grey"
-      data-bs-toggle="tooltip" data-bs-placement="top"
-      data-bs-title="Low match — score {{ score_min }}–{{ t1 }}">{{ n_grey }}</span>{% endif %}
+      data-tooltip="Low match — score {{ score_min }}–{{ t1 }}">{{ n_grey }}</span>{% endif %}
     <span class="badge bg-primary fs-6">{{ jobs|length }} results</span>
   </div>
 </div>
 
 <!-- Filters -->
-<div class="card border-0 shadow-sm mb-4">
+<div class="card mb-4">
   <div class="card-body py-3 jobs-filter-body">
     <div class="app-hint text-info mb-2" style="font-size:.75rem;font-style:italic;">
       <i class="bi bi-info-circle me-1"></i>Use the filters below to narrow job listings. Click <strong>Filter</strong> to apply, <strong>✕</strong> to reset all filters.
     </div>
-    <form method="GET" action="{{ url_for('archived_jobs') if is_archived_view else url_for('jobs') }}" class="row g-2 align-items-end">
-      <div class="col-sm-6 col-md-2" style="position:relative;">
-        <label class="form-label small fw-semibold">Category</label>
-        <select name="category" class="form-select form-select-sm">
-          <option value="">All</option>
-          <option value="software" {% if filters.category == 'software' %}selected{% endif %}>Software Dev</option>
-          <option value="customer_service" {% if filters.category == 'customer_service' %}selected{% endif %}>Customer Service</option>
-          <option value="it" {% if filters.category == 'it' %}selected{% endif %}>IT / Sysadmin</option>
-          <option value="general" {% if filters.category == 'general' %}selected{% endif %}>General</option>
-        </select>
-        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Role type assigned when scraped</div>
+    <form method="GET" action="{{ url_for('archived_jobs') if is_archived_view else url_for('jobs') }}">
+      <div class="row g-2 align-items-end" style="padding-bottom:2.5rem;">
+        <div class="col-sm-6 col-md-2" style="position:relative;">
+          <label class="form-label small fw-semibold">Category</label>
+          <select name="category" class="form-select form-select-sm">
+            <option value="">All</option>
+            <option value="software" {% if filters.category == 'software' %}selected{% endif %}>Software Dev</option>
+            <option value="customer_service" {% if filters.category == 'customer_service' %}selected{% endif %}>Customer Service</option>
+            <option value="it" {% if filters.category == 'it' %}selected{% endif %}>IT / Sysadmin</option>
+            <option value="general" {% if filters.category == 'general' %}selected{% endif %}>General</option>
+          </select>
+          <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Role type assigned when scraped</div>
+        </div>
+        <div class="col-sm-6 col-md-2" style="position:relative;">
+          <label class="form-label small fw-semibold">Source</label>
+          <select name="source" class="form-select form-select-sm">
+            <option value="">All Sources</option>
+            {% for s in sources %}
+            <option value="{{ s }}" {% if filters.source == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+          <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Which job board the listing came from</div>
+        </div>
+        {% if not is_archived_view %}
+        <div class="col-sm-6 col-md-2" style="position:relative;">
+          <label class="form-label small fw-semibold">Status</label>
+          <select name="status" class="form-select form-select-sm">
+            <option value="">All Statuses</option>
+            <option value="new" {% if filters.status == 'new' %}selected{% endif %}>New</option>
+            <option value="saved" {% if filters.status == 'saved' %}selected{% endif %}>Saved</option>
+            <option value="viewed" {% if filters.status == 'viewed' %}selected{% endif %}>Viewed</option>
+            <option value="applied" {% if filters.status == 'applied' %}selected{% endif %}>Applied</option>
+          </select>
+          <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Current stage in your job workflow</div>
+        </div>
+        {% endif %}
+        <div class="col-sm-6 col-md-2" style="position:relative;">
+          <label class="form-label small fw-semibold">Min Score</label>
+          <input type="number" name="min_score" class="form-control form-control-sm"
+                 value="{{ filters.min_score }}" min="0" max="100" placeholder="0">
+          <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Only show jobs scoring at least this % skill match (0–100)</div>
+        </div>
+        <div class="col-sm-6 col-md-2" style="position:relative;">
+          <label class="form-label small fw-semibold">Duration</label>
+          <select name="duration" class="form-select form-select-sm">
+            <option value="">All Types</option>
+            {% for dur in ['Full Time', 'Part Time', 'Contract', 'Internship', 'Temporary', 'Seasonal', 'Freelance', 'Per Diem'] %}
+            <option value="{{ dur }}" {% if filters.duration == dur %}selected{% endif %}>{{ dur }}</option>
+            {% endfor %}
+          </select>
+          <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Employment type listed in the posting</div>
+        </div>
+        <div class="col-sm-6 col-md-2" style="position:relative;">
+          <label class="form-label small fw-semibold">Sort By</label>
+          <select name="sort" class="form-select form-select-sm">
+            <option value="score" {% if filters.sort == 'score' %}selected{% endif %}>Score</option>
+            <option value="date" {% if filters.sort == 'date' %}selected{% endif %}>Date Found</option>
+            <option value="company" {% if filters.sort == 'company' %}selected{% endif %}>Company</option>
+          </select>
+          <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Order results by skill match %, discovery date, or company name</div>
+        </div>
       </div>
-      <div class="col-sm-6 col-md-2" style="position:relative;">
-        <label class="form-label small fw-semibold">Source</label>
-        <select name="source" class="form-select form-select-sm">
-          <option value="">All Sources</option>
-          {% for s in sources %}
-          <option value="{{ s }}" {% if filters.source == s %}selected{% endif %}>{{ s }}</option>
-          {% endfor %}
-        </select>
-        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Which job board the listing came from</div>
-      </div>
-      {% if not is_archived_view %}
-      <div class="col-sm-6 col-md-2" style="position:relative;">
-        <label class="form-label small fw-semibold">Status</label>
-        <select name="status" class="form-select form-select-sm">
-          <option value="">All Statuses</option>
-          <option value="new" {% if filters.status == 'new' %}selected{% endif %}>New</option>
-          <option value="saved" {% if filters.status == 'saved' %}selected{% endif %}>Saved</option>
-          <option value="viewed" {% if filters.status == 'viewed' %}selected{% endif %}>Viewed</option>
-          <option value="applied" {% if filters.status == 'applied' %}selected{% endif %}>Applied</option>
-        </select>
-        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Current stage in your job workflow</div>
-      </div>
-      {% endif %}
-      <div class="col-sm-6 col-md-2" style="position:relative;">
-        <label class="form-label small fw-semibold">Min Score</label>
-        <input type="number" name="min_score" class="form-control form-control-sm"
-               value="{{ filters.min_score }}" min="0" max="100" placeholder="0">
-        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Only show jobs scoring at least this % skill match (0–100)</div>
-      </div>
-      <div class="col-sm-6 col-md-2" style="position:relative;">
-        <label class="form-label small fw-semibold">Duration</label>
-        <select name="duration" class="form-select form-select-sm">
-          <option value="">All Types</option>
-          {% for dur in ['Full Time', 'Part Time', 'Contract', 'Internship', 'Temporary', 'Seasonal', 'Freelance', 'Per Diem'] %}
-          <option value="{{ dur }}" {% if filters.duration == dur %}selected{% endif %}>{{ dur }}</option>
-          {% endfor %}
-        </select>
-        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Employment type listed in the posting</div>
-      </div>
-      <div class="col-sm-6 col-md-2" style="position:relative;">
-        <label class="form-label small fw-semibold">Sort By</label>
-        <select name="sort" class="form-select form-select-sm">
-          <option value="score" {% if filters.sort == 'score' %}selected{% endif %}>Score</option>
-          <option value="date" {% if filters.sort == 'date' %}selected{% endif %}>Date Found</option>
-          <option value="company" {% if filters.sort == 'company' %}selected{% endif %}>Company</option>
-        </select>
-        <div class="app-hint text-info" style="font-size:.72rem;font-style:italic;position:absolute;top:100%;left:0;right:0;margin-top:2px;">Order results by skill match %, discovery date, or company name</div>
-      </div>
-      <div class="col-sm-6 col-md-2 d-flex gap-2">
-        <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm">
           <i class="bi bi-funnel me-1"></i>Filter
         </button>
         <a href="{{ url_for('archived_jobs') if is_archived_view else url_for('jobs') }}" class="btn btn-outline-secondary btn-sm">
@@ -126,7 +125,7 @@
 <div class="row g-3">
   {% for job in jobs %}
   <div class="col-12">
-    <div class="card border-0 shadow-sm job-card {% if job.status == 'archived' and not is_archived_view %}opacity-50{% endif %}">
+    <div class="card job-card {% if job.status == 'archived' and not is_archived_view %}opacity-50{% endif %}">
       <div class="card-body">
         <div class="d-flex align-items-start gap-3">
 
@@ -255,7 +254,7 @@
 
 {% block scripts %}
 <style>
-body.hints-on .jobs-filter-body { padding-bottom: 2.4rem !important; }
+/* hint spacing is handled inline on the filter row */
 </style>
 <script>
 (function () {

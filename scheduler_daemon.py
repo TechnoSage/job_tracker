@@ -147,7 +147,7 @@ def _read_settings() -> dict | None:
 
 
 # ---------------------------------------------------------------------------
-# Scan runner
+# Scan runner + timeout watchdog
 # ---------------------------------------------------------------------------
 
 def _run_scan() -> None:
@@ -161,6 +161,118 @@ def _run_scan() -> None:
         logger.info("Scan completed.")
     except Exception as exc:
         logger.error("Scan error: %s", exc, exc_info=True)
+
+
+def _read_timeout_minutes() -> float | None:
+    """Return the scan_timeout_minutes setting from DB, or None if disabled/unset."""
+    try:
+        from app import create_app  # type: ignore
+        flask_app = create_app()
+        with flask_app.app_context():
+            from models import Setting  # type: ignore
+            raw = Setting.get("scan_timeout_minutes", "30").strip()
+            if raw:
+                val = float(raw)
+                return val if val > 0 else None
+    except Exception as exc:
+        logger.warning("Could not read scan_timeout_minutes setting: %s", exc)
+    return None
+
+
+def _handle_scan_timeout(phase_info: dict, elapsed_secs: float) -> None:
+    """Record timeout in DB (ScanLog + Notification + server log) then restart daemon."""
+    phase          = phase_info.get("phase", "unknown")
+    current_source = phase_info.get("current_source", "")
+    done           = phase_info.get("done_sources", 0)
+    total          = phase_info.get("total_sources", 0)
+    elapsed_min    = elapsed_secs / 60
+
+    detail = f"phase={phase!r}"
+    if current_source:
+        detail += f", scraping {current_source!r}"
+    if total:
+        detail += f", {done}/{total} sources completed"
+
+    error_msg = (
+        f"Scan timed out after {elapsed_min:.1f} min — {detail}. "
+        "Daemon is restarting automatically."
+    )
+    logger.error("SCAN TIMEOUT: %s", error_msg)
+
+    # Persist ScanLog + Notification to DB
+    try:
+        import datetime as _dt
+        from app import create_app      # type: ignore
+        flask_app = create_app()
+        with flask_app.app_context():
+            from extensions import db                   # type: ignore
+            from models import ScanLog, Notification    # type: ignore
+
+            db.session.add(ScanLog(
+                scan_date=_dt.datetime.utcnow(),
+                source="all",
+                jobs_found=phase_info.get("total_fetched", 0),
+                jobs_new=phase_info.get("total_new", 0),
+                jobs_matched=phase_info.get("total_matched", 0),
+                status="timeout",
+                error_message=error_msg,
+                duration_seconds=round(elapsed_secs, 1),
+            ))
+            db.session.add(Notification(
+                type="scan_error",
+                title="Scan Timeout",
+                message=error_msg,
+            ))
+            db.session.commit()
+        logger.info("Timeout ScanLog and Notification recorded.")
+    except Exception as exc:
+        logger.error("Could not record timeout in DB: %s", exc)
+
+    # Launch a fresh daemon process before exiting
+    logger.warning("Restarting daemon after timeout…")
+    try:
+        flags = 0
+        if sys.platform == "win32":
+            import subprocess as _sp
+            flags = _sp.CREATE_NO_WINDOW | _sp.DETACHED_PROCESS
+        import subprocess as _sp
+        _sp.Popen(
+            [sys.executable, os.path.abspath(__file__), "--no-tray"],
+            creationflags=flags,
+            close_fds=True,
+        )
+        logger.info("Replacement daemon process launched.")
+    except Exception as exc:
+        logger.error("Failed to launch replacement daemon: %s", exc)
+
+    # Exit this (timed-out) process immediately
+    os._exit(1)
+
+
+def _run_scan_with_timeout(timeout_minutes: float | None = None) -> None:
+    """Run _run_scan() in a worker thread, killing the daemon if it exceeds the timeout."""
+    if timeout_minutes is None:
+        timeout_minutes = _read_timeout_minutes()
+
+    t = threading.Thread(target=_run_scan, name="scan-worker", daemon=True)
+    t.start()
+
+    if timeout_minutes and timeout_minutes > 0:
+        timeout_secs = timeout_minutes * 60
+        start = time.monotonic()
+        t.join(timeout=timeout_secs)
+        elapsed = time.monotonic() - start
+        if t.is_alive():
+            # Snapshot progress state before the process dies
+            try:
+                from scheduler import get_scan_progress  # type: ignore
+                phase_info = get_scan_progress()
+            except Exception:
+                phase_info = {}
+            _handle_scan_timeout(phase_info, elapsed)
+            # _handle_scan_timeout calls os._exit() — execution stops here
+    else:
+        t.join()
 
 
 # ---------------------------------------------------------------------------
@@ -300,7 +412,7 @@ def _scan_loop() -> None:
 
         settings = _read_settings()
         if settings and settings["enabled"]:
-            _run_scan()
+            _run_scan_with_timeout()
 
         # Email check after each job scan too
         if _email_check_due():
@@ -400,7 +512,7 @@ def run_with_tray() -> None:
     port = settings.get("app_port", "5000")
 
     def on_scan_now(icon, item):  # noqa: ANN001
-        threading.Thread(target=_run_scan, daemon=True).start()
+        threading.Thread(target=_run_scan_with_timeout, daemon=True).start()
 
     def on_open(icon, item):  # noqa: ANN001
         import webbrowser
