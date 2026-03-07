@@ -6,6 +6,8 @@
 <title>Job Tracker — Build Dashboard</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<!-- Apply saved theme before first paint -->
+<script>(function(){var t=localStorage.getItem('bd-theme')||'dark';document.documentElement.setAttribute('data-bs-theme',t);})();</script>
 <style>
 /* ── Base ─────────────────────────────────────────────────────────────────── */
 body { font-size: 0.875rem; background: #212529; }
@@ -103,6 +105,62 @@ body { font-size: 0.875rem; background: #212529; }
 .repo-row:hover { background: rgba(255,255,255,.06); }
 .pr-row { font-size: 0.82rem; }
 #ghAuthBadge { font-size: 0.75rem; }
+
+/* ── Field labels: yellow in dark mode, dark maroon in light mode ────────── */
+[data-bs-theme="dark"] label.form-label,
+[data-bs-theme="dark"] label.form-label-sm {
+  color: #f0c040 !important;
+}
+[data-bs-theme="light"] label.form-label,
+[data-bs-theme="light"] label.form-label-sm {
+  color: #6b1520 !important;
+}
+
+/* ── Light mode overrides ───────────────────────────────────────────────── */
+html[data-bs-theme="light"] body {
+  background: #e9ecef !important;
+}
+html[data-bs-theme="light"] nav.navbar {
+  background: #dee2e6 !important;
+  border-color: rgba(0,0,0,.15) !important;
+}
+html[data-bs-theme="light"] nav.navbar .navbar-brand {
+  color: #212529 !important;
+}
+html[data-bs-theme="light"] .card {
+  --bs-card-bg: #ffffff;
+  background-color: #ffffff !important;
+  border-color: rgba(0,0,0,.10) !important;
+  box-shadow:
+    0 4px 14px rgba(0,0,0,.10),
+    0 2px  6px rgba(0,0,0,.07),
+    inset 0  1px 0 rgba(255,255,255,.90),
+    inset 0 -1px 3px rgba(0,0,0,.05) !important;
+}
+html[data-bs-theme="light"] .card:hover {
+  box-shadow:
+    0 8px 22px rgba(0,0,0,.13),
+    0 4px 10px rgba(0,0,0,.08),
+    inset 0 1px 0 rgba(255,255,255,.95) !important;
+}
+html[data-bs-theme="light"] .inner-card {
+  background: rgba(0,0,0,.04) !important;
+  border-color: rgba(0,0,0,.12) !important;
+}
+html[data-bs-theme="light"] .inner-card-hdr {
+  color: rgba(0,0,0,.55) !important;
+  border-color: rgba(0,0,0,.12) !important;
+}
+html[data-bs-theme="light"] .ver-num {
+  background: rgba(0,0,0,.07) !important;
+}
+html[data-bs-theme="light"] .repo-row:hover {
+  background: rgba(0,0,0,.05) !important;
+}
+/* Keep terminal always dark */
+html[data-bs-theme="light"] #log {
+  background: #0d1117 !important;
+}
 </style>
 </head>
 <body>
@@ -139,7 +197,11 @@ body { font-size: 0.875rem; background: #212529; }
                 onclick="deleteSelectedProject()" disabled title="Remove selected profile">
           <i class="bi bi-trash3 me-1"></i>Delete
         </button>
-        <span id="projectMsg" class="small ms-auto" style="display:none;"></span>
+        <span id="projectMsg" class="small" style="display:none;"></span>
+        <button id="themeToggleBtn" class="btn btn-sm btn-outline-secondary ms-auto"
+                onclick="toggleBdTheme()" title="Switch to light mode">
+          <i id="themeToggleIcon" class="bi bi-sun-fill"></i>
+        </button>
       </div>
     </div>
   </div>
@@ -488,6 +550,16 @@ body { font-size: 0.875rem; background: #212529; }
               <div class="inner-card-hdr"><i class="bi bi-hdd-fill"></i>Backup Settings</div>
               <div class="row g-2 align-items-end">
                 <div class="col-12">
+                  <label class="form-label form-label-sm mb-1 text-muted small">Source (app to backup)</label>
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control font-monospace" id="backupSrc" placeholder="C:\path\to\app"
+                           oninput="saveSetting('BACKUP_SRC', this.value)">
+                    <button class="btn btn-outline-secondary" type="button" onclick="browseBackupSrc()" title="Browse…">
+                      <i class="bi bi-folder2-open"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="col-12">
                   <label class="form-label form-label-sm mb-1 text-muted small">Backup Destination</label>
                   <div class="input-group input-group-sm">
                     <input type="text" class="form-control font-monospace" id="backupDest" placeholder="D:\backups\repo_name"
@@ -541,6 +613,17 @@ body { font-size: 0.875rem; background: #212529; }
                   <label class="form-label form-label-sm mb-1 text-muted small">App Name</label>
                   <input type="text" class="form-control form-control-sm" id="daemonName" value="Build_Dash"
                          oninput="saveSetting('DAEMON_NAME', this.value)">
+                </div>
+                <div class="col-12">
+                  <label class="form-label form-label-sm mb-1 text-muted small">Build Output Path</label>
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control font-monospace" id="daemonBuildDir"
+                           placeholder="Folder where Build_Dash.exe will be placed"
+                           oninput="saveSetting('DAEMON_BUILD_DIR', this.value)">
+                    <button class="btn btn-outline-secondary" type="button" onclick="browseDaemonBuildDir()" title="Browse folder…">
+                      <i class="bi bi-folder2-open"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
               <div class="mt-2 d-flex gap-2 flex-wrap">
@@ -719,10 +802,28 @@ var PROT_NOTES = {
   nuitka:  'Nuitka compiles Python to C then to native machine code. No Python bytecode exists. Requires MSVC or MinGW-w64.'
 };
 
+/* ── Dark / Light mode toggle ──────────────────────────────────────────────── */
+function toggleBdTheme() {
+  var next = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-bs-theme', next);
+  localStorage.setItem('bd-theme', next);
+  _updateThemeBtn();
+}
+
+function _updateThemeBtn() {
+  var btn  = document.getElementById('themeToggleBtn');
+  var icon = document.getElementById('themeToggleIcon');
+  if (!btn || !icon) return;
+  var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+  icon.className = isDark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+  btn.title      = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+}
+
 /* ── Init ──────────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', function () {
-  loadSettings();
-  loadProjectsList();
+  _updateThemeBtn();
+  // Auto-load the active project profile on startup; fall back to build_settings.json
+  loadProjectsList().then(function (loaded) { if (!loaded) loadSettings(); });
   refreshGit();
   checkGhAuth();
   checkDaemonStatus();
@@ -817,6 +918,13 @@ function applySettings(s) {
   var gitMainEl = document.getElementById('GIT_MAIN_BRANCH');
   if (gitMainEl) gitMainEl.value = s.GIT_MAIN_BRANCH || 'main';
 
+  var mergeSrcEl = document.getElementById('mergeSource');
+  if (mergeSrcEl) mergeSrcEl.value = s.MERGE_SOURCE || 'development';
+  var mergeTgtEl = document.getElementById('mergeTarget');
+  if (mergeTgtEl) mergeTgtEl.value = s.MERGE_TARGET || 'main';
+
+  var backupSrcEl = document.getElementById('backupSrc');
+  if (backupSrcEl) backupSrcEl.value = s.BACKUP_SRC || '';
   var backupDestEl = document.getElementById('backupDest');
   if (backupDestEl) backupDestEl.value = s.BACKUP_DEST || '';
   var backupSchedEl = document.getElementById('backupSchedule');
@@ -828,6 +936,8 @@ function applySettings(s) {
   if (daemonIconEl) daemonIconEl.value = s.DAEMON_ICON || '';
   var daemonNameEl = document.getElementById('daemonName');
   if (daemonNameEl) daemonNameEl.value = s.DAEMON_NAME || 'Build_Dash';
+  var daemonBuildDirEl = document.getElementById('daemonBuildDir');
+  if (daemonBuildDirEl) daemonBuildDirEl.value = s.DAEMON_BUILD_DIR || '';
 
   var verIncEl = document.getElementById('VERSION_INCREMENT');
   if (verIncEl) verIncEl.value = s.VERSION_INCREMENT || 'keep';
@@ -881,10 +991,14 @@ function collectSettings() {
     GIT_REMOTE_URL:      (document.getElementById('GIT_REMOTE_URL')  || {value: ''}).value.trim(),
     GIT_DEV_BRANCH:      (document.getElementById('GIT_DEV_BRANCH')  || {value: 'development'}).value.trim() || 'development',
     GIT_MAIN_BRANCH:     (document.getElementById('GIT_MAIN_BRANCH') || {value: 'main'}).value.trim() || 'main',
+    MERGE_SOURCE:        (document.getElementById('mergeSource')      || {value: 'development'}).value.trim() || 'development',
+    MERGE_TARGET:        (document.getElementById('mergeTarget')      || {value: 'main'}).value.trim() || 'main',
+    BACKUP_SRC:          (document.getElementById('backupSrc')        || {value: ''}).value.trim(),
     BACKUP_DEST:         (document.getElementById('backupDest')       || {value: ''}).value.trim(),
     BACKUP_SCHEDULE:     (document.getElementById('backupSchedule')   || {value: 'manual'}).value,
     DAEMON_NAME:         (document.getElementById('daemonName')       || {value: 'Build_Dash'}).value.trim(),
     DAEMON_ICON:         (document.getElementById('daemonIcon')       || {value: ''}).value.trim(),
+    DAEMON_BUILD_DIR:    (document.getElementById('daemonBuildDir')   || {value: ''}).value.trim(),
     VERSION_INCREMENT:   (document.getElementById('VERSION_INCREMENT') || {value: 'keep'}).value
   };
 }
@@ -925,7 +1039,13 @@ async function loadProjectsList(selectName) {
     var target = selectName || d.active || '';
     if (target) sel.value = target;
     onProjectSelectChange();
+    // On initial startup (no explicit selectName), auto-load the active profile
+    if (!selectName && target) {
+      await loadSelectedProject();
+      return true;
+    }
   } catch (e) { /* silently ignore — projects file may not exist yet */ }
+  return false;
 }
 
 function onProjectSelectChange() {
@@ -1489,6 +1609,32 @@ async function browseBackupDest() {
   if (d.ok && d.path) {
     document.getElementById('backupDest').value = d.path;
     saveSetting('BACKUP_DEST', d.path);
+  }
+}
+
+async function browseBackupSrc() {
+  var current = (document.getElementById('backupSrc') || {value: ''}).value.trim();
+  var r = await fetch('/api/gh/browse-folder', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ initial: current || 'C:\\Users\\User\\OneDrive\\GitHub Repositories' })
+  });
+  var d = await r.json();
+  if (d.ok && d.path) {
+    document.getElementById('backupSrc').value = d.path;
+    saveSetting('BACKUP_SRC', d.path);
+  }
+}
+
+async function browseDaemonBuildDir() {
+  var current = (document.getElementById('daemonBuildDir') || {value: ''}).value.trim();
+  var r = await fetch('/api/gh/browse-folder', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ initial: current || 'C:\\Users\\User\\OneDrive\\GitHub Repositories' })
+  });
+  var d = await r.json();
+  if (d.ok && d.path) {
+    document.getElementById('daemonBuildDir').value = d.path;
+    saveSetting('DAEMON_BUILD_DIR', d.path);
   }
 }
 

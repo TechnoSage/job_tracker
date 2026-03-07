@@ -25,6 +25,85 @@ from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
 
+# ── IFileOpenDialog C# — modern Windows Explorer folder picker ────────────────
+# Used by the /api/gh/browse-folder route.  Compiled once per PowerShell call.
+
+_FOLDER_PICKER_CS = """
+using System;
+using System.Runtime.InteropServices;
+
+public class FolderPicker {
+    [ComImport, Guid("DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7"),
+     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IFileOpenDialog {
+        [PreserveSig] int Show(IntPtr hwnd);
+        void SetFileTypes(uint c, IntPtr t);
+        void SetFileTypeIndex(uint i);
+        void GetFileTypeIndex(out uint i);
+        void Advise(IntPtr sink, out uint cookie);
+        void Unadvise(uint cookie);
+        void SetOptions(uint fos);
+        void GetOptions(out uint fos);
+        void SetDefaultFolder(IntPtr si);
+        void SetFolder(IntPtr si);
+        void GetFolder(out IntPtr si);
+        void GetCurrentSelection(out IntPtr si);
+        void SetFileName([MarshalAs(UnmanagedType.LPWStr)] string n);
+        void GetFileName([MarshalAs(UnmanagedType.LPWStr)] out string n);
+        void SetTitle([MarshalAs(UnmanagedType.LPWStr)] string title);
+        void SetOkButtonLabel([MarshalAs(UnmanagedType.LPWStr)] string text);
+        void SetFileNameLabel([MarshalAs(UnmanagedType.LPWStr)] string lbl);
+        void GetResult(out IntPtr si);
+        void AddPlace(IntPtr si, int fdap);
+        void SetDefaultExtension([MarshalAs(UnmanagedType.LPWStr)] string ext);
+        void Close(int hr);
+        void SetClientGuid(ref Guid guid);
+        void ClearClientData();
+        void SetFilter(IntPtr filter);
+        void GetResults(out IntPtr items);
+        void GetSelectedItems(out IntPtr items);
+    }
+
+    [ComImport, Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE"),
+     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IShellItem {
+        void BindToHandler(IntPtr pbc, ref Guid bhid, ref Guid riid, out IntPtr ppv);
+        void GetParent(out IShellItem ppsi);
+        void GetDisplayName(uint sigdn, [MarshalAs(UnmanagedType.LPWStr)] out string name);
+        void GetAttributes(uint mask, out uint attribs);
+        void Compare(IShellItem psi, uint hint, out int order);
+    }
+
+    [DllImport("shell32.dll", CharSet=CharSet.Unicode)]
+    static extern int SHCreateItemFromParsingName(
+        string path, IntPtr pbc, ref Guid riid,
+        [MarshalAs(UnmanagedType.Interface)] out IShellItem ppv);
+
+    static Guid CLSID = new Guid("DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7");
+    static Guid IID_SI = new Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE");
+
+    public static string Pick(string initial) {
+        var dlg = (IFileOpenDialog)Activator.CreateInstance(Type.GetTypeFromCLSID(CLSID));
+        try {
+            uint opts; dlg.GetOptions(out opts);
+            // FOS_PICKFOLDERS (0x20) | FOS_FORCEFILESYSTEM (0x40)
+            dlg.SetOptions(opts | 0x20 | 0x40);
+            dlg.SetTitle("Select Folder");
+            if (!string.IsNullOrEmpty(initial)) {
+                IShellItem si;
+                if (SHCreateItemFromParsingName(initial, IntPtr.Zero, ref IID_SI, out si) == 0)
+                    dlg.SetFolder(Marshal.GetIUnknownForObject(si));
+            }
+            if (dlg.Show(IntPtr.Zero) != 0) return "";
+            IntPtr ptr; dlg.GetResult(out ptr);
+            var item = (IShellItem)Marshal.GetObjectForIUnknown(ptr);
+            string path; item.GetDisplayName(0x80058000, out path);  // SIGDN_FILESYSPATH
+            return path ?? "";
+        } finally { Marshal.ReleaseComObject(dlg); }
+    }
+}
+"""
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
 BUILD_DIR     = Path(__file__).parent.resolve()
@@ -56,11 +135,15 @@ _DEFAULTS: dict = {
     "GIT_REMOTE_URL":      "",   # GitHub remote URL, e.g. https://github.com/user/repo.git
     "GIT_DEV_BRANCH":      "development",
     "GIT_MAIN_BRANCH":     "main",
+    "MERGE_SOURCE":        "development",
+    "MERGE_TARGET":        "main",
+    "BACKUP_SRC":          "",
     "BACKUP_DEST":         "",
     "BACKUP_SCHEDULE":     "manual",
     "VERSION_INCREMENT":   "keep",
     "DAEMON_NAME":         "Build_Dash",
     "DAEMON_ICON":         "",
+    "DAEMON_BUILD_DIR":    "",
 }
 
 
@@ -154,6 +237,47 @@ def _run_build_process(cmd: list[str]) -> None:
     except Exception as exc:
         _append(f"[EXCEPTION] {exc}")
         _set_status("error")
+
+
+def _pip_install(package: str) -> bool:
+    """Install a pip package into the running interpreter, streaming output to the log.
+    Returns True on success."""
+    cmd = [sys.executable, "-m", "pip", "install", package]
+    _append("=" * 56)
+    _append(f"Module '{package}' not found — installing via pip...")
+    _append("Command: " + " ".join(cmd))
+    _append("=" * 56)
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        for line in proc.stdout:
+            _append(line.rstrip())
+        proc.wait()
+        if proc.returncode == 0:
+            _append(f"[OK] '{package}' installed successfully.")
+            _append("")
+            return True
+        _append(f"[ERROR] pip install '{package}' failed (exit {proc.returncode}).")
+        return False
+    except Exception as exc:
+        _append(f"[EXCEPTION during install] {exc}")
+        return False
+
+
+def _run_build_exe(cmd: list[str]) -> None:
+    """Ensure PyInstaller is installed, then run the build command."""
+    import importlib.util
+    if importlib.util.find_spec("PyInstaller") is None:
+        if not _pip_install("pyinstaller"):
+            _set_status("error")
+            return
+    _run_build_process(cmd)
 
 
 def _git_seq(cmds: list[list[str]], cwd: str) -> bool:
@@ -906,18 +1030,14 @@ def create_builder_app() -> Flask:
         initial = data.get("initial", r"C:\Users\User\OneDrive\GitHub Repositories")
         initial_safe = initial.replace("'", "''")
         try:
-            ps_script = (
-                "Add-Type -AssemblyName System.Windows.Forms; "
-                "$o = New-Object System.Windows.Forms.Form; "
-                "$o.TopMost = $true; $o.Size = '0,0'; $o.StartPosition = 'Manual'; $o.Location = '-2000,-2000'; $o.Show(); "
-                "$d = New-Object System.Windows.Forms.FolderBrowserDialog; "
-                f"$d.SelectedPath = '{initial_safe}'; "
-                "$d.Description = 'Select Working Tree Directory'; "
-                "$d.ShowNewFolderButton = $true; "
-                "$null = $d.ShowDialog($o); "
-                "$o.Dispose(); "
-                "Write-Output $d.SelectedPath"
-            )
+            ps_lines = [
+                f"$initial = '{initial_safe}'",
+                "Add-Type @\"",
+                _FOLDER_PICKER_CS,
+                "\"@",
+                "Write-Output ([FolderPicker]::Pick($initial))",
+            ]
+            ps_script = "\n".join(ps_lines)
             result = subprocess.run(
                 ["powershell", "-STA", "-Command", ps_script],
                 capture_output=True, text=True, timeout=60,
@@ -1013,7 +1133,7 @@ def create_builder_app() -> Flask:
     @app.route("/api/backup/run", methods=["POST"])
     def backup_run():
         settings = _load_settings()
-        src  = settings.get("GIT_REPO_DIR", "").strip() or str(PROJECT_ROOT)
+        src  = settings.get("BACKUP_SRC", "").strip() or settings.get("GIT_REPO_DIR", "").strip() or str(PROJECT_ROOT)
         dest = settings.get("BACKUP_DEST", "").strip()
         if not os.path.isdir(src):
             return jsonify({"ok": False, "error": "Source repo dir not found"})
@@ -1080,9 +1200,12 @@ def create_builder_app() -> Flask:
         settings      = _load_settings()
         name          = (settings.get("DAEMON_NAME", "") or "Build_Dash").strip()
         icon          = settings.get("DAEMON_ICON", "").strip()
+        build_dir     = settings.get("DAEMON_BUILD_DIR", "").strip()
         daemon_script = BUILD_DIR / "build_dash_daemon.py"
         if not daemon_script.exists():
             return jsonify({"ok": False, "error": "build_dash_daemon.py not found"})
+        if build_dir:
+            os.makedirs(build_dir, exist_ok=True)
         with _build_lock:
             if _build_status == "running":
                 return jsonify({"ok": False, "error": "A build is already running"})
@@ -1090,9 +1213,11 @@ def create_builder_app() -> Flask:
             _build_status = "running"
         cmd = [sys.executable, "-m", "PyInstaller", "--onefile", "--noconsole",
                f"--name={name}", str(daemon_script)]
+        if build_dir:
+            cmd.insert(-1, f"--distpath={build_dir}")
         if icon and os.path.isfile(icon):
             cmd.insert(-1, f"--icon={icon}")
-        t = threading.Thread(target=_run_build_process, args=(cmd,), daemon=True)
+        t = threading.Thread(target=_run_build_exe, args=(cmd,), daemon=True)
         t.start()
         return jsonify({"ok": True})
 
