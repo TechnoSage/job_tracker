@@ -1,0 +1,1542 @@
+<!doctype html>
+<html lang="en" id="htmlRoot" data-bs-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build Dashboard — Help &amp; Documentation</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+html { scroll-behavior: smooth; }
+
+/* ── Top navbar ─────────────────────────────────────────────────────────── */
+#helpNav {
+  background: var(--bs-body-bg);
+  border-bottom: 1px solid var(--bs-border-color);
+  z-index: 1030;
+}
+
+/* ── TOC sidebar ─────────────────────────────────────────────────────────── */
+#tocSidebar {
+  position: sticky;
+  top: 57px;
+  height: calc(100vh - 57px);
+  overflow-y: auto;
+  border-right: 1px solid var(--bs-border-color);
+  padding: 1.25rem 0.75rem;
+  scrollbar-width: thin;
+}
+#tocSidebar .toc-section { font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--bs-secondary-color); margin: 1rem 0 0.25rem 0; }
+#tocSidebar .nav-link { font-size: 0.8rem; padding: 0.2rem 0.5rem; color: var(--bs-body-color);
+  border-radius: 4px; line-height: 1.4; }
+#tocSidebar .nav-link:hover { background: rgba(255,255,255,.06); color: var(--bs-body-color); }
+#tocSidebar .nav-link.active { background: rgba(13,110,253,.18); color: #6ea8fe; font-weight: 600; }
+#tocSidebar .nav-link.sub { padding-left: 1.1rem; }
+#tocSidebar .nav-link.sub2 { padding-left: 1.9rem; }
+
+/* ── Main content ────────────────────────────────────────────────────────── */
+#helpContent { max-width: 860px; padding: 2rem 2.5rem 4rem; }
+#helpContent h2 { font-size: 1.45rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 0.5rem;
+  padding-top: 0.5rem; border-bottom: 1px solid var(--bs-border-color); padding-bottom: 0.5rem; }
+#helpContent h3 { font-size: 1.05rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.4rem; }
+#helpContent h4 { font-size: 0.875rem; font-weight: 600; margin-top: 1.25rem; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--bs-secondary-color); }
+#helpContent p { line-height: 1.7; }
+#helpContent ul li { line-height: 1.7; margin-bottom: 0.2rem; }
+
+/* ── Mockup containers ───────────────────────────────────────────────────── */
+.mockup {
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin: 0.75rem 0 1.25rem;
+  font-size: 0.82rem;
+}
+[data-bs-theme="light"] .mockup { background: rgba(0,0,0,.03); }
+.mockup-label {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--bs-secondary-color); margin-bottom: 0.6rem;
+}
+.mockup-card {
+  background: #1c1f24;
+  border: 1px solid rgba(255,255,255,.065);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);
+}
+[data-bs-theme="light"] .mockup-card { background: #fff; border-color: rgba(0,0,0,.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,.12); color: #212529; }
+.mockup-topbar {
+  background: #212529; border: 1px solid rgba(255,255,255,.1); border-radius: 0.5rem;
+  padding: 0.5rem 0.875rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+}
+[data-bs-theme="light"] .mockup-topbar { background: #f8f9fa; border-color: rgba(0,0,0,.12); }
+
+/* ── Key term / tip / warn callouts ─────────────────────────────────────── */
+.key-term { background: rgba(13,110,253,.12); border-left: 3px solid #0d6efd;
+  border-radius: 0 .4rem .4rem 0; padding: .6rem 1rem; margin: .75rem 0; font-size:.875rem; }
+.tip-box  { background: rgba(25,135,84,.1); border-left: 3px solid #198754;
+  border-radius: 0 .4rem .4rem 0; padding: .6rem 1rem; margin: .75rem 0; font-size:.875rem; }
+.warn-box { background: rgba(255,193,7,.1); border-left: 3px solid #ffc107;
+  border-radius: 0 .4rem .4rem 0; padding: .6rem 1rem; margin: .75rem 0; font-size:.875rem; }
+
+/* ── Pipeline visual ─────────────────────────────────────────────────────── */
+.pipeline-step {
+  flex: 1; text-align: center; padding: .5rem .25rem; font-size: .75rem; font-weight: 600;
+  border-radius: .4rem; border: 1px solid var(--bs-border-color);
+  background: rgba(255,255,255,.03);
+}
+.pipeline-step.done {
+  background: rgba(57,255,20,.08); border-color: #39ff14; color: #39ff14;
+}
+.pipeline-arrow { color: var(--bs-secondary-color); font-size: 1rem; align-self: center; padding: 0 .15rem; }
+
+/* ── Badge pulse indicators ──────────────────────────────────────────────── */
+.pulse-green { display:inline-block; width:10px; height:10px; border-radius:50%;
+  background:#39ff14; box-shadow:0 0 6px #39ff14; }
+.pulse-red   { display:inline-block; width:10px; height:10px; border-radius:50%;
+  background:#dc3545; box-shadow:0 0 6px #dc3545; }
+</style>
+</head>
+<body>
+
+<!-- ── Top navbar ──────────────────────────────────────────────────────────── -->
+<nav id="helpNav" class="navbar sticky-top px-4 py-2">
+  <span class="navbar-brand fw-bold mb-0">
+    <i class="bi bi-question-circle-fill me-2 text-info"></i>Build Dashboard &mdash; Help &amp; Documentation
+  </span>
+  <div class="d-flex align-items-center gap-2">
+    <button class="btn btn-sm btn-outline-secondary" onclick="toggleTheme()" title="Toggle dark / light mode">
+      <i id="themeIcon" class="bi bi-moon-fill me-1"></i><span id="themeLabel">Dark mode</span>
+    </button>
+    <a href="/" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Back to App
+    </a>
+  </div>
+</nav>
+
+<div class="d-flex">
+
+<!-- ── TOC sidebar ─────────────────────────────────────────────────────────── -->
+<nav id="tocSidebar" class="d-none d-lg-block" style="width:230px;min-width:230px">
+  <div class="toc-section">Getting Started</div>
+  <a class="nav-link" href="#overview">Overview</a>
+  <a class="nav-link" href="#profiles">Project Profiles</a>
+
+  <div class="toc-section">Configuration Cards</div>
+  <a class="nav-link fw-semibold" href="#app-info">App Info</a>
+  <a class="nav-link sub" href="#new-app">New App Button</a>
+  <a class="nav-link fw-semibold" href="#code-protection">Code Protection</a>
+  <a class="nav-link sub" href="#protection-plain">Plain</a>
+  <a class="nav-link sub" href="#protection-pyarmor">PyArmor</a>
+  <a class="nav-link sub" href="#protection-nuitka">Nuitka</a>
+  <a class="nav-link fw-semibold" href="#license-file">License File</a>
+  <a class="nav-link fw-semibold" href="#readme-gen">README Generator</a>
+  <a class="nav-link fw-semibold" href="#git-target">Git — Target Project</a>
+  <a class="nav-link sub" href="#git-operations">Git Operations</a>
+
+  <div class="toc-section">Building</div>
+  <a class="nav-link" href="#pipeline-sounds">Pipeline Sounds</a>
+  <a class="nav-link" href="#pipeline">CI/CD Pipeline</a>
+  <a class="nav-link sub" href="#virus-scan">Virus / Malware Scan</a>
+  <a class="nav-link" href="#build-actions">Build Actions</a>
+  <a class="nav-link sub" href="#version-mgr">Version Management</a>
+  <a class="nav-link" href="#build-log">Build Log</a>
+  <a class="nav-link" href="#test-pipeline">Test Pipeline</a>
+  <a class="nav-link" href="#test-build-output">Test Output Log</a>
+
+  <div class="toc-section">GitHub Integration</div>
+  <a class="nav-link" href="#gh-auth">Auth</a>
+  <a class="nav-link" href="#repo-picker">Repo Picker</a>
+  <a class="nav-link" href="#pull-requests">Pull Requests</a>
+
+  <div class="toc-section">Security</div>
+  <a class="nav-link" href="#https-overview">HTTPS Overview</a>
+  <a class="nav-link sub" href="#mkcert-install">Install mkcert</a>
+  <a class="nav-link sub" href="#cert-generate">Generate Certs</a>
+  <a class="nav-link sub" href="#cert-renewal">Renewal</a>
+  <a class="nav-link sub" href="#cert-installer">Bundle in Installer</a>
+
+  <div class="toc-section">Maintenance</div>
+  <a class="nav-link" href="#local-backup">Local Backup</a>
+  <a class="nav-link" href="#build-daemon">Build Dash Daemon</a>
+</nav>
+
+<!-- ── Main content ────────────────────────────────────────────────────────── -->
+<main id="helpContent">
+
+<!-- ══════════════════════════════════════════════════════════ OVERVIEW -->
+<section id="overview">
+  <h2><i class="bi bi-info-circle me-2 text-info"></i>Overview</h2>
+  <p>
+    The <strong>Build Dashboard</strong> is a Flask-based build tool that compiles a Python Flask application
+    into a standalone Windows installer. It integrates Nuitka or PyInstaller for bundling, optional PyArmor
+    source obfuscation for code protection, and Inno Setup for creating a professional <code>.exe</code>
+    installer — all driven from a single browser-based interface.
+  </p>
+
+  <div class="row g-3 mb-3">
+    <div class="col-sm-6">
+      <div class="mockup-card p-3 h-100">
+        <div class="fw-semibold mb-2"><i class="bi bi-lightning-charge me-1 text-warning"></i>What it automates</div>
+        <ul class="mb-0 ps-3">
+          <li>Git branch management (dev &rarr; main)</li>
+          <li>Dependency installation &amp; verification</li>
+          <li>Source obfuscation or native compilation</li>
+          <li>PyInstaller / Nuitka bundling</li>
+          <li>Inno Setup installer creation</li>
+          <li>Scheduled source backups via robocopy</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-sm-6">
+      <div class="mockup-card p-3 h-100">
+        <div class="fw-semibold mb-2"><i class="bi bi-person me-1 text-success"></i>What you do</div>
+        <ul class="mb-0 ps-3">
+          <li>Fill in App Info fields once per project</li>
+          <li>Pick a protection strategy</li>
+          <li>Click <strong>Full Build</strong> and watch the pipeline</li>
+          <li>Distribute the <code>.exe</code> installer from <code>build_output/</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h3>Launching the Build Dashboard</h3>
+  <p>
+    The Build Dashboard runs on <strong>port 5001</strong> and is launched via the PowerShell script
+    <code>start_builder.ps1</code> located in the project root. Double-click it in Explorer, or
+    run it from a terminal:
+  </p>
+  <div class="mockup">
+    <div class="mockup-label">Terminal</div>
+    <div style="font-family:monospace; font-size:.82rem; color:#adb5bd;">
+      <span style="color:#6ea8fe">PS</span> C:\...\job_tracker&gt; <span style="color:#fff">.\start_builder.ps1</span><br>
+      <span style="color:#6c757d"># Opens browser at http://127.0.0.1:5001</span>
+    </div>
+  </div>
+  <p>
+    The script starts <code>start_builder.py</code>, which in turn launches <code>build/builder_app.py</code>.
+    The Flask server runs in the background and your default browser opens automatically.
+    Close the terminal window (or press <kbd>Ctrl+C</kbd>) to stop the server.
+  </p>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    <strong>Keep it open:</strong> The Build Dashboard does not need to be relaunched between builds.
+    You can start it once in the morning and leave it running all day.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ PROJECT PROFILES -->
+<section id="profiles">
+  <h2><i class="bi bi-collection me-2 text-primary"></i>Project Profiles</h2>
+  <p>
+    A <strong>Profile</strong> is a named snapshot of every configuration field in the Build Dashboard —
+    App Info, protection settings, Git paths, backup directories, and daemon settings. Profiles let you
+    switch between multiple projects instantly without re-entering settings each time.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Profile selector bar (top of dashboard)</div>
+    <div class="mockup-topbar">
+      <span class="text-muted" style="font-size:.78rem">Profile:</span>
+      <select class="form-select form-select-sm" style="width:160px;font-size:.78rem">
+        <option>job_tracker v2.1</option>
+        <option>my_other_app</option>
+      </select>
+      <button class="btn btn-sm btn-outline-success" style="font-size:.75rem"><i class="bi bi-floppy me-1"></i>Save</button>
+      <button class="btn btn-sm btn-outline-primary" style="font-size:.75rem"><i class="bi bi-download me-1"></i>Load</button>
+      <button class="btn btn-sm btn-outline-danger" style="font-size:.75rem"><i class="bi bi-trash me-1"></i>Delete</button>
+    </div>
+  </div>
+
+  <h4>Actions</h4>
+  <ul>
+    <li><strong>Save</strong> — Writes the current configuration to <code>build_settings.json</code> under the profile name you type in the prompt. If a profile with that name already exists it is overwritten.</li>
+    <li><strong>Load</strong> — Restores all fields from the selected profile. Any unsaved changes to the current configuration are discarded.</li>
+    <li><strong>Delete</strong> — Permanently removes the selected profile from <code>build_settings.json</code>. A confirmation dialog is shown first.</li>
+  </ul>
+
+  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
+    <strong>build_settings.json</strong> is machine-specific and is excluded from Git (<code>.gitignore</code>).
+    It lives inside the <code>build/</code> folder and is never committed to the repository.
+  </div>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Create one profile per project you maintain with the Build Dashboard. Name them descriptively,
+    e.g. <em>job_tracker-v2.1</em> or <em>myapp-staging</em>.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ APP INFO -->
+<section id="app-info">
+  <h2><i class="bi bi-card-list me-2 text-secondary"></i>App Info</h2>
+  <p>
+    The <strong>App Info</strong> card contains all the metadata that describes your application.
+    These values are injected into the Inno Setup script (<code>.iss</code>) and embedded in the
+    compiled installer.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">App Info card — field overview</div>
+    <div class="mockup-card">
+      <div class="row g-2" style="font-size:.8rem">
+        <div class="col-6">
+          <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">App Name</div>
+          <div class="border rounded px-2 py-1" style="border-color:rgba(255,255,255,.1)!important">Job Tracker</div>
+        </div>
+        <div class="col-3">
+          <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Version</div>
+          <div class="border rounded px-2 py-1" style="border-color:rgba(255,255,255,.1)!important">2.1.0</div>
+        </div>
+        <div class="col-3">
+          <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Exe Name</div>
+          <div class="border rounded px-2 py-1" style="border-color:rgba(255,255,255,.1)!important">job_tracker</div>
+        </div>
+        <div class="col-12">
+          <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Description</div>
+          <div class="border rounded px-2 py-1" style="border-color:rgba(255,255,255,.1)!important">Self-hosted job search management system</div>
+        </div>
+        <div class="col-6">
+          <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Publisher</div>
+          <div class="border rounded px-2 py-1" style="border-color:rgba(255,255,255,.1)!important">TechnoSage</div>
+        </div>
+        <div class="col-6">
+          <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">App URL</div>
+          <div class="border rounded px-2 py-1" style="border-color:rgba(255,255,255,.1)!important">https://github.com/TechnoSage/job_tracker</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h4>Fields reference</h4>
+  <ul>
+    <li><strong>App Name</strong> — The human-readable product name shown in the installer wizard title bar and Windows "Add/Remove Programs".</li>
+    <li><strong>Version</strong> — Semantic version string (<code>MAJOR.MINOR.PATCH</code>). Inno Setup embeds this in the installer metadata and uses it for upgrade detection.</li>
+    <li><strong>Description</strong> — One-line description included in the installer and optionally in the compiled executable's version info block.</li>
+    <li><strong>Publisher</strong> — Developer or company name shown in the installer and in Windows program listings.</li>
+    <li><strong>App URL</strong> — Project homepage. Shown on the installer "Welcome" page and recorded in the registry entry.</li>
+    <li><strong>Support URL</strong> — Link to your issue tracker or support page. Shown in "Add/Remove Programs" details.</li>
+    <li><strong>Exe Name</strong> — The base filename of the compiled executable (without <code>.exe</code>). Must be a valid Windows filename with no spaces.</li>
+    <li><strong>Output Dir</strong> — Root folder where all build artefacts are written. Defaults to <code>D:\Compile Playground\&lt;RepoName&gt;</code> (derived from the Working Tree Path). Three sub-locations are used automatically:
+      <ul style="margin-top:.35rem">
+        <li><code>&lt;OutputDir&gt;\</code> — The finished installer <code>.exe</code> goes here (e.g. <code>JobTracker_Setup_2.1.0.exe</code>).</li>
+        <li><code>&lt;OutputDir&gt;\Bundle Only\&lt;ExeName&gt;\</code> — PyInstaller / Nuitka bundle folder. The compiled executable and all its dependencies live here.</li>
+        <li><code>&lt;OutputDir&gt;\Log\</code> — Timestamped build logs and test-pipeline logs are written here.</li>
+      </ul>
+      All three directories are created automatically if they do not already exist. Click the <i class="bi bi-folder2-open"></i> button to open the folder in Windows Explorer.
+    </li>
+    <li><strong>Install Dir</strong> — Default installation path suggested to the end user, e.g. <code>{pf}\Job Tracker</code>. Inno Setup macros like <code>{pf}</code> (Program Files) are supported.</li>
+    <li><strong>Require Admin</strong> — Toggle. When enabled, the installer requests UAC elevation. Required if you use <code>{pf}</code> or write to HKLM registry keys.</li>
+    <li><strong>Desktop Shortcut</strong> — Adds a shortcut to the user's Desktop after installation.</li>
+    <li><strong>Start Menu Shortcut</strong> — Creates a Start Menu entry under <em>Publisher\App Name</em>.</li>
+    <li><strong>Startup Shortcut</strong> — Adds a shortcut to the Windows Startup folder so the app launches on login.</li>
+    <li><strong>Icon File</strong> — Path to a <code>.ico</code> file used for the compiled executable and installer graphics. Must be a valid Windows icon file (multi-resolution recommended: 16, 32, 48, 256 px).</li>
+    <li><strong>Support Email</strong> — Contact email injected into the compiled app before each build via <code>build_meta.json</code>. The app reads this at startup and stores it in its settings database, so the support page shows the correct address without modifying any source files.</li>
+  </ul>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    <strong>Icon tip:</strong> Convert a PNG to ICO using a free tool like <em>IcoFX</em> or the
+    online converter at <a href="https://convertio.co/png-ico/" target="_blank">convertio.co</a>.
+    A multi-resolution ICO looks crisp at every Windows DPI setting.
+  </div>
+
+  <h3 id="new-app"><i class="bi bi-file-earmark-plus me-2 text-warning"></i>New App Button &amp; App Name Lookup</h3>
+  <p>
+    The <strong>New App</strong> button (in the Project Profile bar, before the Load button) clears the
+    <em>App Name</em>, <em>Exe Name</em>, and <em>Description</em> fields while leaving every other
+    setting intact. Use it to start configuring a brand-new application without losing your build
+    environment settings (Python path, output dir, protection mode, etc.).
+  </p>
+  <p>
+    After clicking New App and typing in the <strong>App Name</strong> field, the dashboard
+    automatically searches your connected GitHub repositories for a matching repo name:
+  </p>
+  <ul>
+    <li>Names are compared case-insensitively with hyphens, underscores, and spaces treated as equivalent (e.g., <code>job-tracker</code> matches <code>job_tracker</code>).</li>
+    <li>On a match, <strong>App URL</strong>, <strong>GitHub Remote URL</strong>, and <strong>Support URL</strong> are all filled in automatically from the matched repo's metadata.</li>
+    <li>If no match is found after 600 ms of inactivity, a yellow warning appears below the field: <em>"No GitHub repo found matching this name"</em>. You can still continue — the warning is informational only.</li>
+  </ul>
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    The repo lookup requires a valid GitHub auth session (see <a href="#gh-auth">GitHub Auth</a>).
+    If the badge shows <em>Not signed in</em>, sign in first — the lookup will then work automatically.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ CODE PROTECTION -->
+<section id="code-protection">
+  <h2><i class="bi bi-shield-lock me-2 text-warning"></i>Code Protection</h2>
+  <p>
+    The <strong>Code Protection</strong> card controls how your Python source code is handled before
+    it is bundled into an executable. Three options are available. Choose based on your distribution
+    requirements and how much compile time you are willing to accept.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Protection selector</div>
+    <div class="mockup-topbar gap-2">
+      <div class="border rounded px-3 py-2 text-center" style="border-color:rgba(255,255,255,.15)!important;min-width:90px;font-size:.8rem">
+        <i class="bi bi-file-earmark-code d-block mb-1" style="font-size:1.2rem"></i>Plain
+      </div>
+      <div class="border rounded px-3 py-2 text-center" style="border-color:#0d6efd!important;background:rgba(13,110,253,.15);min-width:90px;font-size:.8rem;color:#6ea8fe">
+        <i class="bi bi-lock d-block mb-1" style="font-size:1.2rem"></i>PyArmor
+      </div>
+      <div class="border rounded px-3 py-2 text-center" style="border-color:rgba(255,255,255,.15)!important;min-width:90px;font-size:.8rem">
+        <i class="bi bi-cpu d-block mb-1" style="font-size:1.2rem"></i>Nuitka
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="protection-plain">
+  <h3>Plain — No Protection</h3>
+  <p>
+    Your <code>.py</code> source files are bundled directly by PyInstaller without any
+    transformation. The resulting executable includes compiled <code>.pyc</code> bytecode,
+    which is trivially reversible with tools like <em>uncompyle6</em>.
+  </p>
+  <p>
+    <strong>Use when:</strong> the project is open-source, you are building for personal use,
+    or build speed is the top priority. Plain builds are the fastest — typically under two minutes.
+  </p>
+</section>
+
+<section id="protection-pyarmor">
+  <h3>PyArmor — Source Obfuscation</h3>
+  <p>
+    <strong>PyArmor</strong> encrypts and obfuscates your Python source files before PyInstaller
+    bundles them. Each <code>.py</code> module is replaced with an encrypted bytecode capsule;
+    the decryption key is bound to the PyArmor runtime that ships inside the bundle.
+    Reverse engineering is significantly harder compared to plain bytecode.
+  </p>
+  <p>
+    <strong>Use when:</strong> you are distributing a commercial or proprietary tool and want
+    a meaningful barrier against casual inspection. Build times add roughly 30–60 seconds
+    compared to Plain.
+  </p>
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Install PyArmor once with <strong>Install Dep</strong> (see Build Actions). You do not need
+    to reinstall it between builds.
+  </div>
+</section>
+
+<section id="protection-nuitka">
+  <h3>Nuitka — Native Machine Code</h3>
+  <p>
+    <strong>Nuitka</strong> is a Python-to-C transpiler. It converts your Python source into
+    native C code and compiles it to a <code>.exe</code> directly — no Python interpreter is
+    embedded. The resulting binary is the strongest protection available and often 20–40% faster
+    at runtime than a PyInstaller bundle.
+  </p>
+  <p>
+    <strong>Use when:</strong> you need maximum performance or the highest level of IP protection.
+    Nuitka builds take several minutes (5–20+) depending on project size.
+  </p>
+
+  <div class="warn-box"><i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>Visual Studio Community required.</strong> Nuitka calls the MSVC C/C++ compiler
+    (<code>cl.exe</code>) to compile the generated C code. Install
+    <a href="https://visualstudio.microsoft.com/vs/community/" target="_blank">Visual Studio Community</a>
+    with the <em>Desktop development with C++</em> workload before clicking Full Build with Nuitka selected.
+    The build will fail with a "<code>cannot find cl.exe</code>" error if MSVC is missing.
+  </div>
+
+  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
+    <strong>First-time Nuitka build:</strong> Nuitka downloads and caches C header stubs on its
+    first run. Expect an extra 2–5 minutes on the initial compilation. Subsequent builds reuse
+    the cache and are significantly faster.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ LICENSE FILE -->
+<section id="license-file">
+  <h2><i class="bi bi-file-earmark-text me-2 text-success"></i>License File</h2>
+  <p>
+    The <strong>License File</strong> card lets you attach a software license to your build.
+    The license is written to <code>LICENSE.txt</code> in the project root and compiled into
+    the Inno Setup installer, where it is shown on the "License Agreement" page during installation.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">License card</div>
+    <div class="mockup-card" style="font-size:.8rem">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="text-muted">Template:</span>
+        <select class="form-select form-select-sm" style="width:200px">
+          <optgroup label="Protective">
+            <option>AS-IS (No Warranty)</option>
+            <option>Proprietary / All Rights Reserved</option>
+          </optgroup>
+          <optgroup label="Open Source">
+            <option>MIT</option>
+            <option>Unlicense</option>
+            <option>Apache 2.0</option>
+            <option>BSD 2-Clause</option>
+            <option>ISC</option>
+          </optgroup>
+          <optgroup label="Commercial">
+            <option>Commercial (Custom)</option>
+          </optgroup>
+        </select>
+        <button class="btn btn-sm btn-outline-primary">Apply</button>
+        <button class="btn btn-sm btn-outline-secondary" title="Refresh SPDX text from upstream"><i class="bi bi-cloud-download"></i></button>
+      </div>
+      <textarea class="form-control form-control-sm" rows="4" style="font-family:monospace;font-size:.75rem;resize:none">THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND...</textarea>
+    </div>
+  </div>
+
+  <h4>How it works</h4>
+  <ul>
+    <li>Select a <strong>template</strong> from the dropdown and click <strong>Apply</strong>. The dashboard fetches the canonical license text from its internal database and writes it to <code>LICENSE.txt</code> in the working tree root.</li>
+    <li>The <code>{year}</code> and <code>{publisher}</code> placeholders in the template are automatically substituted from the <strong>App Info</strong> fields (<em>Year</em> defaults to the current calendar year; <em>Publisher</em> is taken from the Publisher field).</li>
+    <li>The text area is fully editable after applying — make any additional customisations before the next build.</li>
+    <li>The Inno Setup script picks up <code>LICENSE.txt</code> automatically — no further action is needed. End users see the license text on the install wizard's "License Agreement" screen.</li>
+  </ul>
+
+  <h4>Template categories</h4>
+  <h4 style="text-transform:none;font-size:.875rem;letter-spacing:0;color:inherit;margin-top:.5rem">Protective</h4>
+  <ul>
+    <li><strong>AS-IS (No Warranty)</strong> — Minimal disclaimer releasing the author from all liability. Suitable for personal or internal tools.</li>
+    <li><strong>Proprietary / All Rights Reserved</strong> — Restricts redistribution and reverse engineering. Suitable for paid or closed-source products.</li>
+  </ul>
+  <h4 style="text-transform:none;font-size:.875rem;letter-spacing:0;color:inherit;margin-top:.5rem">Open Source</h4>
+  <ul>
+    <li><strong>MIT</strong> — Permissive. Allows use, copy, modify, and redistribute with attribution.</li>
+    <li><strong>Unlicense</strong> — Public domain dedication. No conditions whatsoever.</li>
+    <li><strong>Apache 2.0</strong> — Permissive with patent protection clause.</li>
+    <li><strong>BSD 2-Clause</strong> — Permissive. Requires attribution in binary and source forms.</li>
+    <li><strong>ISC</strong> — Functionally equivalent to MIT, shorter text.</li>
+  </ul>
+  <h4 style="text-transform:none;font-size:.875rem;letter-spacing:0;color:inherit;margin-top:.5rem">Commercial</h4>
+  <ul>
+    <li><strong>Commercial (Custom)</strong> — Clears the text area with a starter commercial license skeleton. Fill in your specific terms.</li>
+  </ul>
+
+  <h4>Cloud refresh button</h4>
+  <p>
+    The <i class="bi bi-cloud-download"></i> cloud-download button next to <strong>Apply</strong>
+    fetches the latest canonical SPDX license texts for all open-source templates directly from the
+    SPDX database and updates the local cache. Use this if a template text looks out of date or
+    if a new license version has been published. Proprietary and Commercial templates are not
+    affected — their texts live only in the local database.
+  </p>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    If you are distributing a commercial product, pair the <strong>Proprietary</strong> template
+    with the <strong>Nuitka</strong> or <strong>PyArmor</strong> protection option for a complete
+    IP-protection strategy.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ README GENERATOR -->
+<section id="readme-gen">
+  <h2><i class="bi bi-file-earmark-richtext me-2 text-info"></i>README Generator</h2>
+  <p>
+    The <strong>README Generator</strong> card produces a <code>README.md</code> file for the
+    target project using the metadata already entered in App Info. It checks whether a
+    <code>README.md</code> exists in the working tree and generates or overwrites it with a
+    structured Markdown document.
+  </p>
+
+  <h4>Generated content</h4>
+  <p>The generated README includes:</p>
+  <ul>
+    <li>Project title and description (from <strong>App Name</strong> and <strong>Description</strong>)</li>
+    <li>Version badge and platform badge (Windows)</li>
+    <li>Installation section linking to the built installer (uses <strong>App URL</strong>)</li>
+    <li>License reference (from the selected license template)</li>
+    <li>Publisher and support contact (from <strong>Publisher</strong> and <strong>Support Email</strong>)</li>
+  </ul>
+
+  <h4>Check vs Generate</h4>
+  <ul>
+    <li><strong>Check</strong> (<i class="bi bi-search"></i>) — Inspects the working tree for an existing <code>README.md</code> and reports its size and last-modified date. Does not modify any files.</li>
+    <li><strong>Generate</strong> — Writes a new <code>README.md</code> to the project root. If a file already exists, a confirmation prompt is shown before overwriting.</li>
+  </ul>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Run <strong>Check</strong> before <strong>Generate</strong> to confirm you won't accidentally
+    overwrite a hand-crafted README. After generating, open the file in your text editor to add
+    screenshots, usage examples, and any project-specific detail.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ GIT TARGET -->
+<section id="git-target">
+  <h2><i class="bi bi-git me-2 text-danger"></i>Git — Target Project</h2>
+  <p>
+    The <strong>Git</strong> card tells the Build Dashboard <em>which</em> repository to build.
+    It is separate from the Build Dashboard's own repository. All build pipeline steps operate
+    on the project specified here.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Git card</div>
+    <div class="mockup-card" style="font-size:.8rem">
+      <div class="mb-2">
+        <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Working Tree Path</div>
+        <div class="d-flex gap-2">
+          <div class="border rounded px-2 py-1 flex-grow-1" style="border-color:rgba(255,255,255,.1)!important;font-family:monospace">C:\Users\User\OneDrive\GitHub Repositories\job_tracker</div>
+          <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-folder2-open"></i></button>
+        </div>
+      </div>
+      <div>
+        <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">GitHub Remote URL</div>
+        <div class="d-flex gap-2 align-items-center">
+          <div class="border rounded px-2 py-1 flex-grow-1" style="border-color:rgba(255,255,255,.1)!important;font-family:monospace">https://github.com/TechnoSage/job_tracker.git</div>
+          <span class="pulse-green"></span>
+          <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-github"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h4>Fields</h4>
+  <ul>
+    <li><strong>Working Tree Path</strong> — Absolute path to the root of the target Git repository on this machine. The build pipeline runs all commands (git checkout, pip install, Nuitka, etc.) relative to this directory. Use the <i class="bi bi-folder2-open"></i> Browse button to navigate to the folder in a dialog.</li>
+    <li><strong>GitHub Remote URL</strong> — The <code>https://</code> remote URL for the repository. Used by the PR card and the Repo Picker. A green pulsing dot appears when the URL is reachable and your GitHub auth token has access; a red dot indicates an auth or network problem. The <i class="bi bi-github"></i> icon opens the <a href="#repo-picker">Repo Picker</a> modal.</li>
+  </ul>
+
+  <h4>GitHub Auth Badge</h4>
+  <p>
+    Below the Remote URL field you will see a badge showing your GitHub authentication status.
+    A <span class="badge bg-success">Signed in as TechnoSage</span> badge means the GitHub CLI
+    (<code>gh</code>) is authenticated and the Build Dashboard can make API calls on your behalf.
+    A <span class="badge bg-danger">Not signed in</span> badge means you need to authenticate —
+    see <a href="#gh-auth">GitHub Auth</a>.
+  </p>
+
+  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
+    The <strong>Working Tree Path</strong> must point to the <code>development</code> branch
+    in normal usage. The build pipeline automatically checks out <code>main</code> for the
+    production build and switches back to <code>development</code> when finished.
+  </div>
+
+  <h3 id="git-operations"><i class="bi bi-git me-2 text-secondary"></i>Git Operations</h3>
+  <p>
+    The Git card exposes quick-action buttons for common repository operations on the
+    <strong>target project</strong> — the repo at <em>Working Tree Path</em>. These run
+    <code>git</code> commands directly against that repo (not against the Build Dashboard's
+    own repository).
+  </p>
+
+  <h4>Git Status &amp; Refresh</h4>
+  <p>
+    The refresh button (<i class="bi bi-arrow-clockwise"></i>) in the Git card header fetches
+    the current branch name, working-tree status (clean / modified / ahead), and the last
+    commit message. Results appear in the status area below the URL field.
+  </p>
+
+  <h4>Commit &amp; Push</h4>
+  <p>
+    The <strong>Commit &amp; Push</strong> button stages all changed files, creates a commit
+    with the message you enter, and pushes to the <code>origin</code> remote on the current
+    branch. The operation runs against the <em>Working Tree Path</em> and uses whatever
+    branch is currently checked out. A success or error message is appended to the Build Log.
+  </p>
+  <div class="warn-box"><i class="bi bi-exclamation-triangle me-2"></i>
+    Commit &amp; Push stages <em>all</em> modified files (equivalent to <code>git add -A</code>).
+    Review your working tree before using this button if you have files you do not want to commit.
+    Use your normal git client for selective staging.
+  </div>
+
+  <h4>Push Branch</h4>
+  <p>
+    Pushes the current branch to <code>origin</code> without committing. Use this to update
+    the remote after a local commit made via your usual git tooling. If the remote branch does
+    not exist yet, it is created (<code>git push --set-upstream origin &lt;branch&gt;</code>).
+  </p>
+
+  <h4>Git Setup</h4>
+  <p>
+    The <strong>Git Setup</strong> action initialises the repository if it is not already a
+    git repo, sets the remote URL to the value in <strong>GitHub Remote URL</strong>, and
+    configures the local user name and email from your system git config. Run this once when
+    pointing the dashboard at a brand-new project folder that has not yet been git-initialised.
+  </p>
+
+  <h4>Merge</h4>
+  <p>
+    Merges a specified source branch into the currently checked-out branch. The branch name
+    is entered in the input field that appears when you click the merge action. A fast-forward
+    merge is attempted first; if that fails (diverged history), a standard merge commit is
+    created. Merge conflicts are reported in the Build Log and must be resolved manually.
+  </p>
+</section>
+
+<!-- ══════════════════════════════════════════════════ PIPELINE SOUNDS -->
+<section id="pipeline-sounds">
+  <h2><i class="bi bi-volume-up me-2 text-secondary"></i>Pipeline Sounds</h2>
+  <p>
+    The <strong>Pipeline Sounds</strong> card (above the CI/CD Pipeline) lets you assign audio
+    cues to build and test results. A <em>Success</em> sound plays when either pipeline completes
+    without errors; a <em>Fail</em> sound plays when a stage errors out. Sounds fire automatically
+    on real builds and tests — not on simulation button presses.
+  </p>
+
+  <h4>Choosing a sound</h4>
+  <p>Each sound field (Success / Fail) has three ways to select a file:</p>
+  <ul>
+    <li><strong>Type a path</strong> — paste any absolute path directly into the text field.</li>
+    <li><strong>System sounds dropdown</strong> — click the split-button caret (<i class="bi bi-caret-down-fill"></i>) to scan your computer for audio files in <code>%WINDIR%\Media</code> and Windows Themes directories. The list is grouped by folder and cached for the session.</li>
+    <li><strong>Browse <i class="bi bi-folder2-open"></i></strong> — opens a Windows file picker filtered to common audio formats (<code>.wav .mp3 .ogg .m4a .flac .wma</code>). Defaults to <code>C:\Windows\Media</code>.</li>
+  </ul>
+
+  <h4>Preview</h4>
+  <p>
+    Click the <strong>play</strong> button (<i class="bi bi-play-fill text-success"></i> or
+    <i class="bi bi-play-fill text-danger"></i>) next to each field to preview the configured
+    sound immediately. A toast notification appears if the file cannot be played.
+  </p>
+
+  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
+    <strong>Supported formats:</strong> WAV files play via the Windows system sound API
+    (non-blocking, near-instant). MP3, OGG, FLAC, and other formats play via Windows
+    Media Player through PowerShell — allow up to 1–2 seconds for playback to start.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ CI/CD PIPELINE -->
+<section id="pipeline">
+  <h2><i class="bi bi-diagram-3 me-2 text-info"></i>CI/CD Pipeline</h2>
+  <p>
+    The visual pipeline strip sits directly above the build log. It shows the five sequential
+    stages of every full build and updates in real time as each stage completes.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Pipeline — mid-build state</div>
+    <div class="d-flex gap-1 align-items-center" style="font-size:.75rem">
+      <div class="pipeline-step done"><i class="bi bi-check2-circle d-block mb-1" style="font-size:1rem"></i>Deps</div>
+      <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
+      <div class="pipeline-step done"><i class="bi bi-check2-circle d-block mb-1" style="font-size:1rem"></i>Tools</div>
+      <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
+      <div class="pipeline-step" style="border-color:#0d6efd;background:rgba(13,110,253,.12);color:#6ea8fe"><i class="bi bi-arrow-repeat d-block mb-1 spinning" style="font-size:1rem"></i>Protect</div>
+      <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
+      <div class="pipeline-step"><i class="bi bi-box d-block mb-1" style="font-size:1rem"></i>Bundle</div>
+      <div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>
+      <div class="pipeline-step"><i class="bi bi-archive d-block mb-1" style="font-size:1rem"></i>Installer</div>
+    </div>
+  </div>
+
+  <h4>Stage descriptions</h4>
+  <ul>
+    <li><strong>Deps</strong> — Installs Python dependencies from <code>requirements.txt</code> using <code>pip install -r</code>. Also confirms that all required external tools (Inno Setup, PyInstaller) are on the PATH.</li>
+    <li><strong>Tools</strong> — Verifies Inno Setup (<code>iscc.exe</code>) and the selected protection tool are accessible. Checks the Git working tree is clean and checks out the <code>main</code> branch for the build.</li>
+    <li><strong>Protect</strong> — Runs the selected code protection step. For <em>Plain</em> this stage is a no-op. For <em>PyArmor</em> it obfuscates source into <code>obf_src/</code>. For <em>Nuitka</em> it compiles Python to native C and produces <code>dist/</code>.</li>
+    <li><strong>Bundle</strong> — Runs PyInstaller (or Nuitka's built-in bundler) to produce a self-contained <code>.exe</code> or folder in <code>dist/</code>. All assets, templates, and static files are included via the spec file.</li>
+    <li><strong>Installer</strong> — Runs Inno Setup Compiler (<code>iscc.exe</code>) against the generated <code>.iss</code> script. The output installer is written to the <strong>Output Dir</strong> configured in App Info.</li>
+  </ul>
+
+  <h4>Visual feedback</h4>
+  <ul>
+    <li><strong>3D tubes with flowing particles</strong> — Each stage tube fills with a neon-green gradient as it progresses. Glowing particles flow through the arrows between stages.</li>
+    <li><strong>3D flags</strong> — A <em>Start</em> flag lights up when a build begins; a <em>Finish</em> flag (checkered) lights up when all stages complete.</li>
+    <li><strong>Red pulse</strong> — If any stage fails, the failed tube pulses red and the pipeline halts. Error details appear in the Build Log below.</li>
+    <li><strong>Race car + fireworks</strong> — The celebration animation plays only when <em>both</em> the CI/CD Pipeline <em>and</em> the Test Pipeline complete successfully without errors.</li>
+    <li><strong>BUILD — BUILD simulation buttons</strong> — <em>Run</em> and <em>Error</em> buttons in the pipeline card header simulate a success or failure animation without running an actual build.</li>
+    <li><strong>TEST — TEST simulation buttons</strong> — <em>TP Run</em> and <em>TP Error</em> buttons next to the build simulations drive the Test Pipeline animation independently, for UI testing.</li>
+  </ul>
+
+  <h4>Auto-open output folder</h4>
+  <p>
+    After a successful <em>Bundle Only</em> or <em>Full Build</em>, Windows Explorer automatically
+    opens to the output directory (<code>dist/</code> for bundle, configured <strong>Output Dir</strong>
+    for full build) so you can immediately inspect or distribute the result.
+  </p>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    <strong>Clean Outputs</strong> resets both the CI/CD Pipeline and Test Pipeline to their
+    initial state, clearing all stage fills and flags before you start a fresh build.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ VIRUS SCAN -->
+<section id="virus-scan">
+  <h2><i class="bi bi-shield-check me-2 text-success"></i>Virus / Malware Scan</h2>
+  <p>
+    Before any code is compiled, Build Dashboard automatically runs a
+    <strong>Windows Defender</strong> custom scan against the entire project source directory.
+    This ensures that no infected or tampered file enters the compiled binary or installer.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Pipeline — Scan stage (first stage)</div>
+    <div class="d-flex align-items-center gap-2 flex-wrap" style="font-size:.8rem">
+      <div class="pipeline-step done">Scan</div>
+      <span class="pipeline-arrow">&#8594;</span>
+      <div class="pipeline-step">Deps</div>
+      <span class="pipeline-arrow">&#8594;</span>
+      <div class="pipeline-step">Tools</div>
+      <span class="pipeline-arrow">&#8594;</span>
+      <div class="pipeline-step">Protect</div>
+      <span class="pipeline-arrow">&#8594;</span>
+      <div class="pipeline-step">Bundle</div>
+      <span class="pipeline-arrow">&#8594;</span>
+      <div class="pipeline-step">Installer</div>
+    </div>
+  </div>
+
+  <h4>How it works</h4>
+  <ul>
+    <li>The scan runs against the <strong>Working Tree Path</strong> (the full source directory) using <code>MpCmdRun.exe -Scan -ScanType 3 -File &lt;source&gt;</code> — a targeted custom scan rather than a full system scan, so it completes in seconds to minutes depending on project size.</li>
+    <li><strong>Clean result (exit 0)</strong> — Build continues normally. The Build Log shows: <code>[OK] Scan complete — no threats detected.</code></li>
+    <li><strong>Threat found (exit 2)</strong> — Build halts immediately. An <code>[ERROR]</code> message is written to the log and the pipeline stage turns red. You must quarantine or remove the threat and rebuild.</li>
+    <li><strong>Defender not installed / scan error</strong> — A <code>[WARN]</code> is written and the build continues. This is non-blocking so the dashboard works on machines without Defender, but a manual scan is strongly recommended before distribution.</li>
+  </ul>
+
+  <h4>Windows Defender location</h4>
+  <p>
+    Build Dashboard searches for <code>MpCmdRun.exe</code> in three locations (in order):
+  </p>
+  <ol>
+    <li><code>C:\Program Files\Windows Defender\MpCmdRun.exe</code> — static path on all Windows versions</li>
+    <li><code>C:\ProgramData\Microsoft\Windows Defender\Platform\&lt;version&gt;\MpCmdRun.exe</code> — versioned path on Windows 10/11 after a Defender engine update</li>
+    <li>System <code>PATH</code> — as a fallback for non-standard installations</li>
+  </ol>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Keep Windows Defender definitions up to date for the most effective pre-build scan.
+    Run <strong>Windows Security → Virus &amp; threat protection → Check for updates</strong>
+    before a release build.
+  </div>
+  <div class="warn-box"><i class="bi bi-exclamation-triangle me-2"></i>
+    The scan uses <code>-DisableRemediation</code> — it <strong>detects</strong> threats but does
+    not quarantine or delete them automatically. If a threat is found, use Windows Security or
+    <code>MpCmdRun.exe -Remove</code> to remediate before rebuilding.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ BUILD ACTIONS -->
+<section id="build-actions">
+  <h2><i class="bi bi-play-circle me-2 text-success"></i>Build Actions</h2>
+  <p>Four action buttons control the build pipeline. They appear in a row above the pipeline strip.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Action buttons</div>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-trash me-1"></i>Clean Outputs</button>
+      <button class="btn btn-sm btn-outline-warning"><i class="bi bi-box me-1"></i>Bundle Only</button>
+      <button class="btn btn-sm btn-success"><i class="bi bi-rocket-takeoff me-1"></i>Full Build</button>
+      <button class="btn btn-sm btn-outline-info"><i class="bi bi-download me-1"></i>Install Dep</button>
+    </div>
+  </div>
+
+  <h4>Clean Outputs</h4>
+  <p>
+    Deletes all build artefact directories. Specifically:
+  </p>
+  <ul>
+    <li><code>build_output/</code> and <code>obf_src/</code> inside the project root (PyInstaller work tree, obfuscation intermediates).</li>
+    <li>The entire configured <strong>Output Dir</strong> tree (e.g. <code>D:\Compile Playground\job_tracker\</code>), which contains <code>Bundle Only\</code>, <code>Log\</code>, and any installer <code>.exe</code> files.</li>
+  </ul>
+  <p>Use this before a full rebuild to ensure no stale artefacts from previous builds are included. A confirmation dialog is shown because this action cannot be undone.</p>
+
+  <h4>Bundle Only</h4>
+  <p>
+    Runs only the <strong>Protect</strong> and <strong>Bundle</strong> stages — skipping
+    the Deps, Tools verification, and Installer stages. Use this to verify bundling works
+    or to produce a standalone exe without creating an installer. The output lands in
+    <code>&lt;OutputDir&gt;\Bundle Only\&lt;ExeName&gt;\</code> (e.g.
+    <code>D:\Compile Playground\job_tracker\Bundle Only\JobTracker\</code>).
+    On success, Windows Explorer opens to the Output Dir automatically, and the
+    Test Pipeline runs to verify the bundle starts and responds on the configured port.
+  </p>
+
+  <h4>Full Build</h4>
+  <p>
+    Runs all five pipeline stages in sequence: Deps &rarr; Tools &rarr; Protect &rarr;
+    Bundle &rarr; Installer. This is the normal path for producing a distributable installer.
+    The Git workflow is:
+  </p>
+  <ol style="line-height:1.8">
+    <li>Stash or confirm the working tree is clean on <code>development</code>.</li>
+    <li>Checkout <code>main</code> branch.</li>
+    <li>Run all build stages.</li>
+    <li>Return to <code>development</code> branch.</li>
+  </ol>
+  <p>On success, Windows Explorer opens to the configured <strong>Output Dir</strong> automatically showing the finished <code>&lt;ExeName&gt;_Setup_&lt;Version&gt;.exe</code>, and the Test Pipeline launches to verify the installer silently installs and the app responds on its port.</p>
+
+  <div class="warn-box"><i class="bi bi-exclamation-triangle me-2"></i>
+    Do not close the browser tab or shut down the build server while a Full Build is running.
+    Doing so may leave the repository checked out on <code>main</code> and require a manual
+    <code>git checkout development</code> to recover.
+  </div>
+
+  <h4>Install Dep</h4>
+  <p>
+    Installs the currently selected protection tool (PyArmor or Nuitka) into the project's
+    virtual environment via <code>pip install</code>. Run this once after selecting a new
+    protection strategy or after setting up the project on a new machine.
+    The button has no effect when <em>Plain</em> is selected.
+  </p>
+
+  <h4>Auto-Kill Running App Before Build</h4>
+  <p>
+    When <strong>Bundle Only</strong> or <strong>Full Build</strong> is clicked, the dashboard
+    automatically kills any running instance of the target app (identified by
+    <strong>Exe Name</strong>) before the compile starts. This prevents file-locking errors
+    where the bundler cannot overwrite <code>.exe</code> or <code>.pyd</code> files that are
+    held open by the running process. The kill is logged at the top of the Build Log so you
+    can confirm it happened. You can also trigger a manual kill at any time via the
+    <strong>Kill App</strong> button if visible in the toolbar.
+  </p>
+
+  <h4>Inject Metadata</h4>
+  <p>
+    Before each build, the dashboard writes a <code>build_meta.json</code> file into the
+    project source root containing:
+  </p>
+  <ul>
+    <li><strong>Support Email</strong> — the address from the App Info card</li>
+    <li><strong>Version</strong> — current version string</li>
+    <li><strong>App Name</strong> and <strong>Publisher</strong></li>
+    <li><strong>Build timestamp</strong></li>
+  </ul>
+  <p>
+    The target app reads <code>build_meta.json</code> at startup and persists these values
+    to its own database. This means you can update the support email or version in the
+    dashboard and rebuild — no source-file edits needed. The <strong>Inject Meta</strong>
+    action can also be triggered standalone (without a full build) to push updated metadata
+    immediately.
+  </p>
+
+  <h3 id="version-mgr"><i class="bi bi-123 me-2 text-secondary"></i>Version Management</h3>
+  <p>
+    The <strong>Version</strong> field in the App Info card has dedicated increment controls
+    so you never need to hand-edit the version string:
+  </p>
+  <ul>
+    <li><strong>+ Major</strong> — Increments the first number and resets Minor and Patch to zero (e.g., <code>1.4.2 → 2.0.0</code>). Use for breaking changes.</li>
+    <li><strong>+ Minor</strong> — Increments the second number and resets Patch to zero (e.g., <code>1.4.2 → 1.5.0</code>). Use for new features.</li>
+    <li><strong>+ Patch</strong> — Increments the third number (e.g., <code>1.4.2 → 1.4.3</code>). Use for bug fixes.</li>
+  </ul>
+  <p>
+    Each increment is saved to <code>build_settings.json</code> immediately. The updated
+    version string is embedded in the compiled executable and installer on the next build.
+  </p>
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Bump the version <em>before</em> running a Full Build, not after. The version embedded in
+    the installer is read from <code>build_settings.json</code> at build time.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ BUILD LOG -->
+<section id="build-log">
+  <h2><i class="bi bi-terminal me-2 text-secondary"></i>Build Log</h2>
+  <p>
+    The <strong>Build Log</strong> is a scrolling terminal-style panel below the pipeline strip.
+    It streams output from every subprocess the build pipeline runs, in real time via a
+    server-sent events (SSE) connection.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Build log — colour codes</div>
+    <div style="background:#0d1117; border-radius:.5rem; padding:.75rem 1rem; font-family:monospace; font-size:.78rem; line-height:1.7">
+      <div style="color:#39ff14">[OK]  Installed 12 packages from requirements.txt</div>
+      <div style="color:#adb5bd">[INFO] Running PyArmor obfuscation on 8 modules...</div>
+      <div style="color:#ffc107">[WARN] Large file detected: models.py (2.3 MB) — compile time may be high</div>
+      <div style="color:#dc3545">[ERROR] iscc.exe not found on PATH — install Inno Setup first</div>
+      <div style="color:#495057">── ── ── ── Stage: Bundle ── ── ── ──</div>
+    </div>
+  </div>
+
+  <h4>Colour codes</h4>
+  <ul>
+    <li><span style="color:#39ff14;font-weight:600">Green</span> — Success or confirmation message. The step completed without issues.</li>
+    <li><span style="color:#adb5bd;font-weight:600">Grey / white</span> — Informational output. Normal subprocess stdout.</li>
+    <li><span style="color:#ffc107;font-weight:600">Yellow</span> — Warning. The build continues but something may need attention.</li>
+    <li><span style="color:#dc3545;font-weight:600">Red</span> — Error. The pipeline halts at the current stage. Read this line to diagnose the problem.</li>
+    <li><span style="color:#495057;font-weight:600">Dark grey separator</span> — Stage boundary marker. Makes it easy to find where each stage starts and ends.</li>
+  </ul>
+
+  <h4>Controls</h4>
+  <ul>
+    <li><i class="bi bi-folder2-open"></i> <strong>Open Output Folder</strong> — The folder icon in the log card header opens the <strong>Output Dir</strong> in Windows Explorer so you can immediately inspect or distribute the built installer.</li>
+    <li><strong>Auto-scroll</strong> — The log auto-scrolls to the bottom while a build is running. Manually scrolling up pauses auto-scroll; it resumes when you scroll back to the bottom.</li>
+    <li><strong>Clear</strong> — Clears the log panel contents. Does not affect any build in progress.</li>
+  </ul>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    If a build fails, the error line in red is your starting point. Copy the message and search
+    for it alongside the tool name (e.g., "Nuitka cannot find cl.exe") for targeted troubleshooting.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ TEST PIPELINE -->
+<section id="test-pipeline">
+  <h2><i class="bi bi-diagram-3 me-2" style="color:#00ccff"></i>Test Pipeline</h2>
+  <p>
+    The <strong>Test Pipeline</strong> (cyan/blue colour scheme) sits below the Build Log and
+    runs automatically 1.5 seconds after a successful <em>Bundle Only</em> or <em>Full Build</em>.
+    It launches the compiled output in the background, polls the app port, and verifies the app
+    responds correctly — giving you immediate confidence before distributing.
+  </p>
+
+  <h4>Stages</h4>
+  <ul>
+    <li><strong>Launch</strong> — Starts the compiled exe (bundle test) or runs the installer silently (full build test) in a background process.</li>
+    <li><strong>Connect</strong> — Polls <code>http://127.0.0.1:{port}</code> every second until the app responds or a timeout is reached.</li>
+    <li><strong>Verify</strong> — Confirms the HTTP response is valid (status 200). Checks that the app is not just listening but actually serving content.</li>
+    <li><strong>Report</strong> — Writes the test result to the Test Output Log. On success, triggers the race car + fireworks celebration (if the build pipeline also passed).</li>
+  </ul>
+
+  <h4>Timeouts</h4>
+  <ul>
+    <li><em>Bundle Only</em> test — up to <strong>20 seconds</strong> for the app to respond.</li>
+    <li><em>Full Build</em> test — up to <strong>25 seconds</strong> (extra time for installer execution).</li>
+  </ul>
+
+  <h4>Visual feedback</h4>
+  <p>
+    The Test Pipeline uses the same 3D tube + flag animation as the CI/CD Pipeline, overridden
+    to cyan and blue tones. The card glows cyan while a test is running. A <strong>TP Run</strong>
+    and <strong>TP Error</strong> button in the CI/CD Pipeline card header let you simulate test
+    success and failure for UI testing without actually running a build.
+  </p>
+
+  <h4>Celebration gate</h4>
+  <p>
+    The race car + fireworks animation plays only when <em>both</em> the CI/CD Pipeline and
+    the Test Pipeline finish successfully. If the build passed but the test failed (app did not
+    start), no celebration is shown, signalling the output needs investigation.
+  </p>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    A configured <em>Success</em> sound (Pipeline Sounds card) plays when the Test Pipeline
+    completes cleanly; the <em>Fail</em> sound plays when a test stage errors out.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ TEST OUTPUT LOG -->
+<section id="test-build-output">
+  <h2><i class="bi bi-terminal me-2 text-primary"></i>Test Output Log</h2>
+  <p>
+    The <strong>Test Output Log</strong> card sits below the Test Pipeline and displays the
+    streaming output from test runs — app startup messages, port polling results, and any
+    error tracebacks from the tested executable.
+  </p>
+
+  <p>
+    The log is automatically populated when the Test Pipeline runs after a real build.
+    It shows the same colour-coded output as the Build Log: green for success confirmations,
+    grey for informational output, and red for errors.
+  </p>
+
+  <h4>Persistent log files</h4>
+  <p>
+    Every test run writes a timestamped <code>.log</code> file to
+    <code>&lt;OutputDir&gt;\Log\</code> (e.g.
+    <code>D:\Compile Playground\job_tracker\Log\JobTracker_Output_Pipeline_2026-03-12_14-30-00.log</code>).
+    The file includes a structured header (app name, mode, result, timestamp) and a full
+    transcript of every test step. Open the Output Dir in Explorer and browse the <code>Log\</code>
+    subfolder to review historical test results.
+  </p>
+
+  <div class="warn-box"><i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>Most common failure cause:</strong> if the compiled exe "does nothing" (no port response),
+    the app is likely crashing silently on startup. Check the log shown here — the last traceback
+    line is usually enough to pinpoint the problem. A frequent culprit is a missing
+    <code>WorkingDir</code> entry in the Inno Setup <code>[Run]</code> section, which causes
+    relative-path lookups (templates, database) to fail.
+  </div>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    If the log is empty after a test failure, the process likely crashed before Flask initialised.
+    Run the exe manually from a terminal to capture raw stderr output.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ GH AUTH -->
+<section id="gh-auth">
+  <h2><i class="bi bi-github me-2"></i>GitHub Auth</h2>
+  <p>
+    The Build Dashboard uses the <strong>GitHub CLI</strong> (<code>gh</code>) for all GitHub
+    integration features — reading repos, creating PRs, and validating remote URLs.
+    Authentication is managed by <code>gh</code> and stored securely in the Windows credential
+    store (keyring); the Build Dashboard never handles your token directly.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Auth badge — signed in</div>
+    <div class="d-flex align-items-center gap-2 mockup-topbar">
+      <span class="badge bg-success"><i class="bi bi-github me-1"></i>Signed in as TechnoSage</span>
+      <button class="btn btn-sm btn-outline-secondary" style="font-size:.75rem"><i class="bi bi-box-arrow-right me-1"></i>Sign Out</button>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-label">Auth badge — not signed in</div>
+    <div class="d-flex align-items-center gap-2 mockup-topbar">
+      <span class="badge bg-danger"><i class="bi bi-github me-1"></i>Not signed in</span>
+      <button class="btn btn-sm btn-outline-primary" style="font-size:.75rem"><i class="bi bi-box-arrow-in-right me-1"></i>Sign In</button>
+    </div>
+  </div>
+
+  <h4>Signing in</h4>
+  <p>
+    Click <strong>Sign In</strong>. This opens a new PowerShell terminal window and runs:
+  </p>
+  <div class="mockup">
+    <div class="mockup-label">Terminal</div>
+    <div style="font-family:monospace;font-size:.82rem;color:#adb5bd">
+      gh auth login --web --git-protocol https
+    </div>
+  </div>
+  <p>
+    Follow the prompts: choose <em>GitHub.com</em>, then <em>HTTPS</em>, then copy the one-time
+    code shown and paste it in your browser. Once complete, close the terminal and reload the
+    Build Dashboard — the badge will turn green.
+  </p>
+
+  <h4>Signing out</h4>
+  <p>Click <strong>Sign Out</strong>. This runs <code>gh auth logout</code> and clears your token from the keyring. GitHub integration features will be disabled until you sign in again.</p>
+
+  <div class="warn-box"><i class="bi bi-exclamation-triangle me-2"></i>
+    The GitHub CLI must be installed and accessible on the system PATH. If <code>gh</code> is
+    not found, install it from
+    <a href="https://cli.github.com/" target="_blank">cli.github.com</a>.
+    On this machine it is installed at <code>C:\Program Files\GitHub CLI\gh.exe</code>.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ REPO PICKER -->
+<section id="repo-picker">
+  <h2><i class="bi bi-collection me-2 text-primary"></i>Repo Picker</h2>
+  <p>
+    The <strong>Repo Picker</strong> modal lets you browse all repositories in your GitHub account
+    and select one to populate the <strong>GitHub Remote URL</strong> field automatically.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Repo Picker modal</div>
+    <div class="mockup-card">
+      <div class="fw-semibold mb-2" style="font-size:.85rem"><i class="bi bi-github me-1"></i>Select a Repository</div>
+      <input class="form-control form-control-sm mb-2" type="text" placeholder="Filter repos..." style="font-size:.8rem">
+      <div style="font-size:.8rem;max-height:120px;overflow-y:auto">
+        <div class="px-2 py-1 rounded mb-1" style="background:rgba(13,110,253,.15);border:1px solid #0d6efd;color:#6ea8fe">
+          <i class="bi bi-lock-fill me-1 text-muted"></i>job_tracker <span class="text-muted ms-2">updated 2 days ago</span>
+        </div>
+        <div class="px-2 py-1 rounded mb-1" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)">
+          <i class="bi bi-eye me-1 text-muted"></i>web_page_designs <span class="text-muted ms-2">updated 5 days ago</span>
+        </div>
+        <div class="px-2 py-1 rounded mb-1" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)">
+          <i class="bi bi-eye me-1 text-muted"></i>build_dashboard <span class="text-muted ms-2">updated 1 week ago</span>
+        </div>
+      </div>
+      <div class="d-flex gap-2 mt-2 justify-content-end">
+        <button class="btn btn-sm btn-outline-secondary" style="font-size:.75rem">Cancel</button>
+        <button class="btn btn-sm btn-primary" style="font-size:.75rem">Select</button>
+      </div>
+    </div>
+  </div>
+
+  <p>
+    Click the <i class="bi bi-github"></i> icon next to the <strong>Remote URL</strong> field
+    in the Git card to open this modal. The list is fetched live from the GitHub API using your
+    <code>gh</code> token. Use the filter box to narrow down results by repo name. Click a repo
+    row to highlight it, then click <strong>Select</strong> to populate the Remote URL field.
+  </p>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    After selecting a repo, click <strong>Save</strong> in the Profile bar to persist the
+    Remote URL to your current profile.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ PULL REQUESTS -->
+<section id="pull-requests">
+  <h2><i class="bi bi-git me-2 text-danger"></i>Pull Requests</h2>
+  <p>
+    The <strong>Pull Requests</strong> card displays open PRs for the target repository and
+    lets you create new ones without leaving the Build Dashboard.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">PR card</div>
+    <div class="mockup-card" style="font-size:.8rem">
+      <div class="fw-semibold mb-2"><i class="bi bi-git me-1"></i>Pull Requests <span class="badge bg-primary ms-1">2 open</span></div>
+      <div class="border rounded px-2 py-2 mb-1" style="border-color:rgba(255,255,255,.1)!important">
+        <div class="fw-semibold">#14 — Add scheduler retry logic</div>
+        <div class="text-muted" style="font-size:.72rem">development &rarr; main &nbsp;&middot;&nbsp; opened 1 day ago by TechnoSage</div>
+      </div>
+      <div class="border rounded px-2 py-2 mb-2" style="border-color:rgba(255,255,255,.1)!important">
+        <div class="fw-semibold">#13 — Fix email parsing edge case</div>
+        <div class="text-muted" style="font-size:.72rem">development &rarr; main &nbsp;&middot;&nbsp; opened 3 days ago by TechnoSage</div>
+      </div>
+      <button class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg me-1"></i>New PR</button>
+    </div>
+  </div>
+
+  <h4>Creating a PR</h4>
+  <p>Click <strong>New PR</strong>. A modal opens with the following fields:</p>
+  <ul>
+    <li><strong>Title</strong> — Short description of the change.</li>
+    <li><strong>Base branch</strong> — The branch to merge <em>into</em> (usually <code>main</code>).</li>
+    <li><strong>Compare branch</strong> — The branch containing your changes (usually <code>development</code>).</li>
+    <li><strong>Body</strong> — Optional Markdown description of the changes.</li>
+  </ul>
+  <p>Click <strong>Create</strong>. The dashboard runs <code>gh pr create</code> behind the scenes and opens the new PR URL in your browser.</p>
+
+  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
+    PRs require an active GitHub auth session. If the badge shows <em>Not signed in</em>,
+    authenticate first via the <a href="#gh-auth">Auth</a> flow.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ SECURITY -->
+<section id="https-overview">
+  <h2><i class="bi bi-shield-lock me-2 text-info"></i>HTTPS &amp; Secure Connections</h2>
+  <p>
+    By default Flask serves over plain <code>http://</code>, which causes modern browsers (Chrome,
+    Edge) to display a <em>"Not Secure"</em> warning in the address bar. Build Dashboard and Job
+    Tracker both support HTTPS via locally-trusted certificates generated by
+    <strong>mkcert</strong> — a zero-configuration tool that creates certificates signed by a
+    private CA that it installs directly into the Windows, Chrome, and Firefox trust stores.
+  </p>
+  <div class="key-term">
+    <i class="bi bi-info-circle me-2"></i>
+    HTTPS here is for <strong>local loopback traffic only</strong> (127.0.0.1 / localhost).
+    No data leaves your machine — this purely removes the browser warning and hardens the
+    connection between your browser and the local Flask server.
+  </div>
+  <p>
+    Once certificates exist in the <code>certs/</code> folder next to the app, both
+    <code>run.py</code> (Job Tracker) and <code>start_builder.py</code> (Build Dashboard)
+    detect them automatically and start Flask with <code>ssl_context</code> set. The browser
+    is then opened with <code>https://</code> instead of <code>http://</code>.
+  </p>
+
+  <h3 id="mkcert-install"><i class="bi bi-download me-2 text-secondary"></i>Step 1 — Install mkcert</h3>
+  <p>mkcert is a small open-source tool (BSD 3-Clause licence). Install it once per developer machine:</p>
+  <div class="mockup">
+    <div class="mockup-label">PowerShell — install via Winget (recommended)</div>
+    <code>winget install FiloSottile.mkcert</code>
+  </div>
+  <p>Or download the latest <code>mkcert-v*-windows-amd64.exe</code> from the
+  <a href="https://github.com/FiloSottile/mkcert/releases" target="_blank" rel="noopener">mkcert releases page</a>,
+  rename it to <code>mkcert.exe</code>, and place it somewhere on your <code>PATH</code>
+  (e.g. <code>C:\Windows\System32</code> or a folder already in <code>PATH</code>).</p>
+  <p>After installing, run the one-time CA setup in an <strong>Administrator</strong> PowerShell:</p>
+  <div class="mockup">
+    <div class="mockup-label">PowerShell (run as Administrator)</div>
+    <code>mkcert -install</code>
+  </div>
+  <p>This creates a private CA key in <code>%LOCALAPPDATA%\mkcert\</code> and registers it as
+  trusted with Windows, Chrome, and Firefox. You only need to do this once.</p>
+
+  <h3 id="cert-generate"><i class="bi bi-file-earmark-lock me-2 text-secondary"></i>Step 2 — Generate Certificates</h3>
+  <p>
+    Create a <code>certs/</code> folder inside the project root, then run mkcert to generate
+    certificates for localhost:
+  </p>
+  <div class="mockup">
+    <div class="mockup-label">PowerShell — from the project root (e.g. job_tracker/)</div>
+    <code>mkdir certs<br>
+    cd certs<br>
+    mkcert 127.0.0.1 localhost</code>
+  </div>
+  <p>This produces two files:</p>
+  <ul>
+    <li><code>certs\localhost.pem</code> — the certificate (public)</li>
+    <li><code>certs\localhost-key.pem</code> — the private key (keep secret, never commit)</li>
+  </ul>
+  <div class="warn-box">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    Both files are listed in <code>.gitignore</code> so they are never committed to version control.
+    The private key must stay on your machine only.
+  </div>
+  <p>
+    Once the files are in place, restart the app (<code>python run.py</code> or
+    <code>python start_builder.py</code>) and open <code>https://127.0.0.1:5000</code> (or 5001).
+    Chrome should show a padlock icon with no warnings.
+  </p>
+
+  <h3 id="cert-renewal"><i class="bi bi-arrow-clockwise me-2 text-secondary"></i>Certificate Renewal</h3>
+  <p>
+    mkcert certificates are valid for <strong>2 years + 3 months</strong> by default. When they
+    expire the browser will show a certificate error. Simply regenerate them:
+  </p>
+  <div class="mockup">
+    <div class="mockup-label">PowerShell — from project root</div>
+    <code>cd certs<br>
+    del localhost.pem localhost-key.pem<br>
+    mkcert 127.0.0.1 localhost</code>
+  </div>
+  <p>Restart the app after regenerating — no other steps needed.</p>
+  <div class="tip-box">
+    <i class="bi bi-lightbulb me-2"></i>
+    The expiry date is embedded in the cert. Run
+    <code>mkcert -CAROOT</code> to find where your CA root lives, or inspect the cert with
+    <code>openssl x509 -in certs\localhost.pem -noout -dates</code>.
+  </div>
+
+  <h3 id="cert-installer"><i class="bi bi-box-seam me-2 text-secondary"></i>Bundling HTTPS in Compiled Installers</h3>
+  <p>
+    When you build an installer via Build Dashboard, mkcert can be bundled and run automatically
+    on the end-user's machine as part of the install process. This is handled in
+    <code>build/build.py</code>:
+  </p>
+  <ul>
+    <li>
+      If <code>mkcert.exe</code> is found on your <code>PATH</code> at build time, it is
+      automatically included in the Inno Setup <code>[Files]</code> section.
+    </li>
+    <li>
+      A Pascal <code>[Code]</code> block runs <code>mkcert -install</code> (to register the CA)
+      and then <code>mkcert 127.0.0.1 localhost</code> (to generate certs into
+      <code>{app}\certs\</code>) after the main files are copied.
+    </li>
+    <li>
+      Since Inno Setup installers run as Administrator by default, the CA registration succeeds
+      without any extra UAC prompts.
+    </li>
+  </ul>
+  <div class="key-term">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>Licensing:</strong> mkcert is BSD 3-Clause licensed and may be freely redistributed
+    with compiled applications. The generated certificates and CA root are machine-specific and
+    are not covered by any software licence.
+  </div>
+  <div class="warn-box">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    The mkcert CA is trusted by the user's machine and browser. It can only issue certificates
+    for domains/IPs you specify — it does <strong>not</strong> grant any access to external
+    websites or the public internet.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ LOCAL BACKUP -->
+<section id="local-backup">
+  <h2><i class="bi bi-hdd me-2 text-warning"></i>Local Backup</h2>
+  <p>
+    The <strong>Local Backup</strong> card provides a built-in robocopy-based backup solution
+    that mirrors your project source to a secondary location (e.g. a separate drive).
+    This is independent of Git and provides a fast, versioning-free safety net.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Local Backup card</div>
+    <div class="mockup-card" style="font-size:.8rem">
+      <div class="row g-2">
+        <div class="col-6">
+          <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Source Folder</div>
+          <div class="border rounded px-2 py-1" style="border-color:rgba(255,255,255,.1)!important;font-family:monospace;font-size:.75rem">C:\...\job_tracker</div>
+        </div>
+        <div class="col-6">
+          <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Destination Folder</div>
+          <div class="d-flex gap-1">
+            <div class="border rounded px-2 py-1 flex-grow-1" style="border-color:rgba(255,255,255,.1)!important;font-family:monospace;font-size:.75rem">D:\backups\job_tracker</div>
+            <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-folder2-open"></i></button>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Auto Backup</div>
+          <select class="form-select form-select-sm">
+            <option>Manual only</option>
+            <option>On app open</option>
+            <option>On app open + every 5 min</option>
+            <option>On app open + every 10 min</option>
+            <option>On app open + every 30 min</option>
+            <option>Every 5 minutes</option>
+            <option>Every 10 minutes</option>
+            <option selected>Every 30 minutes</option>
+          </select>
+        </div>
+        <div class="col-6 d-flex align-items-end">
+          <button class="btn btn-sm btn-warning w-100"><i class="bi bi-hdd-fill me-1"></i>Backup Now</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h4>How it works</h4>
+  <p>
+    Clicking <strong>Backup Now</strong> runs:
+  </p>
+  <div class="mockup">
+    <div class="mockup-label">Command executed</div>
+    <div style="font-family:monospace;font-size:.78rem;color:#adb5bd">
+      robocopy "C:\...\job_tracker" "D:\backups\job_tracker" /MIR /R:2 /W:3 /NP /LOG+:backup.log
+    </div>
+  </div>
+  <ul>
+    <li><code>/MIR</code> — Mirror mode: files deleted from the source are also deleted from the destination, keeping the two perfectly in sync.</li>
+    <li><code>/R:2 /W:3</code> — Retry failed files twice with a 3-second wait (handles file-lock conflicts).</li>
+    <li><code>/NP</code> — No progress percentage in output (keeps the build log clean).</li>
+    <li><code>/LOG+</code> — Appends robocopy output to <code>backup.log</code> in the project root.</li>
+  </ul>
+
+  <h4>Auto Backup schedule</h4>
+  <ul>
+    <li><strong>Manual only</strong> — Backup only runs when you click <em>Backup Now</em>.</li>
+    <li><strong>On app open</strong> — A single backup runs each time the Build Dashboard starts. No daemon is required.</li>
+    <li><strong>On app open + every 5 / 10 / 30 min</strong> — Runs once on startup, then continues on the selected timed interval via the Build Dash Daemon.</li>
+    <li><strong>Every 5 / 10 / 30 minutes</strong> — Timed interval only (no startup backup). The Build Dash Daemon (see below) runs the backup on the selected interval, even when the browser tab is closed.</li>
+  </ul>
+
+  <h4>Status badge</h4>
+  <p>
+    A status badge next to the <em>Backup Now</em> button reflects the current backup state:
+    <span class="badge bg-secondary">Idle</span> (no backup has run yet),
+    <span class="badge bg-primary">Running</span> (robocopy in progress),
+    <span class="badge bg-success">Success</span> (last backup completed without errors), or
+    <span class="badge bg-danger">Failed</span> (robocopy returned a non-zero exit code).
+    The badge also shows the time of the last run.
+  </p>
+
+  <div class="warn-box"><i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>/MIR will delete files</strong> in the destination that no longer exist in the source.
+    Ensure the destination folder is dedicated to this backup and does not contain other files
+    you want to keep.
+  </div>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Set the destination to a folder on a separate physical drive (e.g. <code>D:\backups\</code>)
+    for protection against OS-drive failure. Network shares (UNC paths) are also supported by
+    robocopy if the share is always accessible.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ BUILD DAEMON -->
+<section id="build-daemon">
+  <h2><i class="bi bi-cpu me-2 text-info"></i>Build Dash Daemon</h2>
+  <p>
+    The <strong>Build Dash Daemon</strong> is a background Windows process that runs independently
+    of the browser session. Its primary job is to execute scheduled backups on the configured
+    interval, but it can also perform other background maintenance tasks.
+    When the daemon is running, backups happen even if you have closed the Build Dashboard tab.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Daemon card</div>
+    <div class="mockup-card" style="font-size:.8rem">
+      <div class="row g-2 align-items-end">
+        <div class="col-6">
+          <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Tray Icon (.ico)</div>
+          <div class="border rounded px-2 py-1" style="border-color:rgba(255,255,255,.1)!important;font-family:monospace;font-size:.75rem">build/assets/daemon.ico</div>
+        </div>
+        <div class="col-6">
+          <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">App Name (PyInstaller)</div>
+          <div class="border rounded px-2 py-1" style="border-color:rgba(255,255,255,.1)!important;font-family:monospace;font-size:.75rem">build_dash_daemon</div>
+        </div>
+        <div class="col-12">
+          <div class="d-flex gap-2 align-items-center">
+            <span class="pulse-green"></span>
+            <span class="text-success fw-semibold">Daemon running</span>
+            <span class="text-muted ms-2" style="font-size:.75rem">PID 18432</span>
+          </div>
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-sm btn-outline-success"><i class="bi bi-play-fill me-1"></i>Start</button>
+          <button class="btn btn-sm btn-outline-danger"><i class="bi bi-stop-fill me-1"></i>Stop</button>
+          <button class="btn btn-sm btn-outline-warning"><i class="bi bi-tools me-1"></i>Build .exe</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h4>Configuration fields</h4>
+  <ul>
+    <li><strong>Tray Icon (.ico)</strong> — Path to the <code>.ico</code> file used as the daemon's system tray icon. When the daemon is compiled with PyInstaller (<em>Build .exe</em>), this icon is also embedded in the daemon executable itself.</li>
+    <li><strong>App Name (PyInstaller)</strong> — The <code>--name</code> argument passed to PyInstaller when building the daemon executable. The resulting file is <code>&lt;App Name&gt;.exe</code> in <code>build_output/</code>.</li>
+  </ul>
+
+  <h4>Start / Stop</h4>
+  <p>
+    <strong>Start</strong> launches <code>scheduler_daemon.py</code> (or the compiled daemon
+    <code>.exe</code> if it exists) as a detached background process. The dashboard polls for
+    the <strong>PID file</strong> (<code>scheduler_daemon.pid</code>) written by the daemon to
+    determine whether it is running. The status indicator shows a green pulsing dot when the
+    PID file is present and the process is alive.
+  </p>
+  <p>
+    <strong>Stop</strong> sends a termination signal to the PID recorded in the PID file and
+    deletes the file. If the PID file is stale (the process already exited), Stop cleans up
+    the file and resets the status indicator.
+  </p>
+
+  <h4>Build .exe</h4>
+  <p>
+    Click <strong>Build .exe</strong> to compile <code>scheduler_daemon.py</code> into a
+    standalone <code>.exe</code> using PyInstaller (Plain bundling — the daemon has no code
+    protection option). The output lands in <code>build_output/</code> alongside the main
+    application installer. Once compiled, clicking <em>Start</em> will prefer the compiled
+    <code>.exe</code> over the raw Python script.
+  </p>
+
+  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
+    The daemon is only required for <strong>automatic scheduled backups</strong>. If you prefer
+    to run backups manually by clicking <em>Backup Now</em>, you do not need to start or build
+    the daemon at all.
+  </div>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Add the compiled daemon <code>.exe</code> to Windows Task Scheduler or the Startup folder
+    if you want backups to resume automatically after a system reboot, without needing to open
+    the Build Dashboard first.
+  </div>
+
+  <div style="height:3rem"></div>
+</section>
+
+</main>
+</div><!-- /d-flex -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ── Theme toggle ─────────────────────────────────────────────────────────── */
+(function () {
+  var saved = localStorage.getItem('bd-help-theme') || 'dark';
+  document.getElementById('htmlRoot').setAttribute('data-bs-theme', saved);
+  updateThemeBtn(saved);
+})();
+
+function toggleTheme() {
+  var html = document.getElementById('htmlRoot');
+  var next = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-bs-theme', next);
+  localStorage.setItem('bd-help-theme', next);
+  updateThemeBtn(next);
+}
+
+function updateThemeBtn(theme) {
+  var icon  = document.getElementById('themeIcon');
+  var label = document.getElementById('themeLabel');
+  if (theme === 'dark') {
+    icon.className  = 'bi bi-moon-fill me-1';
+    label.textContent = 'Dark mode';
+  } else {
+    icon.className  = 'bi bi-sun-fill me-1';
+    label.textContent = 'Light mode';
+  }
+}
+
+/* ── TOC active-link highlighting on scroll ───────────────────────────────── */
+(function () {
+  var links    = document.querySelectorAll('#tocSidebar .nav-link');
+  var sections = [];
+  links.forEach(function (a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: a });
+  });
+
+  function onScroll() {
+    var top = window.scrollY + 90;
+    var active = null;
+    sections.forEach(function (s) {
+      if (s.el.offsetTop <= top) active = s;
+    });
+    links.forEach(function (a) { a.classList.remove('active'); });
+    if (active) active.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+</body>
+</html>

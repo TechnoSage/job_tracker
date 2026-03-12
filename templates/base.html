@@ -53,6 +53,15 @@
         </a>
       </li>
       <li class="nav-item">
+        <a href="{{ url_for('email_response') }}"
+           class="nav-link {% if request.endpoint == 'email_response' %}active{% else %}text-white{% endif %}">
+          <i class="bi bi-envelope-open me-2"></i>Email Response
+          {% if pending_email_count > 0 %}
+            <span class="badge bg-warning text-dark ms-1">{{ pending_email_count }}</span>
+          {% endif %}
+        </a>
+      </li>
+      <li class="nav-item">
         <a href="{{ url_for('analytics') }}"
            class="nav-link {% if request.endpoint == 'analytics' %}active{% else %}text-white{% endif %}">
           <i class="bi bi-bar-chart-line me-2"></i>Analytics

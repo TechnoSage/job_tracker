@@ -10,7 +10,7 @@ python-dotenv==1.0.1
 icalendar==5.0.13
 pytz==2024.1
 Werkzeug==3.0.3
-SQLAlchemy==2.0.30
+SQLAlchemy>=2.0.36  # 2.0.36+ required for Python 3.13 compatibility
 # Resume parsing (required for "Use Resume" feature on Settings page)
 pypdf>=4.0.0
 python-docx>=1.1.0

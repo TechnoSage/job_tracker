@@ -660,7 +660,7 @@ function sendSupportEmail() {
     body += '\n\n---\nSystem Information:\n' + document.getElementById('sysInfo').textContent;
   }
 
-  window.location.href = 'mailto:support@technosagedv.com'
+  window.location.href = 'mailto:{{ support_contact_email }}'
     + '?subject=' + encodeURIComponent(fullSubject)
     + '&body='    + encodeURIComponent(body);
 }

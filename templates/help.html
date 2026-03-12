@@ -145,10 +145,20 @@ html { scroll-behavior: smooth; }
   <a class="nav-link sub" href="#app-status">Status Pipeline</a>
   <a class="nav-link sub" href="#app-tracking">Tracking &amp; Follow-ups</a>
 
+  <a class="nav-link fw-semibold" href="#email-response">Email Response</a>
+  <a class="nav-link sub" href="#er-layout">Page Layout</a>
+  <a class="nav-link sub" href="#er-match-workflow">Manual Match Workflow</a>
+
   <a class="nav-link fw-semibold" href="#analytics">Analytics</a>
   <a class="nav-link fw-semibold" href="#sources">Job Sources</a>
   <a class="nav-link fw-semibold" href="#notifications">Notifications</a>
   <a class="nav-link fw-semibold" href="#settings">Settings</a>
+
+  <div class="toc-section">Security</div>
+  <a class="nav-link" href="#https-overview">HTTPS Overview</a>
+  <a class="nav-link sub" href="#jt-mkcert-install">Install mkcert</a>
+  <a class="nav-link sub" href="#jt-cert-generate">Generate Certs</a>
+  <a class="nav-link sub" href="#jt-cert-renewal">Renewal</a>
 
   <div class="toc-section">Features</div>
   <a class="nav-link" href="#running-scan">Running a Scan</a>
@@ -688,6 +698,149 @@ html { scroll-behavior: smooth; }
   </div>
 </section>
 
+<!-- ══════════════════════════════════════════════════ EMAIL RESPONSE -->
+<section id="email-response">
+  <h2><i class="bi bi-envelope-check me-2 text-warning"></i>Email Response</h2>
+  <p>
+    The <strong>Email Response</strong> page (<code>/email-response</code>) is the manual review hub for incoming employer
+    emails. It sits between Applications and Analytics in the sidebar and shows a
+    <span class="badge bg-warning text-dark">N</span> yellow badge with the count of emails still awaiting a match.
+  </p>
+  <p>
+    Job Tracker automatically fetches emails from your configured IMAP accounts, classifies them
+    (Declined or Interview), and tries to link each one to the correct job application using domain
+    matching and keyword analysis. When the automation is confident it records the match immediately.
+    When it is not — for example, if the reply came from a generic address like Gmail — the email lands
+    here for you to match by hand.
+  </p>
+
+  <h3 id="er-layout">Page Layout</h3>
+  <p>The page is divided into three visual areas.</p>
+
+  <h4>Top — Confirmed Matches</h4>
+  <p>
+    A table listing every email that has already been successfully linked to a job application.
+    Each row shows:
+  </p>
+  <div class="mockup">
+    <div class="mockup-label">Confirmed Matches table row</div>
+    <div class="mockup-card">
+      <div class="d-flex align-items-center gap-3 flex-wrap" style="font-size:.82rem">
+        <span><a href="#" style="color:#6ea8fe">Senior Engineer</a></span>
+        <span class="text-secondary">Acme Corp</span>
+        <span class="badge bg-danger">Rejected</span>
+        <span class="text-secondary">hr@acmecorp.com</span>
+        <span class="text-white-50">Re: Your Application</span>
+        <span class="badge bg-danger bg-opacity-75">Declined</span>
+        <span class="text-secondary">2026-03-07</span>
+      </div>
+    </div>
+  </div>
+  <ul>
+    <li><strong>Job title</strong> — Clickable link that opens the application detail page.</li>
+    <li><strong>Company</strong> — Company name from the application record.</li>
+    <li><strong>Status badge</strong> — Current application status after the match was confirmed.</li>
+    <li><strong>Email From</strong> — The sender address of the matched email.</li>
+    <li><strong>Subject</strong> — Email subject line.</li>
+    <li><strong>Classification</strong> — What the system classified the email as: <span class="badge bg-danger">Declined</span> or <span class="badge bg-warning text-dark">Interview</span>.</li>
+    <li><strong>Date Matched</strong> — When the match was confirmed.</li>
+  </ul>
+
+  <h4>Bottom Left — Jobs Applied (No Email Match)</h4>
+  <p>
+    A scrollable list of all active applications (excluding Draft and Withdrawn) that do not yet have
+    a confirmed email match. Each card shows the job title, status badge, company name, and date applied.
+  </p>
+  <div class="mockup">
+    <div class="mockup-label">Job card — unselected / selected</div>
+    <div class="d-flex gap-3 flex-wrap">
+      <div class="mockup-card" style="min-width:200px">
+        <div class="fw-semibold" style="font-size:.82rem">Backend Developer</div>
+        <div class="d-flex align-items-center gap-2 mt-1">
+          <span class="badge bg-primary" style="font-size:.68rem">Submitted</span>
+          <span class="text-secondary" style="font-size:.75rem">Globex · Mar 01</span>
+        </div>
+      </div>
+      <div class="mockup-card" style="min-width:200px; border-color:#0d6efd; box-shadow:0 0 0 2px rgba(13,110,253,.4)">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="fw-semibold" style="font-size:.82rem">Backend Developer</div>
+          <i class="bi bi-check-circle-fill text-primary"></i>
+        </div>
+        <div class="d-flex align-items-center gap-2 mt-1">
+          <span class="badge bg-primary" style="font-size:.68rem">Submitted</span>
+          <span class="text-secondary" style="font-size:.75rem">Globex · Mar 01</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p>Click a job card to select it (blue border + checkmark). Click again to deselect.</p>
+
+  <h4>Bottom Right — Email Inbox (Awaiting Match)</h4>
+  <p>
+    A scrollable list of all pending <strong>EmailReview</strong> records — emails fetched from your
+    IMAP accounts that have not yet been matched to an application. Each card shows:
+  </p>
+  <div class="mockup">
+    <div class="mockup-label">Email inbox card</div>
+    <div class="mockup-card" style="font-size:.82rem">
+      <div class="d-flex align-items-start justify-content-between gap-2">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-danger">Declined</span>
+            <span class="fw-semibold">Re: Your Application — Backend Developer</span>
+          </div>
+          <div class="text-secondary mb-1">noreply@jobs.example.com &nbsp;·&nbsp; Mar 07</div>
+          <div class="text-white-50" style="font-size:.77rem">Thank you for applying. After careful review, we have decided to move forward with other candidates…</div>
+        </div>
+      </div>
+      <div class="mt-2 pt-2" style="border-top:1px solid rgba(255,255,255,.07);font-size:.75rem">
+        <i class="bi bi-lightbulb me-1 text-warning"></i>
+        <span class="text-secondary">Auto-suggested:</span>
+        <span class="text-white-50 ms-1">Backend Developer @ Globex</span>
+      </div>
+    </div>
+  </div>
+  <ul>
+    <li><strong>Classification badge</strong> — <span class="badge bg-danger">Declined</span> (red) or <span class="badge bg-warning text-dark">Interview</span> (yellow).</li>
+    <li><strong>Subject &amp; Sender</strong> — Email subject line and the from address.</li>
+    <li><strong>Date</strong> — When the email was received.</li>
+    <li><strong>Body preview</strong> — An excerpt of the email body for quick identification.</li>
+    <li><strong>Auto-suggested match</strong> — If the system found a probable match, it is shown here as a hint. You can confirm it or choose a different job entirely.</li>
+  </ul>
+  <p>Click an email card to select it (blue highlight). Click again to deselect.</p>
+
+  <h3 id="er-match-workflow">Manual Match Workflow</h3>
+  <p>Pairing an email to a job takes four steps:</p>
+  <ol>
+    <li>Click a <strong>job card</strong> on the left — it highlights with a blue border and checkmark.</li>
+    <li>Click an <strong>email card</strong> on the right — it highlights blue.</li>
+    <li>The <button class="btn btn-sm btn-success py-0 px-2" style="font-size:.78rem;pointer-events:none"><i class="bi bi-link-45deg me-1"></i>Match Selected</button> button appears between the two panels.</li>
+    <li>Click <strong>Match Selected</strong> to confirm the pair.</li>
+  </ol>
+
+  <p>When a match is confirmed, the following happens automatically:</p>
+  <ul>
+    <li>The <strong>EmailReview</strong> record is marked <code>confirmed</code> and linked to the selected application.</li>
+    <li>The <strong>application status</strong> is updated — a Declined email moves the status to <em>Rejected</em>; an Interview email advances a Submitted application to <em>Phone Screen</em>.</li>
+    <li>A <strong>Notification</strong> is created so the event appears in your Notifications feed.</li>
+    <li>The sender's domain is saved to the <strong>learning database</strong> (EmailMatchFeedback), improving future auto-matching accuracy.</li>
+    <li>Both cards are removed from the bottom panels and the new pair appears in the Confirmed Matches table at the top.</li>
+  </ul>
+
+  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
+    <strong>Why this page exists:</strong> The automated matcher works well when the email comes from a company domain (e.g. <code>@acmecorp.com</code>). It struggles with generic senders like Gmail or third-party ATS platforms that obscure the company domain. This page gives you a fast way to correct those gaps without touching any settings.
+  </div>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    <strong>Tips:</strong>
+    <ul class="mb-0 mt-1">
+      <li>Emails are fetched by clicking <strong>Check Now</strong> on the Settings page, or automatically when the scheduler daemon runs.</li>
+      <li>The <em>Auto-suggested</em> label shows the system's best guess — you are free to ignore it and select any job from the left panel instead.</li>
+      <li>After confirming a match the application status is updated immediately — check the Applications page to see the new status reflected there.</li>
+    </ul>
+  </div>
+</section>
+
 <!-- ══════════════════════════════════════════════════════ ANALYTICS -->
 <section id="analytics">
   <h2><i class="bi bi-bar-chart-line me-2 text-secondary"></i>Analytics</h2>
@@ -786,6 +939,89 @@ html { scroll-behavior: smooth; }
     <li><strong>Timezone</strong> — Used for scan scheduling and date display.</li>
     <li><strong>AI Cover Letters</strong> — Toggle AI-assisted cover letter generation on or off.</li>
   </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ SECURITY -->
+<section id="https-overview">
+  <h2><i class="bi bi-shield-lock me-2 text-info"></i>HTTPS &amp; Secure Connections</h2>
+  <p>
+    By default Job Tracker serves over plain <code>http://127.0.0.1:5000</code>, which causes
+    modern browsers (Chrome, Edge) to show a <em>"Not Secure"</em> warning. You can enable
+    HTTPS using <strong>mkcert</strong> — a zero-configuration tool that generates
+    locally-trusted certificates and installs its CA into the Windows, Chrome, and Firefox
+    trust stores.
+  </p>
+  <div class="key-term">
+    <i class="bi bi-info-circle me-2"></i>
+    HTTPS here applies to <strong>local loopback traffic only</strong> (127.0.0.1).
+    No data leaves your machine — this removes the browser warning and encrypts traffic
+    between your browser and the local Flask server.
+  </div>
+  <p>
+    Once certificate files exist at <code>certs\localhost.pem</code> and
+    <code>certs\localhost-key.pem</code> inside the Job Tracker folder, <code>run.py</code>
+    detects them automatically and starts Flask with HTTPS enabled. The browser will open
+    at <code>https://127.0.0.1:5000</code> showing a padlock icon.
+  </p>
+
+  <h3 id="jt-mkcert-install"><i class="bi bi-download me-2 text-secondary"></i>Step 1 — Install mkcert</h3>
+  <p>Install mkcert once per developer machine. Open PowerShell and run:</p>
+  <div class="mockup">
+    <div class="mockup-label">PowerShell — install via Winget (recommended)</div>
+    <code>winget install FiloSottile.mkcert</code>
+  </div>
+  <p>
+    Alternatively, download the latest <code>mkcert-v*-windows-amd64.exe</code> from
+    <a href="https://github.com/FiloSottile/mkcert/releases" target="_blank" rel="noopener">github.com/FiloSottile/mkcert/releases</a>,
+    rename it to <code>mkcert.exe</code>, and place it on your <code>PATH</code>.
+  </p>
+  <p>Then run the one-time CA registration in an <strong>Administrator</strong> PowerShell:</p>
+  <div class="mockup">
+    <div class="mockup-label">PowerShell (run as Administrator)</div>
+    <code>mkcert -install</code>
+  </div>
+  <p>
+    This creates a private CA in <code>%LOCALAPPDATA%\mkcert\</code> and registers it as
+    trusted. You only need to do this once per machine.
+  </p>
+
+  <h3 id="jt-cert-generate"><i class="bi bi-file-earmark-lock me-2 text-secondary"></i>Step 2 — Generate Certificates</h3>
+  <p>From the Job Tracker root folder, run:</p>
+  <div class="mockup">
+    <div class="mockup-label">PowerShell — from the job_tracker/ folder</div>
+    <code>mkdir certs<br>
+    cd certs<br>
+    mkcert 127.0.0.1 localhost</code>
+  </div>
+  <p>Two files are created:</p>
+  <ul>
+    <li><code>certs\localhost.pem</code> — the certificate</li>
+    <li><code>certs\localhost-key.pem</code> — the private key</li>
+  </ul>
+  <div class="warn-box">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    The <code>certs/</code> folder is listed in <code>.gitignore</code>. Never commit your
+    private key to version control.
+  </div>
+  <p>Restart Job Tracker (<code>python run.py</code>) and navigate to
+  <code>https://127.0.0.1:5000</code>. Chrome should show a padlock with no warnings.</p>
+
+  <h3 id="jt-cert-renewal"><i class="bi bi-arrow-clockwise me-2 text-secondary"></i>Certificate Renewal</h3>
+  <p>
+    Certificates expire after approximately 2 years. When they expire, the browser shows a
+    certificate error. Regenerate them with:
+  </p>
+  <div class="mockup">
+    <div class="mockup-label">PowerShell — from job_tracker/certs/</div>
+    <code>del localhost.pem localhost-key.pem<br>
+    mkcert 127.0.0.1 localhost</code>
+  </div>
+  <p>Restart the app after regenerating. No other configuration is needed.</p>
+  <div class="tip-box">
+    <i class="bi bi-lightbulb me-2"></i>
+    Check a certificate's expiry date with:<br>
+    <code>openssl x509 -in certs\localhost.pem -noout -dates</code>
+  </div>
 </section>
 
 <!-- ═══════════════════════════════════════════════════ RUNNING SCAN -->

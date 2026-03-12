@@ -33,8 +33,10 @@ _DEFAULTS: dict = {
     # Compiled exe name (no extension)
     "APP_EXE_NAME":    "JobTracker",
 
-    # Where the finished installer .exe is written (relative to project root)
-    "OUTPUT_DIR":      "dist",
+    # Where the finished installer .exe is written.
+    # Absolute path recommended (e.g. D:\Compile Playground\AppName).
+    # Subdirectories created automatically: Log\ (build logs), Bundle Only\ (PyInstaller output).
+    "OUTPUT_DIR":      r"D:\Compile Playground\JobTracker",
 
     # Windows installer behaviour
     "DEFAULT_INSTALL_DIR": r"{autopf}\JobTracker",
@@ -46,6 +48,10 @@ _DEFAULTS: dict = {
     # Optional asset paths (relative to project root; "" = skip)
     "ICON_FILE":    "",
     "LICENSE_FILE": "",
+    "README_FILE":  "",
+
+    # Support contact email injected into the compiled app's build_meta.json
+    "SUPPORT_EMAIL": "",
 
     # Code protection — mutually exclusive
     # False / False  → plain PyInstaller (default)
@@ -88,9 +94,12 @@ ADD_TO_STARTUP      = bool(_cfg["ADD_TO_STARTUP"])
 
 ICON_FILE           = _cfg["ICON_FILE"]    or None
 LICENSE_FILE        = _cfg["LICENSE_FILE"] or None
+README_FILE         = _cfg["README_FILE"]  or None
 
 USE_PYARMOR         = bool(_cfg["USE_PYARMOR"])
 USE_NUITKA          = bool(_cfg["USE_NUITKA"])
+
+SUPPORT_EMAIL       = _cfg.get("SUPPORT_EMAIL", "")
 
 # ── Hidden imports (not editable from the dashboard — too technical) ──────────
 # Modules that PyInstaller / Nuitka may fail to detect automatically because
