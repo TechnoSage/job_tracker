@@ -6,7 +6,7 @@
   <h2 class="fw-bold mb-0"><i class="bi bi-gear me-2 text-primary"></i>Settings</h2>
 </div>
 
-<form method="POST" action="{{ url_for('settings') }}">
+<form method="POST" action="{{ url_for('settings') }}" id="settingsForm">
 
 <!-- Layout mode toggle -->
 <div class="d-flex align-items-center justify-content-end mb-2 gap-2" id="layoutControls">
@@ -1366,11 +1366,6 @@
   </div>
 </div>
 
-<div class="text-end">
-  <button type="submit" class="btn btn-primary btn-lg px-5">
-    <i class="bi bi-save me-2"></i>Save All Settings
-  </button>
-</div>
 </form>
 
 <!-- ================================================================
@@ -3074,6 +3069,53 @@
       }
     });
   }
+}());
+
+// ── Settings dirty-state tracker ──────────────────────────────────────────
+(function () {
+  var form    = document.getElementById('settingsForm');
+  var saveBtn = document.getElementById('sidebarSaveBtn');
+  if (!form || !saveBtn) return;
+
+  // Snapshot: returns a stable string of every tracked field value
+  function snapshot() {
+    var out = [];
+    form.querySelectorAll('input, select, textarea').forEach(function (el) {
+      if (el.type === 'submit' || el.type === 'button' || el.type === 'file') return;
+      var key = (el.name || '') + '|' + (el.id || '') + '|' + el.type;
+      if (el.type === 'checkbox' || el.type === 'radio') {
+        out.push(key + '=' + el.checked);
+      } else {
+        out.push(key + '=' + el.value);
+      }
+    });
+    return out.join('\n');
+  }
+
+  var _baseline = snapshot();
+
+  function checkDirty() {
+    if (snapshot() !== _baseline) {
+      saveBtn.classList.add('dirty');
+    } else {
+      saveBtn.classList.remove('dirty');
+    }
+  }
+
+  // Capture all field changes via delegation
+  form.addEventListener('input',  checkDirty);
+  form.addEventListener('change', checkDirty);
+
+  // Watch for dynamically added fields (scan times, email accounts, etc.)
+  new MutationObserver(function () {
+    form.addEventListener('input',  checkDirty);
+    form.addEventListener('change', checkDirty);
+  }).observe(form, { childList: true, subtree: true });
+
+  // Clear dirty on submit
+  form.addEventListener('submit', function () {
+    saveBtn.classList.remove('dirty');
+  });
 }());
 </script>
 {% endblock %}

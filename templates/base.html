@@ -105,12 +105,25 @@
       </li>
     </ul>
 
-    <!-- Quick scan button -->
+    <!-- Bottom sidebar buttons -->
+    {% if request.endpoint == 'settings' %}
+    <div id="settingsSaveDock" class="mt-auto pt-2 border-top border-secondary">
+      <button type="submit" form="settingsForm" id="sidebarSaveBtn"
+              class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center gap-2 mb-2">
+        <i class="bi bi-save2 flex-shrink-0"></i>
+        <span class="sidebar-save-label">Save Settings</span>
+      </button>
+      <button type="button" class="btn btn-outline-primary btn-sm w-100" id="runScanBtn">
+        <i class="bi bi-arrow-clockwise me-1"></i>Run Scan Now
+      </button>
+    </div>
+    {% else %}
     <div class="mt-auto pt-3 border-top border-secondary">
       <button type="button" class="btn btn-outline-primary btn-sm w-100" id="runScanBtn">
         <i class="bi bi-arrow-clockwise me-1"></i>Run Scan Now
       </button>
     </div>
+    {% endif %}
   </nav>
 
   <!-- ══════════════════════════════════════
