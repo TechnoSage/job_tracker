@@ -1,18 +1,26 @@
 """
 scrapers.py — Extensible job-scraper registry.
 
-Built-in scrapers
-─────────────────
-  • RemoteOK      — https://remoteok.com/api          (JSON API, free)
-  • Remotive      — https://remotive.com/api/remote-jobs (JSON API, free)
-  • We Work Remotely — RSS feeds
-  • Indeed        — python-jobspy (reverse-engineered internal API) with RSS fallback
-  • LinkedIn      — Public guest-search API (HTML, no auth required)
+Built-in scrapers (all free and legal)
+───────────────────────────────────────
+  • RemoteOK       — remoteok.com/api              (JSON API, free, no key)
+  • Remotive       — remotive.com/api/remote-jobs  (JSON API, free, no key)
+  • We Work Remotely — weworkremotely.com          (RSS, free, no key)
+  • LinkedIn       — public guest-search HTML      (no login required)
+  • USAJobs        — data.usajobs.gov/api          (official U.S. federal API, free key)
+  • CareerOneStop  — api.careeronestop.org         (official DOL API, free key)
+
+Official API keys required (free to register):
+  • USAJobs:       https://developer.usajobs.gov/
+                   Set USAJOBS_API_KEY + USAJOBS_USER_AGENT in .env
+  • CareerOneStop: https://www.careeronestop.org/Developers/WebAPI/
+                   Set CAREERONESTOP_USER_ID + CAREERONESTOP_API_KEY in .env
 
 Unavailable sources (see UNAVAILABLE_SOURCES at module bottom)
 ──────────────────────────────────────────────────────────────
-  • ZipRecruiter  — RSS API deprecated Mar 2025; HTML blocked by Cloudflare Bot Management
-  • O*NET         — Occupational database, not a job board (free API for skill matching only)
+  • Indeed        — RSS feed discontinued Mar 2026; no free public API; ToS prohibits scraping
+  • ZipRecruiter  — RSS API deprecated Mar 2025; HTML blocked by Cloudflare
+  • O*NET         — Occupational database, not a job board (skill-matching API, no job listings)
 
 Adding a new scraper
 ────────────────────
@@ -413,44 +421,54 @@ class WWRScraper(JobScraper):
         return jobs
 
 
-class IndeedScraper(JobScraper):
+class USAJobsScraper(JobScraper):
     """
-    Indeed job scraper.
+    USAJobs.gov — Official U.S. Federal Government Jobs API.
 
-    Primary method: python-jobspy (reverse-engineered internal Indeed API).
-    Fallback: public RSS feed (deprecated by Indeed but still partially functional).
+    100% free and legal — provided by the U.S. Office of Personnel Management.
+    Returns real federal job listings. No scraping; uses the official REST API.
 
-    Install python-jobspy with:  pip install python-jobspy
-    If not installed the RSS fallback is used automatically.
+    Setup (one-time):
+    1. Register for a free API key at https://developer.usajobs.gov/
+    2. Add to your .env file in the project root:
+          USAJOBS_API_KEY=your_api_key_here
+          USAJOBS_USER_AGENT=your@email.com
+    Without these values the scraper logs a warning and returns no results.
     """
-    name = "indeed"
-    display_name = "Indeed"
+    name = "usajobs"
+    display_name = "USAJobs (Federal)"
     description = (
-        "Indeed job search via python-jobspy (internal API reverse-engineering). "
-        "Falls back to RSS if python-jobspy is not installed."
+        "Official U.S. Federal Government job listings — free, legal REST API. "
+        "Requires a free API key from developer.usajobs.gov. "
+        "Set USAJOBS_API_KEY and USAJOBS_USER_AGENT in your .env file."
     )
     default_search_terms = [
-        "C# developer remote",
-        ".NET developer remote",
-        "Oracle developer remote",
-        "SQL Server developer remote",
-        "C# customer service",
-        "IT support C# remote",
+        "software developer",
+        "information technology",
+        "data analyst",
+        "systems administrator",
+        "C# developer",
+        ".NET developer",
     ]
+    _BASE = "https://data.usajobs.gov/api/Search"
 
     def fetch(self, search_terms=None):
-        try:
-            import jobspy  # noqa: F401
-            return self._fetch_jobspy(search_terms)
-        except ImportError:
-            logger.warning(
-                "python-jobspy not installed — falling back to Indeed RSS (deprecated). "
-                "Install with: pip install python-jobspy"
-            )
-            return self._fetch_rss(search_terms)
+        import os
+        api_key    = os.environ.get("USAJOBS_API_KEY", "").strip()
+        user_agent = os.environ.get("USAJOBS_USER_AGENT", "").strip()
 
-    def _fetch_jobspy(self, search_terms=None):
-        from jobspy import scrape_jobs
+        if not api_key or not user_agent:
+            logger.warning(
+                "USAJobs: USAJOBS_API_KEY and USAJOBS_USER_AGENT not set. "
+                "Register at https://developer.usajobs.gov/ and add both to your .env file."
+            )
+            return []
+
+        headers = {
+            "Host": "data.usajobs.gov",
+            "User-Agent": user_agent,
+            "Authorization-Key": api_key,
+        }
 
         terms = self._search_terms(search_terms)
         jobs = []
@@ -458,107 +476,196 @@ class IndeedScraper(JobScraper):
 
         for query in terms:
             try:
-                df = scrape_jobs(
-                    site_name=["indeed"],
-                    search_term=query,
-                    location="Remote",
-                    results_wanted=25,
-                    hours_old=168,   # 7 days
-                    country_indeed="USA",
-                )
+                params = {
+                    "Keyword": query,
+                    "ResultsPerPage": 25,
+                    "DatePosted": 7,
+                    "RemoteIndicator": "True",
+                }
+                resp = requests.get(self._BASE, headers=headers, params=params, timeout=15)
+                resp.raise_for_status()
+                data = resp.json()
             except Exception as exc:
-                logger.warning("python-jobspy Indeed failed for '%s': %s", query, exc)
+                logger.warning("USAJobs API failed for '%s': %s", query, exc)
                 continue
 
-            for _, row in df.iterrows():
-                url_val = str(row.get("job_url") or "")
-                ext_id = f"indeed_{hash(url_val)}"
+            items = (data.get("SearchResult", {})
+                        .get("SearchResultItems", []))
+
+            for item in items:
+                matched = item.get("MatchedObjectDescriptor", {})
+                position_id = matched.get("PositionID", "")
+                ext_id = f"usajobs_{position_id or hash(str(matched))}"
                 if ext_id in seen:
                     continue
                 seen.add(ext_id)
 
-                # Parse posted date
-                posted = None
-                date_val = row.get("date_posted")
-                if date_val is not None:
-                    try:
-                        posted = datetime.strptime(str(date_val)[:10], "%Y-%m-%d")
-                    except Exception:
-                        pass
+                # Apply URL (preferred) or position URL
+                apply_uris = matched.get("ApplyURI", [])
+                url_val = (apply_uris[0] if apply_uris
+                           else matched.get("PositionURI", ""))
 
-                # Build salary string from min/max columns
+                # Salary range
                 salary_str = ""
-                lo = row.get("min_amount")
-                hi = row.get("max_amount")
-                interval = row.get("interval", "")
-                if lo and hi:
-                    salary_str = f"${int(lo):,} – ${int(hi):,}"
-                    if interval:
-                        salary_str += f" / {interval}"
+                remun = matched.get("PositionRemuneration", [])
+                if remun:
+                    r = remun[0]
+                    lo = r.get("MinimumRange", "")
+                    hi = r.get("MaximumRange", "")
+                    rate = r.get("RateIntervalCode", "")
+                    if lo and hi:
+                        try:
+                            salary_str = f"${int(float(lo)):,} – ${int(float(hi)):,}"
+                            if rate:
+                                salary_str += f" / {rate.lower()}"
+                        except Exception:
+                            salary_str = f"{lo} – {hi}"
 
-                tags = []
-                job_type = row.get("job_type")
-                if job_type:
-                    tags = [str(job_type)]
+                # Location
+                locations = matched.get("PositionLocation", [])
+                location_str = "Remote"
+                if locations:
+                    loc = locations[0]
+                    city = loc.get("CityName", "")
+                    state = loc.get("CountrySubDivisionCode", "")
+                    if city and ("anywhere" not in city.lower()
+                                 and "remote" not in city.lower()):
+                        location_str = f"{city}, {state}" if state else city
+
+                # Job type tags
+                schedules = matched.get("PositionSchedule", [])
+                tags = [s.get("Name", "") for s in schedules if s.get("Name")]
+
+                # Summary / description
+                details = (matched.get("UserArea", {})
+                                  .get("Details", {}))
+                description = details.get("JobSummary", "")
 
                 jobs.append({
                     "external_id": ext_id,
-                    "title": str(row.get("title") or ""),
-                    "company": str(row.get("company") or ""),
-                    "location": str(row.get("location") or "Remote"),
-                    "description": str(row.get("description") or ""),
-                    "tags": tags,
+                    "title":       matched.get("PositionTitle", ""),
+                    "company":     matched.get("OrganizationName",
+                                              "U.S. Federal Government"),
+                    "location":    location_str,
+                    "description": description,
+                    "tags":        tags,
                     "salary_range": salary_str,
-                    "url": url_val,
-                    "source": self.name,
-                    "posted_date": posted,
+                    "url":         url_val,
+                    "source":      self.name,
+                    "posted_date": _parse_date(
+                        (matched.get("PublicationStartDate") or "")[:10]
+                    ),
                 })
 
-            time.sleep(2.0)   # polite delay between queries
+            time.sleep(0.5)
 
-        logger.info("Indeed (jobspy): %d jobs", len(jobs))
+        logger.info("USAJobs: %d jobs", len(jobs))
         return jobs
 
-    def _fetch_rss(self, search_terms=None):
-        """Legacy RSS fallback — Indeed deprecated their public RSS in 2023."""
+
+class CareerOneStopScraper(JobScraper):
+    """
+    CareerOneStop (Department of Labor) — Official U.S. job listings API.
+
+    Free, legal, government-provided. Aggregates jobs from the National Labor
+    Exchange (NLx) — a partnership between Direct Employers Association and
+    the National Association of State Workforce Agencies. Broader coverage
+    than USAJobs (includes private-sector employers, not just federal).
+
+    Setup (one-time):
+    1. Register at https://www.careeronestop.org/Developers/WebAPI/
+    2. Add to your .env file:
+          CAREERONESTOP_USER_ID=your_user_id_here
+          CAREERONESTOP_API_KEY=your_api_key_here
+    Without these values the scraper logs a warning and returns no results.
+    """
+    name = "careeronestop"
+    display_name = "CareerOneStop (DOL)"
+    description = (
+        "U.S. Department of Labor job listings via the free CareerOneStop API. "
+        "Covers private + public sector jobs from the National Labor Exchange. "
+        "Set CAREERONESTOP_USER_ID and CAREERONESTOP_API_KEY in your .env file."
+    )
+    default_search_terms = [
+        "software developer",
+        "C# developer",
+        ".NET developer",
+        "Oracle developer",
+        "SQL developer",
+        "IT support specialist",
+    ]
+    _BASE = "https://api.careeronestop.org/v1/jobsearch/{user_id}/{keyword}/remote/0/0/0/0/25/0"
+
+    def fetch(self, search_terms=None):
+        import os
+        user_id = os.environ.get("CAREERONESTOP_USER_ID", "").strip()
+        api_key  = os.environ.get("CAREERONESTOP_API_KEY", "").strip()
+
+        if not user_id or not api_key:
+            logger.warning(
+                "CareerOneStop: CAREERONESTOP_USER_ID and CAREERONESTOP_API_KEY not set. "
+                "Register at https://www.careeronestop.org/Developers/WebAPI/"
+                " and add both to your .env file."
+            )
+            return []
+
+        headers = {
+            "Authorization": f"socApiKey {api_key}",
+            "Content-Type": "application/json",
+        }
+
         terms = self._search_terms(search_terms)
         jobs = []
         seen = set()
 
         for query in terms:
-            url = f"https://www.indeed.com/rss?q={quote_plus(query)}&sort=date&fromage=7"
+            url = self._BASE.format(
+                user_id=quote_plus(user_id),
+                keyword=quote_plus(query),
+            )
             try:
-                feed = feedparser.parse(url)
+                resp = requests.get(url, headers=headers,
+                                    params={"days": 7, "enableMetaData": "true"},
+                                    timeout=15)
+                resp.raise_for_status()
+                data = resp.json()
             except Exception as exc:
-                logger.warning("Indeed RSS failed for '%s': %s", query, exc)
+                logger.warning("CareerOneStop API failed for '%s': %s", query, exc)
                 continue
 
-            for entry in feed.entries:
-                link = entry.get("link", "")
-                ext_id = f"indeed_{hash(link)}"
+            items = data.get("Jobs", [])
+            for item in items:
+                job_id = item.get("JobId", "")
+                ext_id = f"careeronestop_{job_id or hash(item.get('JobURL', ''))}"
                 if ext_id in seen:
                     continue
                 seen.add(ext_id)
 
-                company = (entry.get("author", "")
-                           or entry.get("source", {}).get("title", ""))
+                salary_str = ""
+                lo = item.get("SalaryLow", "")
+                hi = item.get("SalaryHigh", "")
+                if lo and hi:
+                    try:
+                        salary_str = f"${int(float(lo)):,} – ${int(float(hi)):,}"
+                    except Exception:
+                        salary_str = f"{lo} – {hi}"
 
                 jobs.append({
                     "external_id": ext_id,
-                    "title": entry.get("title", ""),
-                    "company": company,
-                    "location": entry.get("location", "Remote"),
-                    "description": _get_entry_text(entry),
-                    "tags": [],
-                    "salary_range": "",
-                    "url": link,
-                    "source": self.name,
-                    "posted_date": _parse_date(entry.get("published", "")),
+                    "title":       item.get("JobTitle", ""),
+                    "company":     item.get("Company", ""),
+                    "location":    item.get("Location", "Remote"),
+                    "description": item.get("JobSummary", ""),
+                    "tags":        item.get("JobType", "").split(",") if item.get("JobType") else [],
+                    "salary_range": salary_str,
+                    "url":         item.get("JobURL", ""),
+                    "source":      self.name,
+                    "posted_date": _parse_date(item.get("DatePosted", "")),
                 })
 
-            time.sleep(1.0)
+            time.sleep(0.5)
 
-        logger.info("Indeed (RSS fallback): %d jobs", len(jobs))
+        logger.info("CareerOneStop: %d jobs", len(jobs))
         return jobs
 
 
@@ -1084,18 +1191,39 @@ registry = ScraperRegistry()
 registry.register_builtin(RemoteOKScraper())
 registry.register_builtin(RemotiveScraper())
 registry.register_builtin(WWRScraper())
-registry.register_builtin(IndeedScraper())
 registry.register_builtin(LinkedInScraper())
-# ZipRecruiter removed — RSS API deprecated Mar 2025, HTML blocked by Cloudflare
-# registry.register_builtin(ZipRecruiterScraper())
+registry.register_builtin(USAJobsScraper())        # requires free API key — see class docstring
+registry.register_builtin(CareerOneStopScraper())  # requires free API key — see class docstring
 # registry.register_builtin(MyNewScraper())   ← add your own here
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Unavailable sources — displayed on the Sources page as informational cards
+# These sources CANNOT be legally or technically scraped at this time.
 # ══════════════════════════════════════════════════════════════════════════════
 
 UNAVAILABLE_SOURCES = [
+    {
+        "name": "indeed",
+        "display_name": "Indeed",
+        "icon": "bi-search-heart",
+        "status": "unavailable",
+        "status_label": "No Legal Access",
+        "status_color": "danger",
+        "reason": "RSS Discontinued + No Free Public API + ToS Prohibits Scraping",
+        "detail": (
+            "Indeed's public RSS feeds were discontinued in March 2026. "
+            "Indeed has no free public API — their official API requires a paid "
+            "employer/publisher partnership. Their Terms of Service explicitly prohibit "
+            "automated scraping of job listings. Reverse-engineering their internal API "
+            "(e.g. via python-jobspy) violates those terms and is not included in this app."
+        ),
+        "future": (
+            "If Indeed ever launches a free public API for job seekers, it will be added "
+            "here. For now, use USAJobs or CareerOneStop for free legal job listings."
+        ),
+        "url": "https://www.indeed.com",
+    },
     {
         "name": "ziprecruiter",
         "display_name": "ZipRecruiter",
@@ -1103,39 +1231,41 @@ UNAVAILABLE_SOURCES = [
         "status": "unavailable",
         "status_label": "Unavailable",
         "status_color": "danger",
-        "reason": "RSS API Deprecated + Cloudflare Blocked",
+        "reason": "RSS API Deprecated + Cloudflare Bot Protection",
         "detail": (
-            "ZipRecruiter's ZipSearch RSS API was officially deprecated and shut down on "
-            "March 31, 2025. The HTML search results page is now protected by Cloudflare "
-            "Bot Management (enterprise tier), which blocks all automated scraping tools "
-            "including python-jobspy (returns 403 Forbidden). "
-            "There is no reliable free method to fetch ZipRecruiter listings at this time."
+            "ZipRecruiter's ZipSearch RSS API was officially shut down on March 31, 2025. "
+            "The HTML search results page is now protected by Cloudflare Bot Management "
+            "(enterprise tier), which blocks all automated access including common scraping "
+            "libraries (returns 403 Forbidden). There is no reliable free method to fetch "
+            "ZipRecruiter listings at this time."
         ),
         "future": (
-            "May become available if ZipRecruiter launches a new public API or partner "
-            "program. Check ziprecruiter.com/developers for updates."
+            "May become available if ZipRecruiter launches a new public API or partner program. "
+            "Check ziprecruiter.com/employers/products/apply-connect for updates."
         ),
         "url": "https://www.ziprecruiter.com",
     },
     {
         "name": "onet",
         "display_name": "O*NET Online",
-        "icon": "bi-database-x",
+        "icon": "bi-diagram-3",
         "status": "not_a_job_board",
-        "status_label": "Not a Job Board",
-        "status_color": "warning",
-        "reason": "Occupational Database — No Job Listings",
+        "status_label": "Skills Database",
+        "status_color": "info",
+        "reason": "Occupational Data API — Not a Job Listings Site",
         "detail": (
-            "O*NET (Occupational Information Network) is a free U.S. government database "
-            "of occupational data — not a job listings site. It provides detailed profiles "
-            "of 900+ occupations including required skills, typical tasks, knowledge areas, "
-            "and salary ranges. It has a free official REST API (services.onetcenter.org) "
-            "that returns occupational data, not job postings."
+            "O*NET (Occupational Information Network) is a free U.S. Department of Labor "
+            "database of occupational data, not a job listings site. It provides detailed "
+            "profiles of 900+ occupations: required skills, typical tasks, knowledge areas, "
+            "education requirements, and salary ranges. Its free REST API "
+            "(services.onetcenter.org, CC BY 4.0 license) returns occupational data — "
+            "not job postings."
         ),
         "future": (
-            "Planned future integration: use the O*NET API to enhance skill matching — "
-            "compare the skills in your resume against O*NET occupation profiles to score "
-            "how well each job listing fits your background."
+            "Planned future integration for skill matching: compare the skills extracted "
+            "from your resume against O*NET occupation profiles to automatically score "
+            "how well each job listing fits your background. Register free at "
+            "services.onetcenter.org."
         ),
         "url": "https://www.onetonline.org",
         "api_url": "https://services.onetcenter.org",
