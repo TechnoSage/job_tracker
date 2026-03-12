@@ -882,6 +882,80 @@ def clean_build() -> None:
         shutil.rmtree(out, ignore_errors=True)
 
 
+def _post_build_cleanup() -> None:
+    """
+    Remove intermediate build artefacts that are no longer needed after a
+    successful build.  Final outputs (Bundle Only/, Log/, installer .exe) and
+    the Nuitka incremental-rebuild cache (run.build/) are kept; everything
+    else is deleted to reclaim disk space.
+    """
+    _banner("Post-build cleanup — removing intermediates")
+    removed: list[str] = []
+    kept:    list[str] = []
+
+    def _rm(p: Path) -> None:
+        if not p.exists():
+            return
+        try:
+            if p.is_dir():
+                shutil.rmtree(p)
+            else:
+                p.unlink()
+            removed.append(str(p))
+        except Exception as e:
+            print(f"  [WARN] Could not remove {p}: {e}")
+
+    build_out = PROJECT_ROOT / "build_output"
+
+    # PyInstaller work directory (analysis cache, hook intermediates, .pyz files)
+    _rm(build_out / "work")
+
+    # Auto-generated version-info file written before PyInstaller runs
+    _rm(build_out / "version_info.txt")
+
+    # Auto-generated PyInstaller .spec file
+    for spec in build_out.glob("*.spec"):
+        _rm(spec)
+
+    # Auto-generated Inno Setup script (installer already built from it)
+    _rm(build_out / "installer.iss")
+
+    # PyArmor obfuscated source tree (already bundled into the exe)
+    _rm(PROJECT_ROOT / "obf_src")
+
+    # Nuitka: the raw run.dist/ has already been copied to Bundle Only/ — remove it.
+    # run.build/ is the incremental compilation cache — keep it.
+    nuitka_dist = build_out / "nuitka" / "run.dist"
+    nuitka_build = build_out / "nuitka" / "run.build"
+    if nuitka_dist.exists():
+        _rm(nuitka_dist)
+    if nuitka_build.exists():
+        kept.append(str(nuitka_build))
+
+    # If build_output/ is now empty (PyInstaller mode with no cache left), remove it
+    if build_out.exists():
+        remaining = list(build_out.iterdir())
+        if not remaining:
+            _rm(build_out)
+        elif remaining == [build_out / "nuitka"] or all(
+            p.name == "nuitka" for p in remaining
+        ):
+            # Only the nuitka cache dir remains — that's intentional
+            pass
+
+    if removed:
+        for r in removed:
+            print(f"  Removed: {r}")
+    else:
+        print("  Nothing to remove.")
+
+    if kept:
+        for k in kept:
+            print(f"  Kept   : {k}  (Nuitka incremental cache)")
+
+    print("  Intermediates cleaned.")
+
+
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -946,6 +1020,8 @@ def main() -> None:
         _banner("Inno Setup — generating installer script")
         iss_path = generate_iss(bundle_dir)
         run_inno_setup(iss_path)
+
+    _post_build_cleanup()
 
     print(f"\n{'═' * 62}")
     print(f"  Build complete.")
