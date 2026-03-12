@@ -60,9 +60,41 @@
   font-weight: 700;
   animation: neonJobsGlow 1.8s ease-in-out infinite;
 }
+
+/* ── Unavailable source cards ───────────────────────────────────────── */
+.unavailable-card {
+  border-radius: 0.9rem;
+  background: #1a1c20;
+  box-shadow:
+    0 4px 14px rgba(0,0,0,.5),
+    0 2px 5px  rgba(0,0,0,.3),
+    0 1px 0    rgba(255,255,255,.03) inset,
+    0 -2px 4px rgba(0,0,0,.25) inset;
+  border: 1px solid rgba(255,255,255,.045);
+  opacity: 0.82;
+  transition: opacity 0.18s ease;
+}
+.unavailable-card:hover { opacity: 1; }
+.unavailable-reason {
+  font-size: 0.75rem;
+  color: #adb5bd;
+}
+.unavailable-detail {
+  font-size: 0.78rem;
+  color: #6c757d;
+  line-height: 1.5;
+}
+.unavailable-future {
+  font-size: 0.75rem;
+  color: #5a9fd4;
+  line-height: 1.4;
+}
+
+/* ── View toggle pills ──────────────────────────────────────────────── */
+.view-toggle .btn { border-radius: 2rem; }
 </style>
 
-<div class="d-flex align-items-center justify-content-between mt-3 mb-4 flex-wrap gap-2">
+<div class="d-flex align-items-center justify-content-between mt-3 mb-3 flex-wrap gap-2">
   <div>
     <h2 class="fw-bold mb-0">
       <i class="bi bi-cloud-download me-2 text-primary"></i>Job Sources
@@ -113,7 +145,23 @@
   </div>
 </div>
 
-<!-- ── Source Cards Grid ─────────────────────────────────────────────── -->
+<!-- ── View Toggle ───────────────────────────────────────────────────── -->
+<div class="d-flex align-items-center gap-3 mb-3 view-toggle">
+  <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-primary active" id="btnViewActive" onclick="switchView('active')">
+      <i class="bi bi-check2-circle me-1"></i>Active Sources
+      <span class="badge bg-light text-dark ms-1" style="font-size:.7rem;">{{ sources|length }}</span>
+    </button>
+    <button type="button" class="btn btn-outline-secondary" id="btnViewUnavailable" onclick="switchView('unavailable')">
+      <i class="bi bi-slash-circle me-1"></i>Unavailable
+      <span class="badge bg-secondary ms-1" style="font-size:.7rem;">{{ unavailable_sources|length }}</span>
+    </button>
+  </div>
+  <span class="text-muted small" id="viewSubtitle">Job boards included in your scheduled scans</span>
+</div>
+
+<!-- ── Active Source Cards Grid ──────────────────────────────────────── -->
+<div id="viewActive">
 <div class="row g-3" id="sourceCardsGrid">
   {% for src in sources %}
   <div class="col-md-6 col-xl-4 source-col" id="col-{{ src.name }}">
@@ -261,7 +309,71 @@
     </div>
   </div>
   {% endfor %}
-</div><!-- /row -->
+</div><!-- /row #sourceCardsGrid -->
+</div><!-- /#viewActive -->
+
+<!-- ── Unavailable Sources Grid ──────────────────────────────────────── -->
+<div id="viewUnavailable" style="display:none">
+  <div class="mb-3">
+    <p class="text-muted small mb-0">
+      <i class="bi bi-info-circle me-1 text-info"></i>
+      These sources cannot currently be scraped. They are listed here for transparency
+      and to track when they may become available in the future.
+    </p>
+  </div>
+  <div class="row g-3">
+    {% for src in unavailable_sources %}
+    <div class="col-md-6 col-xl-4">
+      <div class="unavailable-card h-100 p-3">
+
+        <!-- Row 1: Icon + Title + Status badge -->
+        <div class="d-flex align-items-start justify-content-between mb-2">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi {{ src.icon }} fs-5 text-secondary"></i>
+            <span class="fw-bold fs-6">{{ src.display_name }}</span>
+          </div>
+          <span class="badge bg-{{ src.status_color }} ms-2 flex-shrink-0">{{ src.status_label }}</span>
+        </div>
+
+        <!-- Row 2: Reason -->
+        <div class="unavailable-reason fw-semibold mb-2">
+          <i class="bi bi-exclamation-triangle me-1 text-warning"></i>{{ src.reason }}
+        </div>
+
+        <!-- Row 3: Detail explanation -->
+        <div class="unavailable-detail mb-3">{{ src.detail }}</div>
+
+        <!-- Row 4: Future note -->
+        <div class="unavailable-future">
+          <i class="bi bi-clock-history me-1 text-info"></i><em>{{ src.future }}</em>
+        </div>
+
+        <!-- Row 5: Links -->
+        <div class="mt-3 d-flex gap-2 flex-wrap" style="border-top:1px solid rgba(255,255,255,.06);padding-top:0.6rem;">
+          <a href="{{ src.url }}" target="_blank" rel="noopener"
+             class="btn btn-xs btn-outline-secondary">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Website
+          </a>
+          {% if src.get('api_url') %}
+          <a href="{{ src.api_url }}" target="_blank" rel="noopener"
+             class="btn btn-xs btn-outline-info">
+            <i class="bi bi-code-slash me-1"></i>API Docs
+          </a>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-check-circle fs-1 d-block mb-3 text-success"></i>
+        All known sources are currently available.
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div><!-- /#viewUnavailable -->
 
 
 <!-- ══════════════════════════════════════
@@ -542,6 +654,20 @@
 <script>
 // ── XHR helper ────────────────────────────────────────────────────────────────
 var XHR = { 'X-Requested-With': 'XMLHttpRequest' };
+
+// ── View toggle ───────────────────────────────────────────────────────────────
+function switchView(view) {
+  var isActive = (view === 'active');
+  document.getElementById('viewActive').style.display      = isActive ? '' : 'none';
+  document.getElementById('viewUnavailable').style.display = isActive ? 'none' : '';
+  document.getElementById('btnViewActive').className       = isActive
+    ? 'btn btn-primary active' : 'btn btn-outline-secondary';
+  document.getElementById('btnViewUnavailable').className  = isActive
+    ? 'btn btn-outline-secondary' : 'btn btn-secondary active';
+  document.getElementById('viewSubtitle').textContent      = isActive
+    ? 'Job boards included in your scheduled scans'
+    : 'Sources that cannot currently be scraped';
+}
 
 // ── Toggle source ─────────────────────────────────────────────────────────────
 function toggleSource(cb, name) {

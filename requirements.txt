@@ -20,6 +20,8 @@ google-api-python-client>=2.132.0
 msal>=1.28.0
 # Excel export for unemployment weekly reports
 openpyxl>=3.1.0
+# Indeed scraping via reverse-engineered internal API (falls back to RSS if missing)
+python-jobspy>=0.1.0
 # Background daemon system tray icon (optional — auto-installed on first use)
 # pystray>=0.19.5
 # Pillow>=10.0.0
