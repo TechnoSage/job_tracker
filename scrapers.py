@@ -21,6 +21,7 @@ Unavailable sources (see UNAVAILABLE_SOURCES at module bottom)
   • Indeed        — RSS feed discontinued Mar 2026; no free public API; ToS prohibits scraping
   • ZipRecruiter  — RSS API deprecated Mar 2025; HTML blocked by Cloudflare
   • O*NET         — Occupational database, not a job board (skill-matching API, no job listings)
+  • JobRight AI   — Closed system; robots.txt blocks all crawlers from /jobs/; no API
 
 Adding a new scraper
 ────────────────────
@@ -442,6 +443,20 @@ class USAJobsScraper(JobScraper):
         "Requires a free API key from developer.usajobs.gov. "
         "Set USAJOBS_API_KEY and USAJOBS_USER_AGENT in your .env file."
     )
+    requires_keys = True
+    registration_url = "https://developer.usajobs.gov/"
+    key_fields = [
+        {
+            "env_var": "USAJOBS_API_KEY",
+            "label": "API Key",
+            "placeholder": "Paste your USAJobs API key here",
+        },
+        {
+            "env_var": "USAJOBS_USER_AGENT",
+            "label": "User Agent (your email address)",
+            "placeholder": "your@email.com",
+        },
+    ]
     default_search_terms = [
         "software developer",
         "information technology",
@@ -451,6 +466,36 @@ class USAJobsScraper(JobScraper):
         ".NET developer",
     ]
     _BASE = "https://data.usajobs.gov/api/Search"
+
+    @staticmethod
+    def test_keys(key_values):
+        """Test provided keys against the USAJobs API. Returns (ok: bool, message: str)."""
+        api_key    = key_values.get("USAJOBS_API_KEY", "").strip()
+        user_agent = key_values.get("USAJOBS_USER_AGENT", "").strip()
+        if not api_key or not user_agent:
+            return False, "Both API Key and User Agent (email) are required."
+        headers = {
+            "Host": "data.usajobs.gov",
+            "User-Agent": user_agent,
+            "Authorization-Key": api_key,
+        }
+        try:
+            resp = requests.get(
+                "https://data.usajobs.gov/api/Search",
+                headers=headers,
+                params={"Keyword": "developer", "ResultsPerPage": 1},
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                return True, "Connection successful — API key is valid."
+            elif resp.status_code == 401:
+                return False, "Invalid API key (HTTP 401 Unauthorized)."
+            elif resp.status_code == 403:
+                return False, "Access denied (HTTP 403 Forbidden). Check your API key."
+            else:
+                return False, f"API returned HTTP {resp.status_code}."
+        except Exception as exc:
+            return False, f"Connection failed: {exc}"
 
     def fetch(self, search_terms=None):
         import os
@@ -586,6 +631,20 @@ class CareerOneStopScraper(JobScraper):
         "Covers private + public sector jobs from the National Labor Exchange. "
         "Set CAREERONESTOP_USER_ID and CAREERONESTOP_API_KEY in your .env file."
     )
+    requires_keys = True
+    registration_url = "https://www.careeronestop.org/Developers/WebAPI/"
+    key_fields = [
+        {
+            "env_var": "CAREERONESTOP_USER_ID",
+            "label": "User ID",
+            "placeholder": "Your CareerOneStop User ID",
+        },
+        {
+            "env_var": "CAREERONESTOP_API_KEY",
+            "label": "API Key",
+            "placeholder": "Your CareerOneStop API key (Bearer token)",
+        },
+    ]
     default_search_terms = [
         "software developer",
         "C# developer",
@@ -595,6 +654,32 @@ class CareerOneStopScraper(JobScraper):
         "IT support specialist",
     ]
     _BASE = "https://api.careeronestop.org/v1/jobsearch/{user_id}/{keyword}/remote/0/0/0/0/25/0"
+
+    @staticmethod
+    def test_keys(key_values):
+        """Test provided credentials against the CareerOneStop API. Returns (ok: bool, message: str)."""
+        user_id = key_values.get("CAREERONESTOP_USER_ID", "").strip()
+        api_key  = key_values.get("CAREERONESTOP_API_KEY", "").strip()
+        if not user_id or not api_key:
+            return False, "Both User ID and API Key are required."
+        url = f"https://api.careeronestop.org/v1/jobsearch/{quote_plus(user_id)}/developer/remote/0/0/0/0/1/0"
+        headers = {
+            "Authorization": f"socApiKey {api_key}",
+            "Content-Type": "application/json",
+        }
+        try:
+            resp = requests.get(url, headers=headers, params={"days": 7}, timeout=10)
+            if resp.status_code == 200:
+                return True, "Connection successful — credentials are valid."
+            elif resp.status_code == 401:
+                return False, "Invalid credentials (HTTP 401 Unauthorized)."
+            elif resp.status_code == 403:
+                return False, "Access denied (HTTP 403 Forbidden). Check your credentials."
+            else:
+                snippet = resp.text[:200] if resp.text else ""
+                return False, f"API returned HTTP {resp.status_code}. {snippet}".strip()
+        except Exception as exc:
+            return False, f"Connection failed: {exc}"
 
     def fetch(self, search_terms=None):
         import os
@@ -1269,6 +1354,30 @@ UNAVAILABLE_SOURCES = [
         ),
         "url": "https://www.onetonline.org",
         "api_url": "https://services.onetcenter.org",
+    },
+    {
+        "name": "jobright",
+        "display_name": "JobRight AI",
+        "icon": "bi-robot",
+        "status": "unavailable",
+        "status_label": "Blocked",
+        "status_color": "danger",
+        "reason": "No Public API + robots.txt Explicitly Blocks All Crawlers",
+        "detail": (
+            "JobRight AI is an AI-powered job search copilot that aggregates roughly "
+            "400,000 jobs daily from across the web. However, it is a closed system: "
+            "there is no public API, no RSS feed, and no developer program. Their "
+            "robots.txt explicitly blocks all automated crawlers from /jobs/ paths, "
+            "including named blocks for ClaudeBot, GPTBot, and other AI agents. "
+            "Their Terms of Service page returns a 404, but the robots.txt "
+            "restriction alone makes any automated access a clear violation. "
+            "There is no legal or technical way to extract job listings from JobRight AI."
+        ),
+        "future": (
+            "No developer program or API partnership currently exists. "
+            "Contact jobright.ai directly if you require programmatic data access."
+        ),
+        "url": "https://jobright.ai",
     },
 ]
 

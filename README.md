@@ -29,6 +29,25 @@ and comes with a full Windows installer build pipeline.
 - Controlled from the Settings page — start, stop, and view PID/status
 - Persists across browser restarts via a PID file
 
+### Job Sources (Scrapers)
+
+Manage all job data sources from the **Sources** page (`/scrapers`):
+
+- **Active / Unavailable tabs** — toggle the switch on any source card to move it between tabs. Active sources are included in scans; disabled sources move to the Unavailable tab with an optional reason field.
+- **Sort by jobs found** — active source cards are automatically sorted by the number of jobs found in the last scan (most productive sources appear first).
+- **Green glow indicator** — source cards that found jobs in the most recent scan display a pulsing green outline and a job count badge.
+- **Live card refresh** — after clicking "Run now" on a card, the card stats (job count, last run time, error state) update automatically via polling without a page reload. Cards re-sort in place when the scan completes.
+- **Unavailable sources** — the Unavailable tab has two sections:
+  - *Disabled by You* — sources you have turned off, with your optional reason shown. Toggle back on to re-enable.
+  - *Cannot Be Scraped* — hardcoded informational cards for sources with technical or legal barriers (LinkedIn, Indeed, Glassdoor, JobRight AI).
+- **API Key Setup** — sources that require API keys (USAJobs, CareerOneStop) display an amber pulsing outline and an embedded key-setup panel on the card. The panel includes:
+  - A "Get Key" button that opens the provider's developer registration page
+  - Password input fields for each required credential
+  - A "Save & Test" button that writes keys to `.env`, updates the running process, and makes a live test request to confirm the keys work
+  - Inline success/error feedback from the test call
+- **Health check** — each card shows the source's last health-check status (Current / Broken / Not checked) and the timestamp of the last check.
+- **Add custom source** — add any RSS or JSON API source with custom search terms. Custom sources can be renamed, edited, and deleted.
+
 ### Analytics
 - Dashboard metrics: total applications, response rate, average time-to-response
 - Pipeline chart showing applications by stage

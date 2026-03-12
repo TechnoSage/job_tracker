@@ -187,6 +187,7 @@ class ScraperSource(db.Model):
     # JSON list of search query strings to iterate over
     search_terms = db.Column(db.Text)
     is_enabled = db.Column(db.Boolean, default=True)
+    disabled_reason = db.Column(db.Text, nullable=True)
     is_builtin = db.Column(db.Boolean, default=False)
     # Stats from last run
     last_run = db.Column(db.DateTime)

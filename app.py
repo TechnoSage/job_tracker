@@ -119,6 +119,7 @@ def create_app(config_class=Config):
             "ALTER TABLE scraper_sources ADD COLUMN health_status VARCHAR(20)",
             "ALTER TABLE scraper_sources ADD COLUMN health_checked_at DATETIME",
             "ALTER TABLE notifications ADD COLUMN is_acknowledged BOOLEAN DEFAULT 0",
+            "ALTER TABLE scraper_sources ADD COLUMN disabled_reason TEXT",
         ]:
             try:
                 db.session.execute(db.text(_sql))
@@ -1384,16 +1385,50 @@ def _register_routes(app):
     @app.route("/scrapers")
     def scrapers():
         from scrapers import registry, UNAVAILABLE_SOURCES
-        sources = ScraperSource.query.order_by(
+        all_sources = ScraperSource.query.order_by(
             ScraperSource.is_builtin.desc(), ScraperSource.display_name
         ).all()
-        return render_template("scrapers.html", sources=sources,
-                               unavailable_sources=UNAVAILABLE_SOURCES)
+        active_sources = sorted(
+            [s for s in all_sources if s.is_enabled],
+            key=lambda s: (-(s.last_jobs_found or 0), s.display_name.lower())
+        )
+        disabled_sources = [s for s in all_sources if not s.is_enabled]
+
+        # Build per-source key info for scrapers that require API keys
+        key_info = {}
+        for src in all_sources:
+            builtin = registry.get_builtin(src.name)
+            if builtin and getattr(builtin, "requires_keys", False):
+                fields = getattr(builtin, "key_fields", [])
+                key_info[src.name] = {
+                    "fields": fields,
+                    "registration_url": getattr(builtin, "registration_url", ""),
+                    "all_set": all(
+                        bool(os.environ.get(f["env_var"], "").strip())
+                        for f in fields
+                    ),
+                    "field_set": {
+                        f["env_var"]: bool(os.environ.get(f["env_var"], "").strip())
+                        for f in fields
+                    },
+                }
+
+        return render_template("scrapers.html",
+                               sources=all_sources,
+                               active_sources=active_sources,
+                               disabled_sources=disabled_sources,
+                               unavailable_sources=UNAVAILABLE_SOURCES,
+                               key_info=key_info)
 
     @app.route("/scrapers/<name>/toggle", methods=["POST"])
     def toggle_scraper(name):
         row = ScraperSource.query.filter_by(name=name).first_or_404()
         row.is_enabled = not row.is_enabled
+        if not row.is_enabled:
+            data = request.get_json(silent=True) or {}
+            row.disabled_reason = (data.get("reason") or "").strip() or None
+        else:
+            row.disabled_reason = None
         db.session.commit()
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify(ok=True, is_enabled=row.is_enabled)
@@ -1588,6 +1623,18 @@ def _register_routes(app):
         flash(f'Scraper "{row.display_name}" started. Refresh in a moment.', "info")
         return redirect(url_for("scrapers"))
 
+    @app.route("/api/scrapers/<name>/stats")
+    def scraper_stats(name):
+        """Return live stats for a single scraper (used by JS polling after a run)."""
+        row = ScraperSource.query.filter_by(name=name).first_or_404()
+        return jsonify(
+            last_jobs_found=row.last_jobs_found or 0,
+            last_run=row.last_run.isoformat() if row.last_run else None,
+            last_status=row.last_status or "",
+            last_error=row.last_error or "",
+            health_status=row.health_status or "",
+        )
+
     # ------------------------------------------------------------------
     # Source Health Check & Auto-Discovery API
     # ------------------------------------------------------------------
@@ -1691,6 +1738,100 @@ def _register_routes(app):
         row.display_name = new_display
         db.session.commit()
         return jsonify(ok=True, display_name=new_display)
+
+    @app.route("/api/scrapers/<name>/save-keys", methods=["POST"])
+    def api_save_scraper_keys(name):
+        """Write API key values for a scraper to the .env file and reload them."""
+        import sys
+        import pathlib
+        from scrapers import registry
+
+        scraper = registry.get_builtin(name)
+        if not scraper or not getattr(scraper, "requires_keys", False):
+            return jsonify(ok=False, error="Scraper does not require API keys.")
+
+        data = request.get_json(silent=True) or {}
+        key_fields = getattr(scraper, "key_fields", [])
+
+        new_values = {}
+        for field in key_fields:
+            val = (data.get(field["env_var"]) or "").strip()
+            if val:
+                new_values[field["env_var"]] = val
+
+        if not new_values:
+            return jsonify(ok=False, error="No key values provided.")
+
+        # Locate .env file
+        if getattr(sys, "frozen", False):
+            env_path = pathlib.Path(sys.executable).parent / ".env"
+        else:
+            env_path = pathlib.Path(__file__).parent / ".env"
+
+        # Read existing content
+        try:
+            existing = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+        except Exception as exc:
+            return jsonify(ok=False, error=f"Cannot read .env: {exc}")
+
+        # Update existing lines or collect vars to append
+        lines = existing.splitlines(keepends=True)
+        updated_vars = set()
+        for i, line in enumerate(lines):
+            for var, val in new_values.items():
+                stripped = line.lstrip()
+                if stripped.startswith(f"{var}=") or stripped.startswith(f"{var} ="):
+                    lines[i] = f"{var}={val}\n"
+                    updated_vars.add(var)
+
+        # Append any vars not already present
+        for var, val in new_values.items():
+            if var not in updated_vars:
+                if lines and not lines[-1].endswith("\n"):
+                    lines.append("\n")
+                lines.append(f"{var}={val}\n")
+
+        # Write back
+        try:
+            env_path.write_text("".join(lines), encoding="utf-8")
+        except Exception as exc:
+            return jsonify(ok=False, error=f"Cannot write .env: {exc}")
+
+        # Reload into the running process immediately
+        for var, val in new_values.items():
+            os.environ[var] = val
+
+        return jsonify(ok=True, saved=list(new_values.keys()))
+
+    @app.route("/api/scrapers/<name>/test-keys", methods=["POST"])
+    def api_test_scraper_keys(name):
+        """Test API keys for a scraper by making a live connection attempt."""
+        from scrapers import registry
+
+        scraper = registry.get_builtin(name)
+        if not scraper or not getattr(scraper, "requires_keys", False):
+            return jsonify(ok=False, error="Scraper does not support key testing.")
+
+        test_fn = getattr(scraper, "test_keys", None)
+        if not callable(test_fn):
+            return jsonify(ok=False, error="This scraper does not implement test_keys().")
+
+        data = request.get_json(silent=True) or {}
+        key_fields = getattr(scraper, "key_fields", [])
+
+        # Use values from request body; fall back to current env for any not supplied
+        key_values = {}
+        for field in key_fields:
+            val = (data.get(field["env_var"]) or "").strip()
+            if not val:
+                val = os.environ.get(field["env_var"], "").strip()
+            key_values[field["env_var"]] = val
+
+        try:
+            valid, message = test_fn(key_values)
+            return jsonify(ok=True, valid=valid, message=message)
+        except Exception as exc:
+            return jsonify(ok=False, valid=False, message=str(exc))
 
     # ------------------------------------------------------------------
     # Notifications
