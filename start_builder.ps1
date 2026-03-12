@@ -14,8 +14,10 @@
     Do NOT move this file without re-running create_builder_shortcut.ps1.
 #>
 
-$AppDir = $PSScriptRoot
-$AppUrl = "http://127.0.0.1:5001"
+$AppDir  = $PSScriptRoot
+$CertFile = Join-Path $AppDir "certs\localhost.pem"
+$Scheme   = if (Test-Path $CertFile) { "https" } else { "http" }
+$AppUrl   = "${Scheme}://127.0.0.1:5001"
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +78,42 @@ function Open-Or-Focus-Browser($Url) {
 function Test-PortListening($Port) {
     $hits = netstat -an 2>$null | Select-String "127\.0\.0\.1:$Port\s.*LISTENING"
     return ($null -ne $hits -and @($hits).Count -gt 0)
+}
+
+function Test-ServerAlive($Url) {
+    # Verify the server actually responds (not just that the port is bound).
+    # Accepts any HTTP status — even 4xx/5xx means the server is running.
+    # Bypasses SSL cert validation for loopback so mkcert certs always work.
+    try {
+        if ($Url.StartsWith("https")) {
+            # Trust all certs for loopback (mkcert CA may not be in PS trust store)
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+        }
+        $req          = [System.Net.WebRequest]::Create($Url)
+        $req.Timeout  = 2500
+        $resp         = $req.GetResponse()
+        $resp.Dispose()
+        return $true
+    } catch [System.Net.WebException] {
+        if ($null -ne $_.Exception.Response) { $_.Exception.Response.Dispose(); return $true }
+        return $false
+    } catch {
+        return $false
+    }
+}
+
+function Get-PortPid($Port) {
+    # Return the PID owning 127.0.0.1:$Port in LISTENING state, or $null.
+    $line = netstat -ano 2>$null |
+            Select-String "127\.0\.0\.1:$Port\s.*LISTENING" |
+            Select-Object -First 1
+    if ($line) {
+        $parts  = ($line.Line).Trim() -split '\s+'
+        $pidStr = $parts[-1]
+        $pidVal = 0
+        if ([int]::TryParse($pidStr, [ref]$pidVal) -and $pidVal -gt 4) { return $pidVal }
+    }
+    return $null
 }
 
 function Find-Python {
@@ -153,9 +191,20 @@ if (-not $mutex.WaitOne(0)) {
 try {
     # 1. Already running?
     if (Test-PortListening 5001) {
-        Open-Or-Focus-Browser $AppUrl
-        Start-Sleep -Seconds 2   # hold mutex so a concurrent double-click exits early
-        exit 0
+        if (Test-ServerAlive $AppUrl) {
+            # Server is alive — just bring the browser to focus.
+            Open-Or-Focus-Browser $AppUrl
+            Start-Sleep -Seconds 2
+            exit 0
+        }
+        # Port occupied but server not responding (crashed / zombie process).
+        # Kill the owner so we can bind the port cleanly on restart.
+        $oldPid = Get-PortPid 5001
+        if ($oldPid) {
+            try { Stop-Process -Id $oldPid -Force -ErrorAction SilentlyContinue } catch {}
+            Start-Sleep -Milliseconds 800
+        }
+        # Fall through to start a fresh server below.
     }
 
     # 2. Locate Python executable

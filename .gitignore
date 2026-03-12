@@ -25,6 +25,7 @@ env/
 
 # Secrets / local config
 .env
+certs/
 
 # App-specific generated data
 email_responses/
@@ -44,6 +45,10 @@ pyvenv.cfg
 *.pyd
 logs/
 scheduler_daemon.pid
+build_meta.json
+
+# Crash reports
+nuitka-crash-report.xml
 
 # Stray pip output files
 =*

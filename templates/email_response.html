@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+{% block title %}Email Response — Job Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mt-3 mb-3">
+  <h2 class="fw-bold mb-0"><i class="bi bi-envelope-open me-2 text-primary"></i>Email Response</h2>
+  <div class="d-flex align-items-center gap-2">
+    <span id="selectionHint" class="text-secondary small d-none">Select a job and an email to match</span>
+    <button id="matchBtn" class="btn btn-success btn-sm d-none" onclick="doMatch()">
+      <i class="bi bi-link-45deg me-1"></i>Match Selected
+    </button>
+    <button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+  </div>
+</div>
+
+<div class="app-hint text-info mb-3" style="font-size:.75rem;font-style:italic;">
+  <i class="bi bi-info-circle me-1"></i>
+  <strong>Manual matching:</strong> Click a job on the left, click an email on the right, then click
+  <strong>Match Selected</strong>. Confirmed matches appear in the top panel.
+  The email classification (<span class="text-danger">declined</span> /
+  <span class="text-warning">interview</span>) updates the application status automatically.
+</div>
+
+<!-- ══════════════════════════════════════ TOP: CONFIRMED MATCHES ══════════════ -->
+<div class="card mb-4">
+  <div class="card-header bg-transparent border-0 pb-0">
+    <h6 class="fw-bold mb-0">
+      <i class="bi bi-check2-circle me-1 text-success"></i>Confirmed Matches
+      <span class="badge bg-success ms-2">{{ confirmed|length }}</span>
+    </h6>
+  </div>
+  <div class="card-body pt-2">
+    {% if confirmed %}
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0" style="font-size:.82rem;">
+        <thead class="text-secondary">
+          <tr>
+            <th>Job</th>
+            <th>Company</th>
+            <th>Status</th>
+            <th>Email From</th>
+            <th>Subject</th>
+            <th>Classification</th>
+            <th>Matched</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in confirmed %}
+          <tr>
+            <td>
+              {% if r.suggested_app and r.suggested_app.job %}
+                <a href="{{ url_for('application_detail', app_id=r.suggested_app.id) }}"
+                   class="text-decoration-none text-info">
+                  {{ r.suggested_app.job.title }}
+                </a>
+              {% else %}
+                <span class="text-secondary">—</span>
+              {% endif %}
+            </td>
+            <td>{{ r.suggested_app.job.company if r.suggested_app and r.suggested_app.job else '—' }}</td>
+            <td>
+              {% if r.suggested_app %}
+                <span class="badge bg-{{ r.suggested_app.status_color() }}">
+                  {{ r.suggested_app.status_label() }}
+                </span>
+              {% endif %}
+            </td>
+            <td class="font-monospace" style="font-size:.75rem;">{{ r.sender }}</td>
+            <td>{{ r.subject }}</td>
+            <td>
+              {% if r.classification == 'declined' %}
+                <span class="badge bg-danger">Declined</span>
+              {% elif r.classification == 'interview' %}
+                <span class="badge bg-warning text-dark">Interview</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ r.classification or '?' }}</span>
+              {% endif %}
+            </td>
+            <td class="text-secondary">{{ r.created_at.strftime('%b %d, %Y') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-secondary small mb-0">No confirmed matches yet. Use the panels below to manually link emails to jobs.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ BOTTOM: TWO COLUMNS ══════════════════ -->
+<div class="row g-3">
+
+  <!-- ── LEFT: Unmatched Applications ──────────────────────────────────────── -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header bg-transparent border-0 pb-0 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0">
+          <i class="bi bi-file-earmark-text me-1 text-primary"></i>Jobs Applied — No Email Match
+          <span class="badge bg-secondary ms-2">{{ unmatched_apps|length }}</span>
+        </h6>
+        <small class="text-secondary">Click to select</small>
+      </div>
+      <div class="card-body pt-2 p-2" style="max-height:520px;overflow-y:auto;">
+        {% if unmatched_apps %}
+          {% for app in unmatched_apps %}
+          <div class="email-app-card p-2 mb-2 rounded border border-secondary border-opacity-25"
+               id="app-card-{{ app.id }}"
+               onclick="selectApp({{ app.id }}, this)"
+               style="cursor:pointer;transition:background .15s;">
+            <div class="d-flex align-items-start gap-2">
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <span class="fw-semibold" style="font-size:.85rem;">{{ app.job.title }}</span>
+                  <span class="badge bg-{{ app.status_color() }}" style="font-size:.68rem;">
+                    {{ app.status_label() }}
+                  </span>
+                </div>
+                <div class="text-secondary" style="font-size:.75rem;">
+                  <i class="bi bi-building me-1"></i>{{ app.job.company or '—' }}
+                  {% if app.applied_date %}
+                    <span class="mx-1">·</span>
+                    <i class="bi bi-calendar me-1"></i>Applied {{ app.applied_date.strftime('%b %d') }}
+                  {% endif %}
+                </div>
+              </div>
+              <div class="select-indicator text-success d-none">
+                <i class="bi bi-check-circle-fill"></i>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-secondary small p-2 mb-0">All applied jobs have matched email responses.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Pending Email Reviews ──────────────────────────────────────── -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header bg-transparent border-0 pb-0 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0">
+          <i class="bi bi-inbox me-1 text-warning"></i>Email Inbox — Awaiting Match
+          <span class="badge bg-warning text-dark ms-2">{{ pending_emails|length }}</span>
+        </h6>
+        <small class="text-secondary">Click to select</small>
+      </div>
+      <div class="card-body pt-2 p-2" style="max-height:520px;overflow-y:auto;">
+        {% if pending_emails %}
+          {% for review in pending_emails %}
+          <div class="email-review-card p-2 mb-2 rounded border border-secondary border-opacity-25"
+               id="review-card-{{ review.id }}"
+               data-classification="{{ review.classification }}"
+               onclick="selectReview({{ review.id }}, this)"
+               style="cursor:pointer;transition:background .15s;">
+            <div class="d-flex align-items-start gap-2">
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                  {% if review.classification == 'declined' %}
+                    <span class="badge bg-danger" style="font-size:.68rem;">Declined</span>
+                  {% elif review.classification == 'interview' %}
+                    <span class="badge bg-warning text-dark" style="font-size:.68rem;">Interview</span>
+                  {% else %}
+                    <span class="badge bg-secondary" style="font-size:.68rem;">{{ review.classification or 'Unknown' }}</span>
+                  {% endif %}
+                  <span class="fw-semibold text-truncate" style="font-size:.83rem;max-width:260px;">
+                    {{ review.subject }}
+                  </span>
+                </div>
+                <div class="text-secondary" style="font-size:.73rem;">
+                  <i class="bi bi-person me-1"></i>{{ review.sender }}
+                  <span class="mx-1">·</span>
+                  <i class="bi bi-clock me-1"></i>{{ review.created_at.strftime('%b %d, %Y') }}
+                </div>
+                {% if review.body_preview %}
+                <div class="text-secondary mt-1" style="font-size:.73rem;white-space:pre-wrap;overflow:hidden;
+                     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">
+                  {{ review.body_preview[:200] }}
+                </div>
+                {% endif %}
+                {% if review.suggested_app and review.suggested_app.job %}
+                <div class="text-info mt-1" style="font-size:.72rem;">
+                  <i class="bi bi-lightbulb me-1"></i>Auto-suggested:
+                  {{ review.suggested_app.job.title }} @ {{ review.suggested_app.job.company or '—' }}
+                </div>
+                {% endif %}
+              </div>
+              <div class="select-indicator text-success d-none">
+                <i class="bi bi-check-circle-fill"></i>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-secondary small p-2 mb-0">No pending email reviews. Run an inbox check from Settings.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div><!-- /row -->
+
+<!-- Match result toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1100;">
+  <div id="matchToast" class="toast align-items-center text-bg-success border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="matchToastMsg">Match confirmed!</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var selAppId    = null;
+  var selRevId    = null;
+  var selAppEl    = null;
+  var selRevEl    = null;
+
+  function _highlight(el, on) {
+    if (!el) return;
+    el.style.background   = on ? 'rgba(13,110,253,.18)' : '';
+    el.style.borderColor  = on ? 'rgba(13,110,253,.5)'  : '';
+    var ind = el.querySelector('.select-indicator');
+    if (ind) ind.classList.toggle('d-none', !on);
+  }
+
+  function _updateUI() {
+    var btn  = document.getElementById('matchBtn');
+    var hint = document.getElementById('selectionHint');
+    var bothSelected = selAppId && selRevId;
+    btn.classList.toggle('d-none', !bothSelected);
+    hint.classList.toggle('d-none', bothSelected);
+    if (!selAppId && !selRevId) hint.classList.add('d-none');
+    if ((selAppId && !selRevId) || (!selAppId && selRevId)) {
+      hint.classList.remove('d-none');
+      hint.textContent = selAppId
+        ? 'Now click an email on the right →'
+        : '← Click a job on the left first';
+    }
+  }
+
+  window.selectApp = function (id, el) {
+    if (selAppEl === el) {
+      // deselect
+      _highlight(selAppEl, false);
+      selAppId = null; selAppEl = null;
+    } else {
+      _highlight(selAppEl, false);
+      selAppId = id; selAppEl = el;
+      _highlight(el, true);
+    }
+    _updateUI();
+  };
+
+  window.selectReview = function (id, el) {
+    if (selRevEl === el) {
+      _highlight(selRevEl, false);
+      selRevId = null; selRevEl = null;
+    } else {
+      _highlight(selRevEl, false);
+      selRevId = id; selRevEl = el;
+      _highlight(el, true);
+    }
+    _updateUI();
+  };
+
+  window.doMatch = function () {
+    if (!selAppId || !selRevId) return;
+    var btn = document.getElementById('matchBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Matching…';
+
+    fetch('/api/email-response/manual-match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ review_id: selRevId, app_id: selAppId })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.ok) {
+        // Remove matched cards from view
+        var appCard = document.getElementById('app-card-' + selAppId);
+        var revCard = document.getElementById('review-card-' + selRevId);
+        if (appCard) appCard.remove();
+        if (revCard) revCard.remove();
+
+        // Show toast
+        var toastEl = document.getElementById('matchToast');
+        var toastMsg = document.getElementById('matchToastMsg');
+        toastMsg.textContent = 'Match confirmed! Refreshing…';
+        var toast = new bootstrap.Toast(toastEl, { delay: 2000 });
+        toast.show();
+
+        // Reset selection state
+        selAppId = selRevId = selAppEl = selRevEl = null;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-link-45deg me-1"></i>Match Selected';
+        _updateUI();
+
+        // Reload after brief delay so confirmed matches update at top
+        setTimeout(function () { location.reload(); }, 1800);
+      } else {
+        toastEl = document.getElementById('matchToast');
+        toastEl.classList.replace('text-bg-success', 'text-bg-danger');
+        document.getElementById('matchToastMsg').textContent = d.error || 'Match failed.';
+        new bootstrap.Toast(toastEl, { delay: 3000 }).show();
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-link-45deg me-1"></i>Match Selected';
+      }
+    })
+    .catch(function (e) {
+      alert('Error: ' + e);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-link-45deg me-1"></i>Match Selected';
+    });
+  };
+})();
+</script>
+{% endblock %}

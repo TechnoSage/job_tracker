@@ -38,6 +38,8 @@ body { font-size: 0.875rem; background: #212529; }
     inset 0 -2px 5px rgba(0, 0, 0, .35);
   transform: translateY(-2px);
 }
+/* Suppress card hover lift while any sound dropdown is open */
+body.sound-dd-open .card:hover { transform: none; }
 
 /* ── Version spinner ─────────────────────────────────────────────────────── */
 .ver-block { display:flex; flex-direction:column; align-items:center; gap:2px; }
@@ -82,6 +84,12 @@ body { font-size: 0.875rem; background: #212529; }
 }
 .input-valid   { animation: validPulse   2s ease-in-out infinite; }
 .input-invalid { animation: invalidPulse 2s ease-in-out infinite; }
+
+@keyframes docsBadgePulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255,193,7,.4); }
+  50%       { box-shadow: 0 0 0 5px rgba(255,193,7,.15); }
+}
+#docsBadge.docs-warn { animation: docsBadgePulse 2s ease-in-out infinite; background-color: #ffc107 !important; color: #000 !important; }
 
 /* ── Inner section cards (inside Build Configuration) ────────────────────── */
 .inner-card {
@@ -161,6 +169,212 @@ html[data-bs-theme="light"] .repo-row:hover {
 html[data-bs-theme="light"] #log {
   background: #0d1117 !important;
 }
+
+/* ── CI/CD Pipeline ─────────────────────────────────────────────────────────── */
+@keyframes pgCardPulse {
+  0%,100% { box-shadow: 0 8px 22px rgba(0,0,0,.60), 0 3px 8px rgba(0,0,0,.40),
+                        inset 0 1px 0 rgba(255,255,255,.055), inset 0 -2px 5px rgba(0,0,0,.35),
+                        0 0 0 1px rgba(0,255,136,0.18); }
+  50%     { box-shadow: 0 8px 22px rgba(0,0,0,.60), 0 3px 8px rgba(0,0,0,.40),
+                        inset 0 1px 0 rgba(255,255,255,.055), inset 0 -2px 5px rgba(0,0,0,.35),
+                        0 0 18px 3px rgba(0,255,136,0.28), 0 0 0 1px rgba(0,255,136,0.55); }
+}
+#pgCard.pg-card-active { animation: pgCardPulse 2.4s ease-in-out infinite; }
+
+/* ── Test Pipeline — cyan/blue colour variant ────────────────────────────── */
+@keyframes tpCardPulse {
+  0%,100% { box-shadow: 0 8px 22px rgba(0,0,0,.60), 0 3px 8px rgba(0,0,0,.40),
+                        inset 0 1px 0 rgba(255,255,255,.055), inset 0 -2px 5px rgba(0,0,0,.35),
+                        0 0 0 1px rgba(0,204,255,0.18); }
+  50%     { box-shadow: 0 8px 22px rgba(0,0,0,.60), 0 3px 8px rgba(0,0,0,.40),
+                        inset 0 1px 0 rgba(255,255,255,.055), inset 0 -2px 5px rgba(0,0,0,.35),
+                        0 0 18px 3px rgba(0,204,255,0.28), 0 0 0 1px rgba(0,204,255,0.55); }
+}
+#tpCard.pg-card-active { animation: tpCardPulse 2.4s ease-in-out infinite; }
+.tp-track .pg-fill {
+  background: linear-gradient(180deg,
+    #aaf4ff 0%, #00ccff 14%, #0099cc 42%, #0066aa 72%, #003d6b 100%);
+}
+.tp-track .pg-tube.pg-error .pg-fill {
+  background: linear-gradient(180deg,
+    #ffaaaa 0%, #ff3333 14%, #cc2222 42%, #991111 72%, #660000 100%);
+}
+.tp-track .pg-tube.pg-active {
+  box-shadow: 0 0 20px rgba(0,204,255,.42), 0 0 42px rgba(0,204,255,.14),
+    0 7px 20px rgba(0,0,0,.80), inset 0 1px 2px rgba(255,255,255,.11);
+}
+.tp-track .pg-tube.pg-done {
+  box-shadow: 0 0 10px rgba(0,204,255,.24), 0 7px 20px rgba(0,0,0,.80),
+    inset 0 1px 2px rgba(255,255,255,.11);
+}
+.tp-track .pg-wrap.pg-active .pg-sub { color: #00ccff; }
+.tp-track .pg-wrap.pg-done   .pg-sub { color: rgba(0,153,204,.60); }
+.tp-track .pg-wrap.pg-active .pg-dot {
+  background: #00ccff; box-shadow: 0 0 6px rgba(0,204,255,.85);
+  animation: tpDotPulse 1.1s ease-in-out infinite;
+}
+.tp-track .pg-wrap.pg-done .pg-dot { background: #0077aa; box-shadow: 0 0 4px rgba(0,119,170,.5); }
+.tp-track .pg-particle {
+  background: #00ccff;
+  box-shadow: 0 0 8px rgba(0,204,255,.95), 0 0 16px rgba(0,204,255,.50);
+}
+@keyframes tpDotPulse {
+  0%,100% { box-shadow: 0 0 4px rgba(0,204,255,.60); }
+  50%     { box-shadow: 0 0 10px rgba(0,204,255,.95), 0 0 22px rgba(0,204,255,.40); }
+}
+
+.pg-track {
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px 4px 6px; gap: 0; user-select: none; flex-wrap: nowrap;
+  overflow-x: auto; overflow-y: visible;
+}
+.pg-wrap { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+
+/* 3-D cylinder tube */
+.pg-tube {
+  position: relative; width: 126px; height: 48px; border-radius: 24px;
+  background: linear-gradient(180deg,
+    #636363 0%, #525252 14%, #3c3c3c 42%, #2b2b2b 72%, #1d1d1d 100%);
+  box-shadow:
+    0 7px 20px rgba(0,0,0,.80), 0 2px 6px rgba(0,0,0,.55),
+    inset 0 1px 2px rgba(255,255,255,.11), inset 0 -2px 6px rgba(0,0,0,.50);
+  overflow: hidden; flex-shrink: 0;
+  transition: box-shadow 0.4s ease;
+}
+.pg-tube.pg-active {
+  box-shadow:
+    0 0 20px rgba(0,255,136,.42), 0 0 42px rgba(0,255,136,.14),
+    0 7px 20px rgba(0,0,0,.80), inset 0 1px 2px rgba(255,255,255,.11);
+}
+.pg-tube.pg-done {
+  box-shadow:
+    0 0 10px rgba(0,255,136,.24), 0 7px 20px rgba(0,0,0,.80),
+    inset 0 1px 2px rgba(255,255,255,.11);
+}
+.pg-tube.pg-error {
+  animation: pgErrorPulse 1.15s ease-in-out infinite;
+}
+@keyframes pgErrorPulse {
+  0%,100% { box-shadow: 0 0 10px rgba(255,45,45,.38), 0 7px 20px rgba(0,0,0,.80),
+                        inset 0 1px 2px rgba(255,255,255,.08); }
+  50%     { box-shadow: 0 0 30px rgba(255,45,45,.82), 0 0 56px rgba(255,45,45,.28),
+                        0 7px 20px rgba(0,0,0,.80), inset 0 1px 2px rgba(255,255,255,.08); }
+}
+/* 3-D flags */
+.pg-flag-wrap { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+.pg-flag-svg  { display:block; overflow:visible; }
+@keyframes pgWave {
+  0%   { transform: skewX(0deg)  scaleX(1.00); }
+  20%  { transform: skewX(-7deg) scaleX(0.86); }
+  45%  { transform: skewX(5deg)  scaleX(1.06); }
+  70%  { transform: skewX(-4deg) scaleX(0.92); }
+  90%  { transform: skewX(3deg)  scaleX(1.03); }
+  100% { transform: skewX(0deg)  scaleX(1.00); }
+}
+.pg-banner-waving { animation: pgWave 0.68s ease-in-out infinite; }
+/* ── Celebration animations ──────────────────────────────────────────────── */
+@keyframes pgCarIn {
+  from { transform: translateX(320px); }
+  to   { transform: translateX(0px);   }
+}
+@keyframes pgCarBounce {
+  0%,100% { transform: translateY(0px);  }
+  50%     { transform: translateY(-3px); }
+}
+@keyframes pgArmWave {
+  0%,100% { transform: rotate(-12deg); }
+  45%     { transform: rotate(38deg);  }
+}
+@keyframes pgCorkPop {
+  0%   { transform: translate(0,0)     rotate(0deg);   opacity: 1; }
+  70%  { opacity: 1; }
+  100% { transform: translate(22px,-52px) rotate(150deg); opacity: 0; }
+}
+@keyframes pgFoamDrip {
+  0%   { stroke-dashoffset: 36; opacity: 0.85; }
+  100% { stroke-dashoffset: 0;  opacity: 0;    }
+}
+@keyframes pgFwShoot {
+  0%   { stroke-dashoffset: 46; opacity: 1; }
+  55%  { opacity: 1; }
+  100% { stroke-dashoffset: 0;  opacity: 0; }
+}
+@keyframes pgFwFlash {
+  0%,100% { r: 4px; opacity: 0; }
+  40%,60% { r: 7px; opacity: 0.9; }
+}
+#pgCelebrate svg { display:block; width:100%; height:100%; }
+.pg-car-group    { animation: pgCarIn 0.85s cubic-bezier(.18,.89,.32,1.28) forwards; }
+.pg-car-idle     { animation: pgCarBounce 1.8s ease-in-out infinite; }
+/* Neon fill (grows left-to-right inside tube) */
+.pg-fill {
+  position: absolute; inset: 0; width: 0%; border-radius: 24px;
+  background: linear-gradient(180deg,
+    #c0ffe6 0%, #00ff99 14%, #00cc77 42%, #009955 72%, #006633 100%);
+  transition: width 0.55s cubic-bezier(.4,0,.2,1);
+}
+.pg-tube.pg-error .pg-fill {
+  background: linear-gradient(180deg,
+    #ffaaaa 0%, #ff3333 14%, #cc2222 42%, #991111 72%, #660000 100%);
+}
+/* Specular highlight — always on top */
+.pg-sheen {
+  position: absolute; top: 0; left: 0; right: 0; height: 44%;
+  border-radius: 24px 24px 0 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.17) 0%, rgba(255,255,255,.02) 100%);
+  pointer-events: none; z-index: 2;
+}
+/* Tube label */
+.pg-lbl {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.70rem; font-weight: 700; letter-spacing: .05em;
+  color: rgba(255,255,255,.93);
+  text-shadow: 0 1px 5px rgba(0,0,0,.95);
+  pointer-events: none;
+}
+/* Sub-label below tube */
+.pg-sub {
+  font-size: 0.60rem; color: rgba(255,255,255,.32);
+  white-space: nowrap; transition: color 0.3s;
+}
+.pg-wrap.pg-active .pg-sub { color: #00ff99; }
+.pg-wrap.pg-done   .pg-sub { color: rgba(0,204,102,.60); }
+.pg-wrap.pg-error  .pg-sub { color: #ff6666; }
+/* Activity dot above each tube */
+.pg-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: #353535;
+  transition: background 0.3s, box-shadow 0.3s; flex-shrink: 0;
+}
+.pg-wrap.pg-active .pg-dot {
+  background: #00ff99; box-shadow: 0 0 6px rgba(0,255,136,.85);
+  animation: pgDotPulse 1.1s ease-in-out infinite;
+}
+.pg-wrap.pg-done   .pg-dot { background: #00aa55; box-shadow: 0 0 4px rgba(0,170,85,.5); }
+.pg-wrap.pg-error  .pg-dot { background: #ff4444; box-shadow: 0 0 6px rgba(255,68,68,.75); }
+@keyframes pgDotPulse {
+  0%,100% { box-shadow: 0 0 4px rgba(0,255,136,.60); }
+  50%     { box-shadow: 0 0 10px rgba(0,255,136,.95), 0 0 22px rgba(0,255,136,.40); }
+}
+/* 3-D arrow between stages */
+.pg-arr-wrap { position: relative; width: 44px; height: 48px; flex-shrink: 0; }
+.pg-arr-svg  { width: 100%; height: 100%; overflow: visible; display: block; }
+/* Flowing data particle */
+.pg-particle {
+  position: absolute; top: 50%; left: 0;
+  width: 7px; height: 7px; border-radius: 50%;
+  margin-top: -3.5px; margin-left: -3.5px;
+  background: #00ff99;
+  box-shadow: 0 0 8px rgba(0,255,136,.95), 0 0 16px rgba(0,255,136,.50);
+  opacity: 0; pointer-events: none;
+}
+@keyframes pgFlow {
+  0%   { left: 2px;  opacity: 0; }
+  18%  { opacity: 1; }
+  82%  { opacity: 1; }
+  100% { left: 42px; opacity: 0; }
+}
+.pg-arr-wrap.pg-flowing .pg-particle { animation: pgFlow 0.80s linear infinite; }
 </style>
 </head>
 <body>
@@ -185,6 +399,9 @@ html[data-bs-theme="light"] #log {
                 onchange="onProjectSelectChange()">
           <option value="">— no saved profiles —</option>
         </select>
+        <button class="btn btn-sm btn-outline-warning" onclick="newApp()" title="Clear App Identity fields to start a new app (keeps all other settings)">
+          <i class="bi bi-file-earmark-plus me-1"></i>New App
+        </button>
         <button class="btn btn-sm btn-outline-info" id="btnLoadProject"
                 onclick="loadSelectedProject()" disabled title="Load selected profile">
           <i class="bi bi-box-arrow-in-down me-1"></i>Load
@@ -198,7 +415,13 @@ html[data-bs-theme="light"] #log {
           <i class="bi bi-trash3 me-1"></i>Delete
         </button>
         <span id="projectMsg" class="small" style="display:none;"></span>
-        <button id="themeToggleBtn" class="btn btn-sm btn-outline-secondary ms-auto"
+        <a href="/help" target="_blank" class="btn btn-sm btn-outline-info ms-auto" title="Help &amp; Documentation">
+          <i class="bi bi-question-circle me-1"></i>Help
+        </a>
+        <span id="docsBadge" class="badge bg-secondary" style="cursor:pointer;font-size:.72rem;" onclick="showDocsPanel()" title="Documentation coverage — click for details">
+          <i class="bi bi-book me-1"></i>Docs
+        </span>
+        <button id="themeToggleBtn" class="btn btn-sm btn-outline-secondary"
                 onclick="toggleBdTheme()" title="Switch to light mode">
           <i id="themeToggleIcon" class="bi bi-sun-fill"></i>
         </button>
@@ -228,7 +451,8 @@ html[data-bs-theme="light"] #log {
         <!-- App Name (col-8) + Version spinner (col-4) -->
         <div class="col-8">
           <label class="form-label mb-1 text-muted small" for="APP_NAME">App Name</label>
-          <input id="APP_NAME" class="form-control form-control-sm">
+          <input id="APP_NAME" class="form-control form-control-sm" oninput="debouncedAppNameLookup()">
+          <div id="appNameMsg" style="min-height:1.1em;font-size:0.72rem;" class="mt-1"></div>
         </div>
         <div class="col-4">
           <label class="form-label mb-1 text-muted small d-block">
@@ -302,11 +526,19 @@ html[data-bs-theme="light"] #log {
         </div>
         <div class="col-6">
           <label class="form-label mb-1 text-muted small" for="APP_EXE_NAME">Exe Name <span class="text-secondary">(no .exe)</span></label>
-          <input id="APP_EXE_NAME" class="form-control form-control-sm">
+          <input id="APP_EXE_NAME" class="form-control form-control-sm"
+                 oninput="updateOutputDirDefault()">
         </div>
         <div class="col-6">
           <label class="form-label mb-1 text-muted small" for="OUTPUT_DIR">Output Folder</label>
-          <input id="OUTPUT_DIR" class="form-control form-control-sm">
+          <div class="input-group input-group-sm">
+            <input id="OUTPUT_DIR" class="form-control form-control-sm"
+                   placeholder="D:\Compile Playground\AppName">
+            <button class="btn btn-outline-secondary" type="button"
+                    onclick="browseOutputDir()" title="Open output folder in Explorer">
+              <i class="bi bi-folder2-open"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -330,16 +562,98 @@ html[data-bs-theme="light"] #log {
             </button>
           </div>
         </div>
-        <!-- License File + Open button -->
-        <div class="col-6">
-          <label class="form-label mb-1 text-muted small" for="LICENSE_FILE">License File <span class="text-secondary">(optional)</span></label>
-          <div class="input-group input-group-sm">
-            <input id="LICENSE_FILE" class="form-control form-control-sm" placeholder="LICENSE.txt">
-            <button class="btn btn-outline-secondary" id="btnOpenLicense" onclick="openLicenseFile()"
-                    title="Open in Notepad++ (or system default text editor)">
-              <i class="bi bi-file-text"></i>
-            </button>
+        <!-- README File — open/generate with editor picker -->
+        <div class="col-12">
+          <label class="form-label mb-1 text-muted small">README File</label>
+          <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="input-group input-group-sm" style="width:auto;flex:1 1 160px;max-width:300px;">
+              <input id="README_FILE" class="form-control form-control-sm font-monospace"
+                     placeholder="README.txt" oninput="updateOpenReadmeBtn()">
+              <button class="btn btn-outline-secondary" id="btnOpenReadme"
+                      onclick="openReadmeFile(null, null)"
+                      title="Open in default editor — prompts to generate if missing">
+                <i class="bi bi-file-earmark-text"></i>
+              </button>
+              <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-2"
+                        id="btnReadmeEditorDrop" data-bs-toggle="dropdown"
+                        onclick="loadReadmeEditorList()" title="Choose editor…"
+                        style="border-left:0;">
+                  <span class="visually-hidden">Choose editor</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" id="readmeEditorMenu">
+                  <li><span class="dropdown-item-text text-secondary small">Click to load editors…</span></li>
+                </ul>
+              </div>
+            </div>
+            <span id="readmeExistsIndicator" class="small"></span>
           </div>
+          <!-- Generate prompt (hidden until needed) -->
+          <div id="readmeGeneratePrompt" class="mt-1 d-none">
+            <div class="d-flex align-items-center gap-2 p-2 rounded"
+                 style="background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.3);font-size:.8rem;">
+              <i class="bi bi-exclamation-triangle text-warning"></i>
+              <span class="text-warning">README file not found.</span>
+              <button class="btn btn-xs btn-warning py-0 px-2" id="btnGenReadme"
+                      onclick="generateAndOpenReadme(null, null)">
+                <i class="bi bi-magic me-1"></i>Generate default
+              </button>
+              <button class="btn btn-xs btn-outline-secondary py-0 px-2"
+                      onclick="createEmptyReadme(null, null)">Create empty</button>
+              <button class="btn btn-xs btn-link text-secondary py-0 px-1"
+                      onclick="document.getElementById('readmeGeneratePrompt').classList.add('d-none')">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- License File — template picker + open button -->
+        <div class="col-12">
+          <label class="form-label mb-1 text-muted small">License File</label>
+          <div class="d-flex flex-wrap gap-2 align-items-center">
+            <!-- Template selector -->
+            <div class="input-group input-group-sm" style="width:auto;flex:1 1 260px;max-width:420px;">
+              <select id="licenseTemplate" class="form-select form-select-sm" style="min-width:0;">
+                <option value="">— select template —</option>
+              </select>
+              <button class="btn btn-outline-info" onclick="applyLicenseTemplate()"
+                      title="Write selected template to LICENSE.txt in the project root">
+                <i class="bi bi-pencil-square me-1"></i>Apply
+              </button>
+              <button class="btn btn-outline-secondary" onclick="refreshLicenseTemplates()"
+                      title="Refresh open-source license texts from spdx.org">
+                <i class="bi bi-cloud-download"></i>
+              </button>
+            </div>
+            <!-- Filename + open with editor picker -->
+            <div class="input-group input-group-sm" style="width:auto;flex:1 1 160px;max-width:300px;">
+              <input id="LICENSE_FILE" class="form-control form-control-sm font-monospace" placeholder="LICENSE.txt">
+              <button class="btn btn-outline-secondary" id="btnOpenLicense" onclick="openLicenseFile(null, null)"
+                      title="Open in default editor (creates file if missing)">
+                <i class="bi bi-file-text"></i>
+              </button>
+              <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-2"
+                        id="btnLicenseEditorDrop" data-bs-toggle="dropdown"
+                        onclick="loadEditorList()" title="Choose editor…"
+                        style="border-left:0;">
+                  <span class="visually-hidden">Choose editor</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" id="licenseEditorMenu">
+                  <li><span class="dropdown-item-text text-secondary small">Click to load editors…</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Support Email -->
+        <div class="col-12">
+          <label class="form-label mb-1 text-muted small" for="SUPPORT_EMAIL">
+            Support Email <span class="text-secondary">(injected into compiled app before build)</span>
+          </label>
+          <input id="SUPPORT_EMAIL" class="form-control form-control-sm" type="email"
+                 placeholder="support@yourcompany.com"
+                 oninput="saveSetting('SUPPORT_EMAIL', this.value)">
         </div>
         <div class="col-6 mt-1">
           <div class="form-check">
@@ -428,7 +742,8 @@ html[data-bs-theme="light"] #log {
       <label class="form-label mb-1 text-muted small" for="gitRepoDir">Working Tree Path</label>
       <div class="input-group input-group-sm">
         <input id="gitRepoDir" class="form-control form-control-sm font-monospace"
-               placeholder="(leave blank to use project root)">
+               placeholder="(leave blank to use project root)"
+               oninput="updateOutputDirDefault()">
         <button class="btn btn-outline-secondary" type="button" onclick="browseRepoDir()" title="Browse folder…">
           <i class="bi bi-folder2-open"></i>
         </button>
@@ -677,6 +992,119 @@ html[data-bs-theme="light"] #log {
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
+     Pipeline Sounds
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="row mt-3 mb-2">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-volume-up me-1 text-secondary"></i>Pipeline Sounds
+          <span class="text-secondary fw-normal ms-2" style="font-size:.68rem;">played on build &amp; test success / failure</span>
+        </h6>
+      </div>
+      <div class="card-body pt-2 pb-2">
+        <div class="row g-2">
+          <!-- Success Sound -->
+          <div class="col-md-6">
+            <label class="form-label mb-1 text-muted small"><i class="bi bi-check-circle text-success me-1"></i>Success Sound</label>
+            <div class="input-group input-group-sm">
+              <input id="SOUND_SUCCESS" class="form-control form-control-sm font-monospace"
+                     placeholder="No sound (silent)"
+                     oninput="saveSetting('SOUND_SUCCESS', this.value)">
+              <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-2"
+                      id="btnSuccessSoundDrop" data-bs-toggle="dropdown" data-bs-strategy="fixed" aria-expanded="false"
+                      onclick="loadSoundList('success')" title="Pick from system sounds">
+                <span class="visually-hidden">System sounds</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" id="successSoundMenu"
+                  style="max-height:280px;overflow-y:auto;min-width:240px;">
+                <li><span class="dropdown-item-text text-secondary small px-3 py-1">Click to scan…</span></li>
+              </ul>
+              <button class="btn btn-outline-secondary" onclick="browseSoundFile('success')"
+                      title="Browse for any audio file">
+                <i class="bi bi-folder2-open"></i>
+              </button>
+              <button class="btn btn-outline-success" onclick="testSound('success')"
+                      title="Preview success sound">
+                <i class="bi bi-play-fill"></i>
+              </button>
+            </div>
+          </div>
+          <!-- Fail Sound -->
+          <div class="col-md-6">
+            <label class="form-label mb-1 text-muted small"><i class="bi bi-x-circle text-danger me-1"></i>Fail Sound</label>
+            <div class="input-group input-group-sm">
+              <input id="SOUND_FAIL" class="form-control form-control-sm font-monospace"
+                     placeholder="No sound (silent)"
+                     oninput="saveSetting('SOUND_FAIL', this.value)">
+              <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-2"
+                      id="btnFailSoundDrop" data-bs-toggle="dropdown" data-bs-strategy="fixed" aria-expanded="false"
+                      onclick="loadSoundList('fail')" title="Pick from system sounds">
+                <span class="visually-hidden">System sounds</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" id="failSoundMenu"
+                  style="max-height:280px;overflow-y:auto;min-width:240px;">
+                <li><span class="dropdown-item-text text-secondary small px-3 py-1">Click to scan…</span></li>
+              </ul>
+              <button class="btn btn-outline-secondary" onclick="browseSoundFile('fail')"
+                      title="Browse for any audio file">
+                <i class="bi bi-folder2-open"></i>
+              </button>
+              <button class="btn btn-outline-danger" onclick="testSound('fail')"
+                      title="Preview fail sound">
+                <i class="bi bi-play-fill"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     CI/CD Pipeline
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="row mt-3 mb-3">
+  <div class="col-12">
+    <div class="card" id="pgCard">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-diagram-3 me-1 text-secondary"></i>CI/CD Pipeline</h6>
+        <div class="d-flex gap-2 align-items-center">
+          <span class="text-secondary" style="font-size:.62rem;letter-spacing:.04em;opacity:.55;">BUILD</span>
+          <button id="btnPipelineError" class="btn btn-sm btn-outline-danger py-0 px-2"
+                  onclick="pgTestError()" title="Simulate a random build pipeline failure">
+            <i class="bi bi-bug me-1"></i>Test Error
+          </button>
+          <button id="btnPipelineTest" class="btn btn-sm btn-outline-info py-0 px-2"
+                  onclick="pgTestRun()" title="Simulate all build stages without compiling">
+            <i class="bi bi-play-fill me-1"></i>Test Run
+          </button>
+          <span class="vr opacity-25 mx-1"></span>
+          <span class="text-secondary" style="font-size:.62rem;letter-spacing:.04em;opacity:.55;">TEST</span>
+          <button id="btnTPipelineError" class="btn btn-sm btn-outline-warning py-0 px-2"
+                  onclick="tpTestError()" title="Simulate a random test pipeline failure">
+            <i class="bi bi-bug me-1"></i>TP Error
+          </button>
+          <button id="btnTPipelineTest" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                  onclick="tpTestRun()" title="Simulate all test stages without running">
+            <i class="bi bi-play-fill me-1"></i>TP Run
+          </button>
+        </div>
+      </div>
+      <div class="card-body pt-1 pb-2">
+        <div style="display:flex;align-items:center;overflow-x:auto;overflow-y:visible;">
+          <div id="pgTrack" class="pg-track" style="flex:1 0 auto;overflow:visible;"></div>
+          <div id="pgCelebrate" style="display:none;flex-shrink:0;width:270px;height:106px;overflow:hidden;"></div>
+        </div>
+        <div id="pgStatus" class="text-center mt-1"
+             style="font-size:0.72rem;min-height:1.3em;color:#777;letter-spacing:.02em;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
      Build Log
      ══════════════════════════════════════════════════════════════════════════ -->
 <div class="row mt-3 mb-3">
@@ -684,10 +1112,76 @@ html[data-bs-theme="light"] #log {
     <div class="card">
       <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
         <h6 class="fw-bold mb-0"><i class="bi bi-terminal me-1 text-secondary"></i>Build Log</h6>
-        <button class="btn btn-sm btn-link text-secondary p-0" onclick="clearLog()">Clear</button>
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="openOutputFolder()" title="Open output folder in Explorer">
+            <i class="bi bi-folder2-open"></i>
+          </button>
+          <button class="btn btn-sm btn-link text-secondary p-0" onclick="clearLog()">Clear</button>
+        </div>
       </div>
       <div id="log">
         <div class="log-line">Ready. Press a build button above to start.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     Test Pipeline
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="row mt-3 mb-3">
+  <div class="col-12">
+    <div class="card" id="tpCard">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-cpu me-1 text-secondary"></i>Test Pipeline
+          <span class="text-secondary fw-normal ms-2" style="font-size:.68rem;">auto-runs after each successful build</span>
+        </h6>
+        <div class="d-flex gap-2 align-items-center">
+          <button id="btnTpCardError" class="btn btn-sm btn-outline-warning py-0 px-2"
+                  onclick="tpTestError()" title="Simulate a test pipeline failure">
+            <i class="bi bi-bug me-1"></i>Test Error
+          </button>
+          <button id="btnTpCardOutput" class="btn btn-sm btn-outline-info py-0 px-2"
+                  onclick="doTestOutput()" title="Run test against last compiled output (Bundle or Full Build)">
+            <i class="bi bi-play-fill me-1"></i>Test Output
+          </button>
+          <span id="tpBadge" class="badge bg-secondary small ms-1">Idle</span>
+        </div>
+      </div>
+      <div class="card-body pt-1 pb-2">
+        <div style="display:flex;align-items:center;overflow-x:auto;overflow-y:visible;">
+          <div id="tpTrack" class="pg-track tp-track" style="flex:1 0 auto;overflow:visible;"></div>
+        </div>
+        <div id="tpStatus" class="text-center mt-1"
+             style="font-size:0.72rem;min-height:1.3em;color:#777;letter-spacing:.02em;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     Test Output Log
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="row mt-3 mb-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+        <h6 class="fw-bold mb-0">
+          <i class="bi bi-clipboard2-check me-1 text-secondary"></i>Test Output Log
+        </h6>
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="openTestLogFolder()" title="Open test log folder in Explorer">
+            <i class="bi bi-folder2-open"></i>
+          </button>
+          <span id="testBadge" class="badge bg-secondary small">Idle</span>
+        </div>
+      </div>
+      <div class="card-body pt-2">
+        <div id="testResult" class="font-monospace rounded p-2" style="
+            min-height:48px;background:rgba(0,0,0,.35);font-size:0.75rem;
+            max-height:220px;overflow-y:auto;white-space:pre-wrap;color:#aaa;">
+          Waiting for test pipeline…
+        </div>
       </div>
     </div>
   </div>
@@ -748,33 +1242,25 @@ html[data-bs-theme="light"] #log {
   </div>
 </div>
 
-<!-- ── Main-app running warning modal ──────────────────────────────────────── -->
-<div class="modal fade" id="mainAppModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0"
-         style="background:#2b3035;box-shadow:0 24px 64px rgba(0,0,0,.8)">
+<!-- Docs Status Panel -->
+<div class="modal fade" id="docsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content bg-dark text-light border border-secondary">
       <div class="modal-header border-secondary py-2">
-        <h6 class="modal-title mb-0 small">
-          <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Job Tracker is Currently Running
-        </h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <h6 class="modal-title mb-0"><i class="bi bi-book me-2 text-info"></i>Documentation Coverage</h6>
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body text-secondary small">
-        The <strong class="text-light">Job Tracker</strong> app is running on port&nbsp;5000.
-        <br><br>
-        For best results, close the <strong class="text-light">Job Tracker Server</strong> window
-        in your taskbar before building to avoid file conflicts, then click Build again.
-        <br><br>
-        Or choose <strong class="text-warning">Build Anyway</strong> if you are certain there
-        are no conflicts.
+      <div class="modal-body p-3">
+        <div id="docsContent"><span class="text-secondary small">Loading…</span></div>
       </div>
       <div class="modal-footer border-secondary py-2">
-        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-warning btn-sm" onclick="buildAnyway()">Build Anyway</button>
+        <small id="docsLastUpdated" class="text-secondary me-auto"></small>
+        <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
 </div>
+
 
 <!-- ── Toast ────────────────────────────────────────────────────────────────── -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index:1100">
@@ -820,13 +1306,82 @@ function _updateThemeBtn() {
 }
 
 /* ── Init ──────────────────────────────────────────────────────────────────── */
+/* ── Documentation coverage badge ─────────────────────────────────────────── */
+async function checkDocsStatus() {
+  try {
+    var r = await fetch('/api/docs/status');
+    var d = await r.json();
+    var badge = document.getElementById('docsBadge');
+    if (!d.ok) return;
+    if (d.undocumented && d.undocumented.length > 0) {
+      badge.className = 'badge docs-warn';
+      badge.innerHTML = '<i class="bi bi-book me-1"></i>Docs: ' + d.undocumented.length + ' missing';
+      badge.title = 'Undocumented routes:\n' + d.undocumented.join('\n');
+    } else {
+      badge.className = 'badge bg-success';
+      badge.innerHTML = '<i class="bi bi-book-fill me-1"></i>Docs \u2713';
+      badge.title = 'All routes documented. Last updated: ' + (d.last_updated || '');
+    }
+  } catch (e) {
+    // Non-fatal — leave badge as default
+  }
+}
+
+async function showDocsPanel() {
+  var modal = new bootstrap.Modal(document.getElementById('docsModal'));
+  document.getElementById('docsContent').innerHTML = '<span class="text-secondary small">Loading…</span>';
+  modal.show();
+  try {
+    var r = await fetch('/api/docs/status');
+    var d = await r.json();
+    if (!d.ok) {
+      document.getElementById('docsContent').innerHTML = '<span class="text-danger small">Error: ' + escHtml(d.error || 'unknown') + '</span>';
+      return;
+    }
+    document.getElementById('docsLastUpdated').textContent = 'Manifest last updated: ' + (d.last_updated || 'unknown');
+
+    var html = '';
+    if (d.undocumented && d.undocumented.length) {
+      html += '<div class="alert alert-warning py-2 px-3 mb-3" style="font-size:.83rem;">'
+            + '<i class="bi bi-exclamation-triangle me-2"></i>'
+            + '<strong>' + d.undocumented.length + ' route(s) not yet in docs:</strong><br>'
+            + d.undocumented.map(function(r){ return '<code class="text-warning-emphasis">' + escHtml(r) + '</code>'; }).join(' &nbsp; ')
+            + '</div>';
+    } else {
+      html += '<div class="alert alert-success py-2 px-3 mb-3" style="font-size:.83rem;">'
+            + '<i class="bi bi-check-circle me-2"></i>All routes are documented.</div>';
+    }
+
+    if (d.sections && d.sections.length) {
+      html += '<h6 class="text-secondary mb-2" style="font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;">Documented Sections</h6>';
+      html += '<table class="table table-sm table-dark table-borderless mb-0" style="font-size:.82rem;">'
+            + '<thead><tr><th>Section</th><th>Feature</th><th>Updated</th></tr></thead><tbody>';
+      d.sections.forEach(function(s) {
+        html += '<tr>'
+              + '<td><a href="/help#' + escHtml(s.id) + '" target="_blank" class="text-info text-decoration-none"><code>#' + escHtml(s.id) + '</code></a></td>'
+              + '<td>' + escHtml(s.feature) + '</td>'
+              + '<td class="text-secondary">' + escHtml(s.updated) + '</td>'
+              + '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+    document.getElementById('docsContent').innerHTML = html;
+  } catch(e) {
+    document.getElementById('docsContent').innerHTML = '<span class="text-danger small">Failed to load status.</span>';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   _updateThemeBtn();
+  pgInit();
+  tpInit();
   // Auto-load the active project profile on startup; fall back to build_settings.json
   loadProjectsList().then(function (loaded) { if (!loaded) loadSettings(); });
   refreshGit();
   checkGhAuth();
+  checkDocsStatus();
   checkDaemonStatus();
+  loadLicenseTemplates();
 
   document.querySelectorAll('input[name="prot"]').forEach(function (r) {
     r.addEventListener('change', function () {
@@ -846,6 +1401,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Debounced URL validation on manual input
   document.getElementById('GIT_REMOTE_URL').addEventListener('input', debouncedValidateUrl);
+
+  // Suppress card hover lift while a sound dropdown is open (prevents pipeline flickering)
+  ['btnSuccessSoundDrop', 'btnFailSoundDrop'].forEach(function (id) {
+    var btn = document.getElementById(id);
+    if (!btn) return;
+    btn.addEventListener('show.bs.dropdown',   function () { document.body.classList.add('sound-dd-open'); });
+    btn.addEventListener('hidden.bs.dropdown', function () { document.body.classList.remove('sound-dd-open'); });
+  });
 });
 
 /* ── Version spinner ───────────────────────────────────────────────────────── */
@@ -942,6 +1505,36 @@ function applySettings(s) {
   var verIncEl = document.getElementById('VERSION_INCREMENT');
   if (verIncEl) verIncEl.value = s.VERSION_INCREMENT || 'keep';
 
+  var readmeEl = document.getElementById('README_FILE');
+  if (readmeEl) readmeEl.value = s.README_FILE || '';
+  updateOpenReadmeBtn();
+
+  var supportEmailEl = document.getElementById('SUPPORT_EMAIL');
+  if (supportEmailEl) supportEmailEl.value = s.SUPPORT_EMAIL || '';
+
+  var sndSuccEl = document.getElementById('SOUND_SUCCESS');
+  if (sndSuccEl) sndSuccEl.value = s.SOUND_SUCCESS || '';
+  var sndFailEl = document.getElementById('SOUND_FAIL');
+  if (sndFailEl) sndFailEl.value = s.SOUND_FAIL || '';
+
+  // Restore license template selection (after templates are loaded the value may
+  // not exist yet; that's fine — the dropdown defaults to "— select template —")
+  var licTplEl = document.getElementById('licenseTemplate');
+  if (licTplEl && s.LICENSE_TEMPLATE) licTplEl.value = s.LICENSE_TEMPLATE;
+
+  // Seed OUTPUT_DIR: replace empty or old relative-path values (e.g. 'dist', 'build_output')
+  // with the computed absolute default.  An absolute path (X:\...) is kept as-is.
+  var outEl = document.getElementById('OUTPUT_DIR');
+  if (outEl) {
+    var _cur = outEl.value.trim();
+    var _isAbsolute = _cur.length >= 2 && _cur[1] === ':';
+    if (!_cur || !_isAbsolute) {
+      var _def = _outputDirDefault();
+      outEl.value = _def;
+      saveSetting('OUTPUT_DIR', _def);
+    }
+  }
+
   updateOpenLicenseBtn();
   if (s.GIT_REMOTE_URL) { setTimeout(validateRemoteUrl, 600); }
   startBackupSchedule(s.BACKUP_SCHEDULE || 'manual');
@@ -980,6 +1573,7 @@ function collectSettings() {
     OUTPUT_DIR:          document.getElementById('OUTPUT_DIR').value,
     DEFAULT_INSTALL_DIR: document.getElementById('DEFAULT_INSTALL_DIR').value,
     ICON_FILE:           document.getElementById('ICON_FILE').value,
+    README_FILE:         (document.getElementById('README_FILE') || {value: ''}).value.trim(),
     LICENSE_FILE:        document.getElementById('LICENSE_FILE').value,
     REQUIRE_ADMIN:       document.getElementById('REQUIRE_ADMIN').checked,
     DESKTOP_ICON:        document.getElementById('DESKTOP_ICON').checked,
@@ -999,7 +1593,12 @@ function collectSettings() {
     DAEMON_NAME:         (document.getElementById('daemonName')       || {value: 'Build_Dash'}).value.trim(),
     DAEMON_ICON:         (document.getElementById('daemonIcon')       || {value: ''}).value.trim(),
     DAEMON_BUILD_DIR:    (document.getElementById('daemonBuildDir')   || {value: ''}).value.trim(),
-    VERSION_INCREMENT:   (document.getElementById('VERSION_INCREMENT') || {value: 'keep'}).value
+    VERSION_INCREMENT:   (document.getElementById('VERSION_INCREMENT') || {value: 'keep'}).value,
+    LICENSE_TEMPLATE:    (document.getElementById('licenseTemplate')   || {value: ''}).value,
+    SUPPORT_EMAIL:       (document.getElementById('SUPPORT_EMAIL')     || {value: ''}).value.trim(),
+    APP_PORT:            (document.getElementById('APP_PORT')          || {value: '5000'}).value.trim(),
+    SOUND_SUCCESS:       (document.getElementById('SOUND_SUCCESS')     || {value: ''}).value.trim(),
+    SOUND_FAIL:          (document.getElementById('SOUND_FAIL')        || {value: ''}).value.trim()
   };
 }
 
@@ -1120,24 +1719,250 @@ async function deleteSelectedProject() {
 
 /* ── License file opener ───────────────────────────────────────────────────── */
 function updateOpenLicenseBtn() {
-  var el  = document.getElementById('LICENSE_FILE');
-  var btn = document.getElementById('btnOpenLicense');
-  if (btn) btn.disabled = !el || !el.value.trim();
+  // Always enabled — clicking without a filename uses LICENSE.txt as default,
+  // and the backend creates the file if it doesn't exist.
+  var btn  = document.getElementById('btnOpenLicense');
+  var drop = document.getElementById('btnLicenseEditorDrop');
+  if (btn)  btn.disabled  = false;
+  if (drop) drop.disabled = false;
 }
 
-function openLicenseFile() {
-  var path = document.getElementById('LICENSE_FILE').value.trim();
-  if (!path) return;
-  fetch('/api/open-file', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({path: path})
-  })
-  .then(function (r) { return r.json(); })
-  .then(function (d) {
-    if (!d.ok) showToast('Could not open file: ' + d.error, 'danger');
-  })
-  .catch(function (e) { showToast('Error: ' + e, 'danger'); });
+function _licFilePath() {
+  var el      = document.getElementById('LICENSE_FILE');
+  var licFile = (el && el.value.trim()) || 'LICENSE.txt';
+  var repoDir = (document.getElementById('gitRepoDir') || {value: ''}).value.trim();
+  if (licFile.match(/^[A-Za-z]:\\/) || licFile.startsWith('/')) return licFile;
+  return repoDir ? repoDir.replace(/[/\\]+$/, '') + '\\' + licFile : licFile;
+}
+
+function openLicenseFile(editorExe, editorName) {
+  var path = _licFilePath();
+  if (!path) { showToast('Set the Working Tree Path first.', 'warning'); return; }
+  _doOpenFile('/api/open-file-with', path, editorExe, editorName, 'LICENSE');
+}
+
+var _editorsCache = null;
+async function loadEditorList() {
+  var menu = document.getElementById('licenseEditorMenu');
+  if (_editorsCache) { _renderEditorMenu(_editorsCache, menu); return; }
+  menu.innerHTML = '<li><span class="dropdown-item-text text-secondary small px-3 py-1">Scanning…</span></li>';
+  try {
+    var r = await fetch('/api/text-editors');
+    var d = await r.json();
+    _editorsCache = d.editors || [];
+    _renderEditorMenu(_editorsCache, menu);
+  } catch (e) {
+    menu.innerHTML = '<li><span class="dropdown-item-text text-danger small px-3">Error loading editors</span></li>';
+  }
+}
+
+function _renderEditorMenu(editors, menu) {
+  if (!editors.length) {
+    menu.innerHTML = '<li><span class="dropdown-item-text text-secondary small px-3">No editors found</span></li>';
+    return;
+  }
+  menu.innerHTML = editors.map(function (e, i) {
+    return '<li><a class="dropdown-item" href="#" data-idx="' + i + '">' +
+           '<i class="bi bi-pencil me-2 text-secondary" style="font-size:.8rem;"></i>' +
+           escHtml(e.name) + '</a></li>';
+  }).join('');
+  menu.querySelectorAll('a[data-idx]').forEach(function (a) {
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      var ed = _editorsCache[parseInt(this.dataset.idx)];
+      if (ed) openLicenseFile(ed.exe, ed.name);
+    });
+  });
+}
+
+/* ── README file helpers ───────────────────────────────────────────────────── */
+function updateOpenReadmeBtn() {
+  var el   = document.getElementById('README_FILE');
+  var btn  = document.getElementById('btnOpenReadme');
+  var drop = document.getElementById('btnReadmeEditorDrop');
+  // btn is always enabled (clicking it triggers the check/generate flow)
+  if (btn)  btn.disabled  = false;
+  if (drop) drop.disabled = false;
+  // Hide any existing prompt when user edits the field
+  document.getElementById('readmeGeneratePrompt').classList.add('d-none');
+  document.getElementById('readmeExistsIndicator').textContent = '';
+}
+
+function _readmeFilePath() {
+  var f = (document.getElementById('README_FILE').value.trim() || 'README.txt');
+  var d = (document.getElementById('gitRepoDir') || {value: ''}).value.trim();
+  if (f.match(/^[A-Za-z]:\\/) || f.startsWith('/')) return f;
+  return d ? d.replace(/[/\\]+$/, '') + '\\' + f : f;
+}
+
+async function openReadmeFile(editorExe, editorName) {
+  var path = _readmeFilePath();
+  if (!path) { showToast('Set the Working Tree Path first.', 'warning'); return; }
+
+  // Check existence first
+  var chk = await fetch('/api/readme/check').then(function(r){return r.json();}).catch(function(){return {exists:false};});
+  if (!chk.exists) {
+    // Show generate prompt instead of silently creating an empty file
+    document.getElementById('readmeGeneratePrompt').classList.remove('d-none');
+    // Store chosen editor for when generate/create is triggered
+    document.getElementById('btnGenReadme').dataset.editorExe  = editorExe  || '';
+    document.getElementById('btnGenReadme').dataset.editorName = editorName || '';
+    var emptyBtn = document.getElementById('readmeGeneratePrompt').querySelector('[onclick*="createEmpty"]');
+    if (emptyBtn) {
+      emptyBtn.setAttribute('onclick', 'createEmptyReadme(' +
+        JSON.stringify(editorExe) + ',' + JSON.stringify(editorName) + ')');
+    }
+    return;
+  }
+
+  _doOpenFile('/api/open-file-with', path, editorExe, editorName, 'README');
+}
+
+async function generateAndOpenReadme(editorExe, editorName) {
+  // If called from the generate button, read stored editor from dataset
+  var btn = document.getElementById('btnGenReadme');
+  if (btn && !editorExe) {
+    editorExe  = btn.dataset.editorExe  || null;
+    editorName = btn.dataset.editorName || null;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating…';
+
+  // Save current README_FILE value first so the backend knows the path
+  await fetch('/api/settings', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({README_FILE: (document.getElementById('README_FILE').value.trim() || 'README.txt')})
+  }).catch(function(){});
+
+  var r = await fetch('/api/readme/generate', {method:'POST'}).then(function(r){return r.json();}).catch(function(){return {ok:false};});
+  document.getElementById('readmeGeneratePrompt').classList.add('d-none');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-magic me-1"></i>Generate default';
+
+  if (r.ok) {
+    showToast('README.txt generated.', 'success');
+    document.getElementById('readmeExistsIndicator').innerHTML =
+      '<i class="bi bi-check-circle-fill text-success me-1"></i><span class="text-success">Found</span>';
+    _doOpenFile('/api/open-file-with', r.path, editorExe, editorName, 'README');
+  } else {
+    showToast('Could not generate README: ' + (r.error || '?'), 'danger');
+  }
+}
+
+async function createEmptyReadme(editorExe, editorName) {
+  var path = _readmeFilePath();
+  document.getElementById('readmeGeneratePrompt').classList.add('d-none');
+  _doOpenFile('/api/open-file', path, null, null, 'README');
+}
+
+function _doOpenFile(endpoint, path, editorExe, editorName, label) {
+  var body = (endpoint === '/api/open-file-with' && editorExe)
+    ? {path: path, editor: editorExe, editor_name: editorName || editorExe}
+    : {path: path};
+  var ep = (endpoint === '/api/open-file-with' && editorExe)
+    ? '/api/open-file-with' : '/api/open-file';
+  fetch(ep, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if (!d.ok) showToast('Could not open ' + label + ': ' + d.error, 'danger');
+      else showToast('Opened ' + label + ' in ' + (d.editor || 'editor') + '.', 'success');
+    })
+    .catch(function(e){ showToast('Error: ' + e, 'danger'); });
+}
+
+// Wire the readme editor picker dropdown to use openReadmeFile
+function loadReadmeEditorList() {
+  var menu = document.getElementById('readmeEditorMenu');
+  if (_editorsCache) { _renderReadmeEditorMenu(_editorsCache, menu); return; }
+  menu.innerHTML = '<li><span class="dropdown-item-text text-secondary small px-3 py-1">Scanning…</span></li>';
+  fetch('/api/text-editors')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      _editorsCache = d.editors || [];
+      _renderReadmeEditorMenu(_editorsCache, menu);
+    })
+    .catch(function(){
+      menu.innerHTML = '<li><span class="dropdown-item-text text-danger small px-3">Error</span></li>';
+    });
+}
+
+function _renderReadmeEditorMenu(editors, menu) {
+  if (!editors.length) {
+    menu.innerHTML = '<li><span class="dropdown-item-text text-secondary small px-3">No editors found</span></li>';
+    return;
+  }
+  menu.innerHTML = editors.map(function(e, i){
+    return '<li><a class="dropdown-item" href="#" data-idx="' + i + '">' +
+           '<i class="bi bi-pencil me-2 text-secondary" style="font-size:.8rem;"></i>' +
+           escHtml(e.name) + '</a></li>';
+  }).join('');
+  menu.querySelectorAll('a[data-idx]').forEach(function(a){
+    a.addEventListener('click', function(ev){
+      ev.preventDefault();
+      var ed = _editorsCache[parseInt(this.dataset.idx)];
+      if (ed) openReadmeFile(ed.exe, ed.name);
+    });
+  });
+}
+
+/* ── License template helpers ──────────────────────────────────────────────── */
+function loadLicenseTemplates() {
+  fetch('/api/licenses')
+    .then(function (r) { return r.json(); })
+    .then(function (list) {
+      var sel = document.getElementById('licenseTemplate');
+      if (!sel) return;
+      var saved = sel.value;
+      // Group by category
+      var cats = {};
+      list.forEach(function (l) {
+        var c = l.category || 'Other';
+        if (!cats[c]) cats[c] = [];
+        cats[c].push(l);
+      });
+      sel.innerHTML = '<option value="">— select template —</option>';
+      Object.keys(cats).sort().forEach(function (cat) {
+        var og = document.createElement('optgroup');
+        og.label = cat;
+        cats[cat].forEach(function (l) {
+          var o = document.createElement('option');
+          o.value = l.id;
+          o.textContent = l.name;
+          og.appendChild(o);
+        });
+        sel.appendChild(og);
+      });
+      if (saved) sel.value = saved;
+    })
+    .catch(function () {});
+}
+
+async function applyLicenseTemplate() {
+  var sel = document.getElementById('licenseTemplate');
+  if (!sel || !sel.value) { showToast('Select a license template first.', 'warning'); return; }
+  try {
+    var r = await fetch('/api/licenses/apply', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id: parseInt(sel.value) })
+    });
+    var d = await r.json();
+    if (d.ok) showToast('License written: ' + d.path, 'success');
+    else      showToast('Failed: ' + d.error, 'danger');
+  } catch (e) { showToast('Error: ' + e, 'danger'); }
+}
+
+async function refreshLicenseTemplates() {
+  showToast('Fetching license texts from spdx.org…', 'info');
+  try {
+    var r = await fetch('/api/licenses/refresh', { method: 'POST' });
+    var d = await r.json();
+    if (d.ok) {
+      showToast('Updated ' + d.updated + ' license(s) from spdx.org.', 'success');
+      if (d.errors && d.errors.length) console.warn('License refresh errors:', d.errors);
+    } else showToast('Refresh failed.', 'danger');
+  } catch (e) { showToast('Error: ' + e, 'danger'); }
 }
 
 /* ── Git ───────────────────────────────────────────────────────────────────── */
@@ -1385,30 +2210,11 @@ function cancelDepInstall() {
 }
 
 /* ── Build ─────────────────────────────────────────────────────────────────── */
-var _pendingBuildMode = null;
 
 function doBuild(mode) {
-  // Clean output doesn't touch running-app files, so skip the check for it.
-  if (mode === 'clean') { _startBuild('clean'); return; }
-
-  // For bundle/full builds, warn if the main app is running.
-  _pendingBuildMode = mode;
-  fetch('/api/check-mainapp')
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      if (d.running) {
-        new bootstrap.Modal(document.getElementById('mainAppModal')).show();
-      } else {
-        _startBuild(mode);
-      }
-    })
-    .catch(function () { _startBuild(mode); }); // if check fails, proceed
-}
-
-function buildAnyway() {
-  var modal = bootstrap.Modal.getInstance(document.getElementById('mainAppModal'));
-  if (modal) modal.hide();
-  _startBuild(_pendingBuildMode);
+  // The build backend automatically kills any running instance of the app
+  // (by exe name AND by port) before compiling — no manual user action needed.
+  _startBuild(mode);
 }
 
 function _startBuild(mode) {
@@ -1418,6 +2224,17 @@ function _startBuild(mode) {
   document.getElementById('log').innerHTML = '';
   document.getElementById('buildMsg').textContent = '';
   updateBadge('running');
+  pgReset();
+  tpReset();
+  _pgBuildMode = mode;
+  _pgPipelineDone = false;
+  _tpPipelineDone = false;
+  // Reset the test log back to waiting state
+  var _tr = document.getElementById('testResult');
+  if (_tr) { _tr.textContent = 'Waiting for test pipeline\u2026'; _tr.style.color = '#aaa'; }
+  var _tb = document.getElementById('testBadge');
+  if (_tb) { _tb.className = 'badge bg-secondary small'; _tb.textContent = 'Idle'; }
+  if (mode !== 'clean') { pgFlagSet('pgStart', '#00aa55', true); _pgCardGlow(true); }
 
   var endpoint = (mode === 'clean') ? '/api/build/clean' : '/api/build/start';
   var body     = (mode === 'clean') ? {} : {mode: mode, settings: collectSettings()};
@@ -1439,7 +2256,10 @@ function _startBuild(mode) {
       setBuildBtns(false);
       updateBadge(status);
       document.getElementById('buildMsg').textContent =
-        status === 'done' ? 'Build complete.' : 'Build finished with errors.';
+        status === 'done'
+          ? (mode === 'clean' ? 'Clean complete.' : 'Build complete.')
+          : 'Build finished with errors.';
+      if (mode !== 'clean') pgFinish(status);
     });
   })
   .catch(function (e) {
@@ -1479,6 +2299,7 @@ function appendLines(lines) {
     div.className = cls;
     div.textContent = line;
     log.appendChild(div);
+    pgScanLine(line);
   });
   if (autoScroll) log.scrollTop = log.scrollHeight;
 }
@@ -1486,6 +2307,135 @@ function appendLines(lines) {
 function clearLog() {
   document.getElementById('log').innerHTML = '';
   logOffset = 0;
+}
+
+var _lastTestLogDir = '';
+
+function openTestLogFolder() {
+  var dir = _lastTestLogDir;
+  if (!dir) { return; }
+  fetch('/api/open-folder', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path: dir})
+  }).catch(function () {});
+}
+
+function openOutputFolder() {
+  var outputDir = (document.getElementById('OUTPUT_DIR') || {value: ''}).value.trim();
+  var repoDir   = (document.getElementById('gitRepoDir') || {value: ''}).value.trim();
+  var path = outputDir
+    ? (repoDir ? repoDir.replace(/[/\\]$/, '') + '\\' + outputDir : outputDir)
+    : '';
+  fetch('/api/open-folder', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path: path})
+  }).catch(function () {});
+}
+
+/* ── Test Run / Test Install ───────────────────────────────────────────────── */
+function _setTestState(running, label) {
+  var badge   = document.getElementById('testBadge');
+  var killBtn = document.getElementById('btnKillTest');
+  var res     = document.getElementById('testResult');
+  badge.className   = 'badge ' + (running ? 'bg-info' : 'bg-secondary') + ' small';
+  badge.textContent = running ? label : 'Idle';
+  var _btr = document.getElementById('btnTestRun');     if (_btr) _btr.disabled = running;
+  var _bti = document.getElementById('btnTestInstall'); if (_bti) _bti.disabled = running;
+  if (killBtn) killBtn.classList.toggle('d-none', !running);
+  res.style.display = '';
+}
+
+function _showTestResult(d) {
+  var res   = document.getElementById('testResult');
+  var badge = document.getElementById('testBadge');
+  badge.className   = 'badge ' + (d.ok ? 'bg-success' : 'bg-danger') + ' small';
+  badge.textContent = d.ok ? 'OK' : 'Failed';
+
+  // Use verbose_log if available, otherwise build a basic summary
+  var lines = [];
+  if (d.verbose_log && d.verbose_log.length) {
+    lines = d.verbose_log.slice();
+    if (d.pipeline_log) {
+      lines.push('');
+      lines.push('\u2192 Pipeline log written to: ' + d.pipeline_log);
+    }
+  } else {
+    if (d.ok) {
+      lines.push('[OK] ' + (d.message || 'App started successfully'));
+      lines.push('[URL] ' + (d.url || ''));
+      if (d.install_dir) lines.push('[DIR] ' + d.install_dir);
+    } else {
+      lines.push('[FAIL] step=' + (d.step || '?') + '  ' + (d.error || ''));
+      if (d.install_dir) lines.push('[DIR] ' + d.install_dir);
+    }
+    if (d.log && d.log.length) {
+      lines.push('');
+      lines.push('\u2500\u2500 app log (last lines) \u2500\u2500');
+      lines = lines.concat(d.log);
+    }
+    if (d.pipeline_log) {
+      lines.push('');
+      lines.push('\u2192 Pipeline log: ' + d.pipeline_log);
+    }
+  }
+  res.textContent = lines.join('\n');
+  res.style.display = '';
+  res.scrollTop = res.scrollHeight;
+
+  // Store log dir for the folder button, open Explorer on real runs
+  if (d.pipeline_log) {
+    _lastTestLogDir = d.pipeline_log.replace(/[^\\\/]+$/, '');
+    if (!_tpSimMode) {
+      fetch('/api/open-folder', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({path: _lastTestLogDir})
+      }).catch(function () {});
+    }
+  }
+}
+
+async function doTestRun() {
+  _setTestState(true, 'Testing run…');
+  document.getElementById('testResult').textContent = 'Launching exe and waiting for response…';
+  document.getElementById('testResult').style.display = '';
+  try {
+    var r = await fetch('/api/build/test-run', { method: 'POST' });
+    _showTestResult(await r.json());
+  } catch (e) {
+    document.getElementById('testBadge').className = 'badge bg-danger small';
+    document.getElementById('testBadge').textContent = 'Error';
+    document.getElementById('testResult').textContent = 'Request error: ' + e;
+    var _btr = document.getElementById('btnTestRun'); if (_btr) _btr.disabled = false;
+    var _bti = document.getElementById('btnTestInstall'); if (_bti) _bti.disabled = false;
+  }
+}
+
+async function doTestInstall() {
+  _setTestState(true, 'Installing…');
+  document.getElementById('testResult').textContent = 'Running installer silently, please wait…';
+  document.getElementById('testResult').style.display = '';
+  try {
+    var r = await fetch('/api/build/test-install', { method: 'POST' });
+    _showTestResult(await r.json());
+  } catch (e) {
+    document.getElementById('testBadge').className = 'badge bg-danger small';
+    document.getElementById('testBadge').textContent = 'Error';
+    document.getElementById('testResult').textContent = 'Request error: ' + e;
+    var _btr = document.getElementById('btnTestRun'); if (_btr) _btr.disabled = false;
+    var _bti = document.getElementById('btnTestInstall'); if (_bti) _bti.disabled = false;
+  }
+}
+
+async function killTestApp() {
+  try { await fetch('/api/build/kill-app', { method: 'POST' }); } catch (e) {}
+  document.getElementById('testBadge').className = 'badge bg-secondary small';
+  document.getElementById('testBadge').textContent = 'Stopped';
+  document.getElementById('btnKillTest').classList.add('d-none');
+  document.getElementById('btnTestRun').disabled = false;
+  document.getElementById('btnTestInstall').disabled = false;
 }
 
 /* ── UI helpers ────────────────────────────────────────────────────────────── */
@@ -1558,109 +2508,242 @@ async function doGhLogin() {
 }
 
 /* ── Folder Browser ────────────────────────────────────────────────────────── */
+/* ── Open folder in full Windows Explorer ──────────────────────────────────── */
+function _openExplorer(path) {
+  var p = (path || '').trim();
+  // Strip any URL-like values — fall back to GitHub Repositories root
+  if (!p || p.indexOf('://') !== -1 || (p.length >= 2 && p[1] !== ':' && !p.startsWith('\\\\'))) {
+    p = 'C:\\Users\\User\\OneDrive\\GitHub Repositories';
+  }
+  fetch('/api/open-folder', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path: p})
+  }).catch(function () {});
+}
+
 async function browseRepoDir() {
-  var current = document.getElementById('gitRepoDir').value;
-  var r = await fetch('/api/gh/browse-folder', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ initial: current || 'C:\\Users\\User\\OneDrive\\GitHub Repositories' })
-  });
-  var d = await r.json();
-  if (d.ok && d.path) {
-    document.getElementById('gitRepoDir').value = d.path;
-    saveSetting('GIT_REPO_DIR', d.path);
-    refreshGit();
-    showToast('Working tree path updated.', 'success');
+  var current = document.getElementById('gitRepoDir').value.trim()
+                || 'C:\\Users\\User\\OneDrive\\GitHub Repositories';
+  try {
+    var r = await fetch('/api/gh/browse-folder', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ initial: current })
+    });
+    var d = await r.json();
+    if (d.ok && d.path) {
+      document.getElementById('gitRepoDir').value = d.path;
+      saveSetting('GIT_REPO_DIR', d.path);
+      updateOutputDirDefault();
+      refreshGit();
+    } else if (!d.ok && d.error) {
+      showToast('Folder picker error: ' + d.error, 'danger');
+    }
+  } catch (e) {
+    showToast('Could not open folder picker.', 'danger');
   }
 }
 
-async function browseAppUrl() {
-  var current = document.getElementById('APP_URL').value;
-  var r = await fetch('/api/gh/browse-folder', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ initial: current || 'C:\\Users\\User\\OneDrive\\GitHub Repositories' })
-  });
-  var d = await r.json();
-  if (d.ok && d.path) {
-    document.getElementById('APP_URL').value = d.path;
-    saveSetting('APP_URL', d.path);
-  }
+function browseAppUrl() {
+  _openExplorer((document.getElementById('gitRepoDir') || {value: ''}).value
+    || 'C:\\Users\\User\\OneDrive\\GitHub Repositories');
 }
 
-async function browseSupportUrl() {
-  var current = document.getElementById('APP_SUPPORT_URL').value;
-  var r = await fetch('/api/gh/browse-folder', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ initial: current || 'C:\\Users\\User\\OneDrive\\GitHub Repositories' })
-  });
-  var d = await r.json();
-  if (d.ok && d.path) {
-    document.getElementById('APP_SUPPORT_URL').value = d.path;
-    saveSetting('APP_SUPPORT_URL', d.path);
+function browseSupportUrl() {
+  _openExplorer((document.getElementById('gitRepoDir') || {value: ''}).value
+    || 'C:\\Users\\User\\OneDrive\\GitHub Repositories');
+}
+
+async function browseBackupSrc() {
+  var el = document.getElementById('backupSrc');
+  var current = (el ? el.value.trim() : '') || 'C:\\Users\\User\\OneDrive\\GitHub Repositories';
+  try {
+    var r = await fetch('/api/gh/browse-folder', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ initial: current })
+    });
+    var d = await r.json();
+    if (d.ok && d.path) {
+      if (el) el.value = d.path;
+      saveSetting('BACKUP_SRC', d.path);
+    } else if (!d.ok && d.error) {
+      showToast('Folder picker error: ' + d.error, 'danger');
+    }
+  } catch (e) {
+    showToast('Could not open folder picker.', 'danger');
   }
 }
 
 async function browseBackupDest() {
-  var current = document.getElementById('backupDest').value;
-  var r = await fetch('/api/gh/browse-folder', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ initial: current || 'D:\\backups' })
-  });
-  var d = await r.json();
-  if (d.ok && d.path) {
-    document.getElementById('backupDest').value = d.path;
-    saveSetting('BACKUP_DEST', d.path);
-  }
-}
-
-async function browseBackupSrc() {
-  var current = (document.getElementById('backupSrc') || {value: ''}).value.trim();
-  var r = await fetch('/api/gh/browse-folder', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ initial: current || 'C:\\Users\\User\\OneDrive\\GitHub Repositories' })
-  });
-  var d = await r.json();
-  if (d.ok && d.path) {
-    document.getElementById('backupSrc').value = d.path;
-    saveSetting('BACKUP_SRC', d.path);
+  var el = document.getElementById('backupDest');
+  var current = (el ? el.value.trim() : '') || 'D:\\backups';
+  try {
+    var r = await fetch('/api/gh/browse-folder', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ initial: current })
+    });
+    var d = await r.json();
+    if (d.ok && d.path) {
+      if (el) el.value = d.path;
+      saveSetting('BACKUP_DEST', d.path);
+    } else if (!d.ok && d.error) {
+      showToast('Folder picker error: ' + d.error, 'danger');
+    }
+  } catch (e) {
+    showToast('Could not open folder picker.', 'danger');
   }
 }
 
 async function browseDaemonBuildDir() {
-  var current = (document.getElementById('daemonBuildDir') || {value: ''}).value.trim();
-  var r = await fetch('/api/gh/browse-folder', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ initial: current || 'C:\\Users\\User\\OneDrive\\GitHub Repositories' })
-  });
-  var d = await r.json();
-  if (d.ok && d.path) {
-    document.getElementById('daemonBuildDir').value = d.path;
-    saveSetting('DAEMON_BUILD_DIR', d.path);
+  var el = document.getElementById('daemonBuildDir');
+  var current = (el ? el.value.trim() : '') || 'C:\\Users\\User\\OneDrive\\GitHub Repositories';
+  try {
+    var r = await fetch('/api/gh/browse-folder', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ initial: current })
+    });
+    var d = await r.json();
+    if (d.ok && d.path) {
+      if (el) el.value = d.path;
+      saveSetting('DAEMON_BUILD_DIR', d.path);
+    } else if (!d.ok && d.error) {
+      showToast('Folder picker error: ' + d.error, 'danger');
+    }
+  } catch (e) {
+    showToast('Could not open folder picker.', 'danger');
   }
 }
 
 async function browseDaemonIcon() {
   var current = document.getElementById('daemonIcon').value;
-  var r = await fetch('/api/gh/browse-file', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ filter_desc: 'Icon Files', filter_ext: '*.ico', initial: current || '' })
-  });
-  var d = await r.json();
-  if (d.ok && d.path) {
-    document.getElementById('daemonIcon').value = d.path;
-    saveSetting('DAEMON_ICON', d.path);
+  try {
+    var r = await fetch('/api/gh/browse-file', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ filter_desc: 'Icon Files', filter_ext: '*.ico', initial: current || '' })
+    });
+    var d = await r.json();
+    if (d.ok && d.path) {
+      document.getElementById('daemonIcon').value = d.path;
+      saveSetting('DAEMON_ICON', d.path);
+    } else if (!d.ok && d.error) {
+      showToast('File picker error: ' + d.error, 'danger');
+    }
+  } catch (e) {
+    showToast('Could not open file picker.', 'danger');
   }
 }
 
 async function browseIconFile() {
   var current = document.getElementById('ICON_FILE').value;
-  var r = await fetch('/api/gh/browse-file', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ filter_desc: 'Icon Files', filter_ext: '*.ico', initial: current || '' })
+  try {
+    var r = await fetch('/api/gh/browse-file', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ filter_desc: 'Icon Files', filter_ext: '*.ico', initial: current || '' })
+    });
+    var d = await r.json();
+    if (d.ok && d.path) {
+      document.getElementById('ICON_FILE').value = d.path;
+      saveSetting('ICON_FILE', d.path);
+    } else if (!d.ok && d.error) {
+      showToast('File picker error: ' + d.error, 'danger');
+    }
+  } catch (e) {
+    showToast('Could not open file picker.', 'danger');
+  }
+}
+
+/* ── Output Folder browse + auto-default ──────────────────────────────────── */
+var _OUTPUT_BASE = 'D:\\Compile Playground';
+
+function _repoName() {
+  // Prefer the last segment of the Working Tree Path (= the repository folder name)
+  var repoDir = (document.getElementById('gitRepoDir') || {value: ''}).value.trim()
+                  .replace(/[/\\]+$/, '');
+  if (repoDir) {
+    var parts = repoDir.split(/[/\\]/);
+    var last  = parts[parts.length - 1];
+    if (last) return last;
+  }
+  // Fall back to Exe Name, then App Name
+  var exeName = (document.getElementById('APP_EXE_NAME') || {value: ''}).value.trim();
+  if (exeName) return exeName;
+  return (document.getElementById('APP_NAME') || {value: ''}).value.trim();
+}
+
+function _outputDirDefault() {
+  var name = _repoName();
+  return name ? _OUTPUT_BASE + '\\' + name : _OUTPUT_BASE;
+}
+
+function updateOutputDirDefault() {
+  var el = document.getElementById('OUTPUT_DIR');
+  if (!el) return;
+  var cur = el.value.trim();
+  // Auto-update only when the field is empty or still matches a previous default
+  if (!cur || cur === _OUTPUT_BASE || cur.startsWith(_OUTPUT_BASE + '\\')) {
+    var newVal = _outputDirDefault();
+    el.value = newVal;
+    saveSetting('OUTPUT_DIR', newVal);
+  }
+}
+
+function browseOutputDir() {
+  var path = (document.getElementById('OUTPUT_DIR').value || '').trim() || _outputDirDefault();
+  _openExplorer(path);
+}
+
+/* ── New App / App Name → Repo lookup ─────────────────────────────────────── */
+function newApp() {
+  ['APP_NAME', 'APP_EXE_NAME', 'APP_DESCRIPTION'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) { el.value = ''; saveSetting(id, ''); }
   });
-  var d = await r.json();
-  if (d.ok && d.path) {
-    document.getElementById('ICON_FILE').value = d.path;
-    saveSetting('ICON_FILE', d.path);
+  var msgEl = document.getElementById('appNameMsg');
+  if (msgEl) msgEl.innerHTML = '';
+  document.getElementById('APP_NAME').focus();
+}
+
+var _appNameTimer = null;
+function debouncedAppNameLookup() {
+  clearTimeout(_appNameTimer);
+  _appNameTimer = setTimeout(appNameRepoLookup, 600);
+}
+
+async function appNameRepoLookup() {
+  var nameEl = document.getElementById('APP_NAME');
+  var msgEl  = document.getElementById('appNameMsg');
+  if (!nameEl || !msgEl) return;
+  var name = nameEl.value.trim();
+  saveSetting('APP_NAME', name);
+  if (!name) { msgEl.innerHTML = ''; return; }
+
+  // Ensure repos are loaded
+  if (!_allRepos.length) {
+    try {
+      var r = await fetch('/api/gh/repos');
+      var d = await r.json();
+      _allRepos = d.repos || [];
+    } catch (e) { _allRepos = []; }
+  }
+
+  // Find a repo whose name matches (case-insensitive, ignore hyphens/underscores/spaces)
+  var normalise = function (s) { return s.toLowerCase().replace(/[-_\s]/g, ''); };
+  var needle    = normalise(name);
+  var match     = _allRepos.find(function (repo) { return normalise(repo.name) === needle; });
+
+  if (match) {
+    var url = match.url || '';
+    // Update App URL, GitHub Remote URL, Support URL
+    var appUrlEl = document.getElementById('APP_URL');
+    if (appUrlEl) { appUrlEl.value = url; saveSetting('APP_URL', url); }
+    var remoteEl = document.getElementById('GIT_REMOTE_URL');
+    if (remoteEl && remoteEl.value !== url) { remoteEl.value = url; saveSetting('GIT_REMOTE_URL', url); debouncedValidateUrl(); }
+    var supUrl = _deriveSupport(url);
+    var supEl  = document.getElementById('APP_SUPPORT_URL');
+    if (supEl) { supEl.value = supUrl; saveSetting('APP_SUPPORT_URL', supUrl); }
+    msgEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Matched repo: ' + escHtml(match.name) + '</span>';
+  } else {
+    msgEl.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>No GitHub repo found matching <em>' + escHtml(name) + '</em></span>';
   }
 }
 
@@ -1929,6 +3012,1266 @@ async function buildDaemonExe() {
     document.getElementById('buildMsg').textContent =
       status === 'done' ? 'Daemon exe built successfully.' : 'Daemon exe build finished with errors.';
   });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CI/CD Pipeline engine
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Stage definitions — label, sub-label, and log-line patterns that signal
+   each stage has started.  Patterns are checked in-order so specificity
+   only matters between adjacent conflicting stages.                         */
+/* ── Build pipeline sim-mode flag + dual-pipeline done tracking ──────────── */
+var _pgBuildMode    = 'bundle-only';  // last real build mode (bundle-only | full)
+var _pgSimMode      = false;           // true while pgTestRun / pgTestError is running
+var _pgPipelineDone = false;           // build pipeline last finished 'done'
+var _tpPipelineDone = false;           // test pipeline last finished 'done'
+
+var PIPE_STAGES = [
+  { label: 'Scan',      sub: 'Security Scan',
+    patterns: [/STAGE.*virus.*malware.*scan/i, /STAGE.*virus/i,
+               /scanning source:/i, /windows defender:/i,
+               /scan complete.*no threats/i, /\[scan\]/i] },
+  { label: 'Deps',      sub: 'Python Deps',
+    patterns: [/checking.*python dep/i, /all python dep.*up to date/i,
+               /pip install/i, /requirements\.txt/i] },
+  { label: 'Tools',     sub: 'Build Tools',
+    patterns: [/inno setup (not found|already installed)/i,
+               /downloading installer/i, /\[ok\] inno setup/i] },
+  { label: 'Protect',   sub: 'Code Protection',
+    patterns: [/pyarmor.*encrypting/i, /pyarmor.*gen/i, /obfuscat/i] },
+  { label: 'Bundle',    sub: 'Compile & Pack',
+    patterns: [/pyinstaller.*bundling/i, /nuitka.*compiling to native/i,
+               /nuitka: starting python/i, /running c compilation/i,
+               /completed python level/i, /generating source code for c/i] },
+  { label: 'Installer', sub: 'Create Installer',
+    patterns: [/inno setup.*compiling installer/i, /generating installer script/i,
+               /iscc\.exe/i, /installer ready:/i] },
+];
+
+/* Runtime state */
+var pgStates  = ['pending','pending','pending','pending','pending','pending'];
+var pgFills   = [0, 0, 0, 0, 0, 0];   // current fill % (float)
+var pgTargets = [0, 0, 0, 0, 0, 0];   // target fill %
+var pgCurrent = -1;
+var pgRafId   = null;
+var pgSpeed   = 0.04;               // % per rAF frame (real build = slow)
+var pgTestTimers = [];
+
+/* ── SVG arrow template (3-D bevel look) ─────────────────────────────────── */
+var _PG_ARROW_SVG = [
+  '<svg class="pg-arr-svg" viewBox="0 0 44 48" xmlns="http://www.w3.org/2000/svg">',
+  '  <defs>',
+  '    <linearGradient id="pgAG" x1="0" y1="0" x2="0" y2="1">',
+  '      <stop offset="0%"   stop-color="#585858"/>',
+  '      <stop offset="50%"  stop-color="#303030"/>',
+  '      <stop offset="100%" stop-color="#1c1c1c"/>',
+  '    </linearGradient>',
+  '  </defs>',
+  '  <!-- shaft -->',
+  '  <rect x="0" y="21" width="30" height="7" rx="1" fill="url(#pgAG)"/>',
+  '  <!-- arrowhead -->',
+  '  <polygon points="27,12 44,24.5 27,37" fill="url(#pgAG)"/>',
+  '  <!-- top bevel sheen -->',
+  '  <rect x="0" y="21" width="30" height="2.5" rx="1" fill="rgba(255,255,255,0.11)"/>',
+  '  <polygon points="27,12 44,24.5 35,24.5" fill="rgba(255,255,255,0.08)"/>',
+  '</svg>',
+].join('\n');
+
+/* ── Flag SVG builders ────────────────────────────────────────────────────── */
+function _pgFlagSvg(id, labelText, poleX, bannerPts, originX) {
+  // poleX: x-center of the pole; bannerPts: polygon points string; originX: transform-origin x
+  var rx = poleX, bx = rx - 3;
+  return [
+    '<svg class="pg-flag-svg" id="' + id + 'Svg" viewBox="0 0 62 100" width="62" height="96">',
+    '  <defs>',
+    '    <linearGradient id="pg' + id + 'PG" x1="0" y1="0" x2="1" y2="0">',
+    '      <stop offset="0%"   stop-color="#3a3a3a"/><stop offset="32%" stop-color="#ababab"/>',
+    '      <stop offset="65%"  stop-color="#808080"/><stop offset="100%" stop-color="#2a2a2a"/>',
+    '    </linearGradient>',
+    '    <linearGradient id="pg' + id + 'BG" x1="0" y1="0" x2="0" y2="1">',
+    '      <stop offset="0%" stop-color="#686868"/><stop offset="100%" stop-color="#1e1e1e"/>',
+    '    </linearGradient>',
+    '  </defs>',
+    '  <ellipse cx="' + poleX + '" cy="93" rx="13" ry="5" fill="url(#pg' + id + 'BG)"/>',
+    '  <rect x="' + (poleX + 1) + '" y="10" width="5" height="83" rx="1.5" fill="rgba(0,0,0,0.38)"/>',
+    '  <rect x="' + (poleX - 3) + '" y="8" width="6" height="83" rx="2" fill="url(#pg' + id + 'PG)"/>',
+    '  <circle cx="' + poleX + '" cy="8" r="4.5" fill="#909090"/>',
+    '  <circle cx="' + (poleX - 1) + '" cy="7" r="2" fill="#d8d8d8"/>',
+    '  <g id="' + id + 'Banner" style="transform-origin:' + originX + 'px 25px">',
+    '    <polygon id="' + id + 'Poly" points="' + bannerPts + '" fill="#363636"/>',
+    '    <text id="' + id + 'Text" x="' + (poleX === 11 ? 36 : 26) + '" y="30"',
+    '          text-anchor="middle" font-size="7.5" font-weight="800"',
+    '          font-family="sans-serif" letter-spacing="0.8" fill="rgba(255,255,255,0.72)">' + labelText + '</text>',
+    '  </g>',
+    '</svg>',
+  ].join('\n');
+}
+
+var _PG_START_FLAG =
+  '<div class="pg-flag-wrap" id="pgStartWrap">' +
+    _pgFlagSvg('pgStart', 'START', 11, '15,13 57,16 57,36 15,38', 15) +
+  '</div>';
+
+/* Checkered end flag — built manually so the banner uses url(#pgChkPat) */
+var _PG_END_FLAG = [
+  '<div class="pg-flag-wrap" id="pgEndWrap">',
+  '<svg class="pg-flag-svg" id="pgEndSvg" viewBox="0 0 62 100" width="62" height="96">',
+  '  <defs>',
+  '    <pattern id="pgChkPat" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">',
+  '      <rect width="8" height="8" fill="white"/>',
+  '      <rect width="4" height="4" fill="black"/>',
+  '      <rect x="4" y="4" width="4" height="4" fill="black"/>',
+  '    </pattern>',
+  '    <clipPath id="pgChkClip"><polygon points="47,13 5,16 5,36 47,38"/></clipPath>',
+  '    <linearGradient id="pgEndPG" x1="0" y1="0" x2="1" y2="0">',
+  '      <stop offset="0%"   stop-color="#3a3a3a"/>',
+  '      <stop offset="32%"  stop-color="#ababab"/>',
+  '      <stop offset="65%"  stop-color="#808080"/>',
+  '      <stop offset="100%" stop-color="#2a2a2a"/>',
+  '    </linearGradient>',
+  '    <linearGradient id="pgEndBG" x1="0" y1="0" x2="0" y2="1">',
+  '      <stop offset="0%"   stop-color="#686868"/>',
+  '      <stop offset="100%" stop-color="#1e1e1e"/>',
+  '    </linearGradient>',
+  '  </defs>',
+  '  <ellipse cx="50" cy="93" rx="13" ry="5" fill="url(#pgEndBG)"/>',
+  '  <rect x="51" y="10" width="5" height="83" rx="1.5" fill="rgba(0,0,0,0.38)"/>',
+  '  <rect x="47" y="8" width="6" height="83" rx="2" fill="url(#pgEndPG)"/>',
+  '  <circle cx="50" cy="8" r="4.5" fill="#909090"/>',
+  '  <circle cx="49" cy="7" r="2"   fill="#d8d8d8"/>',
+  '  <g id="pgEndBanner" style="transform-origin:47px 25px">',
+  '    <polygon id="pgEndPoly"    points="47,13 5,16 5,36 47,38" fill="url(#pgChkPat)" clip-path="url(#pgChkClip)"/>',
+  '    <polygon id="pgEndOverlay" points="47,13 5,16 5,36 47,38" fill="rgba(0,0,0,0)" style="transition:fill 0.45s"/>',
+  '    <text x="26" y="30" text-anchor="middle" font-size="7" font-weight="900"',
+  '          font-family="sans-serif" letter-spacing="0.5"',
+  '          stroke="#000" stroke-width="2.5" stroke-linejoin="round" paint-order="stroke"',
+  '          fill="white">FINISH</text>',
+  '  </g>',
+  '</svg>',
+  '</div>',
+].join('\n');
+
+/* ── Build the pipeline DOM ──────────────────────────────────────────────── */
+function pgInit() {
+  var track = document.getElementById('pgTrack');
+  if (!track) return;
+
+  // Start flag + intro arrow
+  var html = _PG_START_FLAG +
+    '<div class="pg-arr-wrap" id="pgArrStart">' + _PG_ARROW_SVG + '<div class="pg-particle"></div></div>';
+
+  // Stages + inter-stage arrows
+  PIPE_STAGES.forEach(function (s, i) {
+    html += '<div class="pg-wrap" id="pgWrap_' + i + '">' +
+              '<div class="pg-dot" id="pgDot_' + i + '"></div>' +
+              '<div class="pg-tube" id="pgTube_' + i + '">' +
+                '<div class="pg-fill" id="pgFill_' + i + '"></div>' +
+                '<div class="pg-sheen"></div>' +
+                '<div class="pg-lbl">' + s.label + '</div>' +
+              '</div>' +
+              '<div class="pg-sub" id="pgSub_' + i + '">' + s.sub + '</div>' +
+            '</div>';
+    if (i < PIPE_STAGES.length - 1) {
+      html += '<div class="pg-arr-wrap" id="pgArr_' + i + '">' +
+                _PG_ARROW_SVG + '<div class="pg-particle"></div></div>';
+    }
+  });
+
+  // Exit arrow + End flag
+  html += '<div class="pg-arr-wrap" id="pgArrEnd">' + _PG_ARROW_SVG + '<div class="pg-particle"></div></div>' +
+          _PG_END_FLAG;
+
+  track.innerHTML = html;
+}
+
+/* ── rAF fill animation loop ─────────────────────────────────────────────── */
+function pgRafLoop() {
+  var any = false;
+  for (var i = 0; i < PIPE_STAGES.length; i++) {
+    if (Math.abs(pgFills[i] - pgTargets[i]) > 0.01) {
+      var step = (pgStates[i] === 'done' || pgStates[i] === 'error') ? 3.0 : pgSpeed;
+      pgFills[i] += (pgFills[i] < pgTargets[i] ? 1 : -1) * Math.min(step, Math.abs(pgFills[i] - pgTargets[i]));
+      any = true;
+      var el = document.getElementById('pgFill_' + i);
+      if (el) el.style.width = pgFills[i].toFixed(2) + '%';
+    }
+  }
+  pgRafId = any ? requestAnimationFrame(pgRafLoop) : null;
+}
+
+function _pgRafStart() {
+  if (!pgRafId) pgRafId = requestAnimationFrame(pgRafLoop);
+}
+
+/* ── State helpers ───────────────────────────────────────────────────────── */
+function _pgSetClass(idx, state) {
+  var cls = state ? 'pg-' + state : '';
+  ['pgWrap_', 'pgTube_'].forEach(function (pfx) {
+    var el = document.getElementById(pfx + idx);
+    if (el) el.className = el.className.replace(/\bpg-(active|done|error|pending)\b/g,'').trim() + (cls ? ' ' + cls : '');
+  });
+}
+
+function pgActivate(idx) {
+  if (pgCurrent === idx && pgStates[idx] === 'active') return;
+  // Complete any prior active stage
+  if (pgCurrent >= 0 && pgStates[pgCurrent] === 'active') pgComplete(pgCurrent);
+  // Auto-skip stages we jumped over
+  for (var s = Math.max(0, pgCurrent + 1); s < idx; s++) {
+    if (pgStates[s] === 'pending') pgSkip(s);
+  }
+  pgCurrent = idx;
+  pgStates[idx] = 'active';
+  pgTargets[idx] = 82;
+  _pgSetClass(idx, 'active');
+  // Flow the intro arrow and wave the start flag on first stage
+  if (idx === 0) {
+    var as = document.getElementById('pgArrStart');
+    if (as) as.classList.add('pg-flowing');
+    pgFlagSet('pgStart', '#00aa55', true);
+  }
+  // Flow the inter-stage incoming arrow
+  if (idx > 0) {
+    var arr = document.getElementById('pgArr_' + (idx - 1));
+    if (arr) arr.classList.add('pg-flowing');
+  }
+  var statusEl = document.getElementById('pgStatus');
+  if (statusEl) statusEl.textContent = '\u25cf ' + PIPE_STAGES[idx].sub + '\u2026';
+  _pgRafStart();
+}
+
+function pgComplete(idx) {
+  pgStates[idx] = 'done';
+  pgTargets[idx] = 100;
+  _pgSetClass(idx, 'done');
+  // Stop the intro arrow when stage 0 finishes
+  if (idx === 0) {
+    var as = document.getElementById('pgArrStart');
+    if (as) as.classList.remove('pg-flowing');
+  }
+  // Stop the inter-stage incoming arrow
+  if (idx > 0) {
+    var arr = document.getElementById('pgArr_' + (idx - 1));
+    if (arr) arr.classList.remove('pg-flowing');
+  }
+  _pgRafStart();
+}
+
+function pgSkip(idx) {
+  /* Mark as done at 100% instantly (skipped optional stage) */
+  pgStates[idx] = 'done';
+  pgFills[idx]  = 100;
+  pgTargets[idx] = 100;
+  _pgSetClass(idx, 'done');
+  var el = document.getElementById('pgFill_' + idx);
+  if (el) el.style.width = '100%';
+}
+
+function pgError(idx) {
+  pgStates[idx] = 'error';
+  pgTargets[idx] = pgFills[idx];   // freeze fill where it is
+  _pgSetClass(idx, 'error');
+  // Stop any arrows flowing into this stage
+  var arr0 = (idx === 0) ? document.getElementById('pgArrStart') : null;
+  if (arr0) arr0.classList.remove('pg-flowing');
+  var arr = (idx > 0) ? document.getElementById('pgArr_' + (idx - 1)) : null;
+  if (arr) arr.classList.remove('pg-flowing');
+}
+
+function pgFinish(status) {
+  _pgPipelineDone = (status === 'done');
+  if (status === 'done') {
+    for (var i = 0; i < PIPE_STAGES.length; i++) {
+      if (pgStates[i] !== 'error') pgComplete(i);
+    }
+    pgFlagSet('pgStart', '#007744', false);
+    _pgCardGlow(false);
+    var ae = document.getElementById('pgArrEnd');
+    if (ae) ae.classList.add('pg-flowing');
+    setTimeout(function () {
+      var ae2 = document.getElementById('pgArrEnd');
+      if (ae2) ae2.classList.remove('pg-flowing');
+      pgEndFlagSuccess();
+      _maybeShowCelebrate();
+    }, 700);
+    var statusEl = document.getElementById('pgStatus');
+    if (statusEl) statusEl.textContent = '\u2713 Build complete \u2014 all stages passed.';
+    if (!_pgSimMode) {
+      _playPipelineSound('success');
+      openOutputFolder();
+      setTimeout(function () { _runTestPipeline(_pgBuildMode); }, 1500);
+    }
+  } else {
+    if (pgCurrent >= 0 && pgStates[pgCurrent] === 'active') pgError(pgCurrent);
+    pgFlagSet('pgStart', '#1a5c3a', false);
+    _pgCardGlow(false);
+    pgEndFlagError();
+    var statusEl = document.getElementById('pgStatus');
+    if (statusEl) statusEl.textContent = '\u2717 Failed at: ' + (pgCurrent >= 0 ? PIPE_STAGES[pgCurrent].sub : 'unknown');
+    if (!_pgSimMode) _playPipelineSound('fail');
+  }
+}
+
+function pgReset() {
+  _pgPipelineDone = false;
+  _pgSimMode      = false;
+  pgTestTimers.forEach(clearTimeout);
+  pgTestTimers = [];
+  pgSpeed   = 0.04;
+  pgCurrent = -1;
+  for (var i = 0; i < PIPE_STAGES.length; i++) {
+    pgStates[i]  = 'pending';
+    pgFills[i]   = 0;
+    pgTargets[i] = 0;
+    _pgSetClass(i, '');
+    var fill = document.getElementById('pgFill_' + i);
+    if (fill) fill.style.width = '0%';
+    var arr = document.getElementById('pgArr_' + i);
+    if (arr) arr.classList.remove('pg-flowing');
+  }
+  // Reset intro / exit arrows
+  ['pgArrStart', 'pgArrEnd'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('pg-flowing');
+  });
+  // Reset both flags to idle grey; remove card glow
+  _pgCardGlow(false);
+  pgFlagSet('pgStart', '#363636', false);
+  pgEndFlagReset();
+  var startSvg = document.getElementById('pgStartSvg');
+  if (startSvg) startSvg.style.filter = '';
+  // Hide celebration area
+  var cel = document.getElementById('pgCelebrate');
+  if (cel) { cel.style.display = 'none'; cel.innerHTML = ''; }
+  var statusEl = document.getElementById('pgStatus');
+  if (statusEl) statusEl.textContent = '';
+  if (pgRafId) { cancelAnimationFrame(pgRafId); pgRafId = null; }
+}
+
+/* ── Real-build log scanning ──────────────────────────────────────────────── */
+function pgScanLine(line) {
+  for (var i = 0; i < PIPE_STAGES.length; i++) {
+    var pats = PIPE_STAGES[i].patterns;
+    for (var j = 0; j < pats.length; j++) {
+      if (pats[j].test(line)) { pgActivate(i); return; }
+    }
+  }
+  /* Detect errors to freeze and colour the active stage */
+  if (pgCurrent >= 0 && pgStates[pgCurrent] === 'active' &&
+      /\bfatal\b|^\[error\]|exit code [^0]/i.test(line)) {
+    pgError(pgCurrent);
+  }
+}
+
+/* ── Flag control helper ──────────────────────────────────────────────────── */
+function _pgCardGlow(on) {
+  var card = document.getElementById('pgCard');
+  if (card) card.classList.toggle('pg-card-active', on);
+}
+
+function pgFlagSet(flagId, color, waving) {
+  var poly   = document.getElementById(flagId + 'Poly');
+  var banner = document.getElementById(flagId + 'Banner');
+  if (poly)   poly.setAttribute('fill', color);
+  if (banner) {
+    banner.classList.remove('pg-banner-waving');
+    if (waving) banner.classList.add('pg-banner-waving');
+  }
+}
+
+/* ── End-flag specific helpers ───────────────────────────────────────────── */
+function pgEndFlagSuccess() {
+  var banner  = document.getElementById('pgEndBanner');
+  var overlay = document.getElementById('pgEndOverlay');
+  var svg     = document.getElementById('pgEndSvg');
+  if (overlay) overlay.setAttribute('fill', 'rgba(0,0,0,0)');
+  if (banner)  { banner.classList.remove('pg-banner-waving'); banner.classList.add('pg-banner-waving'); }
+  if (svg)     svg.style.filter = 'drop-shadow(0 0 10px rgba(245,210,11,0.85))';
+}
+
+function pgEndFlagError() {
+  var banner  = document.getElementById('pgEndBanner');
+  var overlay = document.getElementById('pgEndOverlay');
+  var svg     = document.getElementById('pgEndSvg');
+  if (overlay) overlay.setAttribute('fill', 'rgba(180,0,0,0.58)');
+  if (banner)  banner.classList.remove('pg-banner-waving');
+  if (svg)     svg.style.filter = 'drop-shadow(0 0 8px rgba(200,30,30,0.70))';
+}
+
+function pgEndFlagReset() {
+  var banner  = document.getElementById('pgEndBanner');
+  var overlay = document.getElementById('pgEndOverlay');
+  var svg     = document.getElementById('pgEndSvg');
+  if (overlay) overlay.setAttribute('fill', 'rgba(0,0,0,0)');
+  if (banner)  banner.classList.remove('pg-banner-waving');
+  if (svg)     svg.style.filter = '';
+}
+
+/* ── Celebration: race car + fireworks (no bottle) ───────────────────────── */
+function pgCelebrate() {
+  var cel = document.getElementById('pgCelebrate');
+  if (!cel) return;
+  cel.style.display = 'block';
+
+  // SVG fills the 270×106 celebrate div; fireworks upper half, car lower half
+  var out = '<svg viewBox="0 0 270 106" xmlns="http://www.w3.org/2000/svg">\n';
+  out += _pgCarDefs();
+  // Fireworks — 5 bursts across the upper area
+  out += _pgFwBurst(22,  24, '#ff4466', 0.00);
+  out += _pgFwBurst(76,  13, '#ffcc00', 0.18);
+  out += _pgFwBurst(140, 26, '#44ddff', 0.09);
+  out += _pgFwBurst(204, 14, '#ff88ff', 0.24);
+  out += _pgFwBurst(250, 28, '#00ff99', 0.06);
+  // Race car — slides in from right, bounces idle after parking
+  out += '<g class="pg-car-group">';
+  out += '<g class="pg-car-idle" style="transform-box:fill-box;transform-origin:50% 100%;">';
+  out += _pgRaceCar(8, 93, 252, 36, 13);
+  out += '</g>';
+  out += '</g>';
+  out += '</svg>';
+  cel.innerHTML = out;
+}
+
+/* ── Firework burst (8 spokes + centre flash) ── */
+function _pgFwBurst(cx, cy, color, delay) {
+  var n = 8, r1 = 5, r2 = 22, len = r2 - r1, out = '';
+  for (var i = 0; i < n; i++) {
+    var a  = (i / n) * Math.PI * 2;
+    var x1 = (cx + Math.cos(a) * r1).toFixed(1), y1 = (cy + Math.sin(a) * r1).toFixed(1);
+    var x2 = (cx + Math.cos(a) * r2).toFixed(1), y2 = (cy + Math.sin(a) * r2).toFixed(1);
+    out += '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'"' +
+           ' stroke="'+color+'" stroke-width="2" stroke-linecap="round"' +
+           ' stroke-dasharray="'+len+'" stroke-dashoffset="'+len+'">' +
+             '<animate attributeName="stroke-dashoffset" from="'+len+'" to="0"' +
+                      ' dur="0.72s" begin="'+delay+'s" repeatCount="indefinite"/>' +
+             '<animate attributeName="opacity" values="1;1;0" keyTimes="0;0.58;1"' +
+                      ' dur="0.72s" begin="'+delay+'s" repeatCount="indefinite"/>' +
+           '</line>\n';
+  }
+  out += '<circle cx="'+cx+'" cy="'+cy+'" r="3" fill="'+color+'" opacity="0">' +
+           '<animate attributeName="opacity" values="0;1;0" dur="0.72s" begin="'+delay+'s" repeatCount="indefinite"/>' +
+           '<animate attributeName="r" values="1;5;1" dur="0.72s" begin="'+delay+'s" repeatCount="indefinite"/>' +
+         '</circle>\n';
+  return out;
+}
+
+/* ── SVG gradient defs shared by the car ── */
+function _pgCarDefs() {
+  return '<defs>\n' +
+    /* body: highlight on top, deepen to dark red at bottom */
+    '<linearGradient id="cBG" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%"   stop-color="#ff9999"/>' +
+      '<stop offset="16%"  stop-color="#ee1111"/>' +
+      '<stop offset="58%"  stop-color="#990000"/>' +
+      '<stop offset="100%" stop-color="#3d0000"/>' +
+    '</linearGradient>\n' +
+    /* side curvature: left edge bright, right edge dark */
+    '<linearGradient id="cSG" x1="0" y1="0" x2="1" y2="0">' +
+      '<stop offset="0%"   stop-color="rgba(255,255,255,0.20)"/>' +
+      '<stop offset="35%"  stop-color="rgba(255,255,255,0.00)"/>' +
+      '<stop offset="100%" stop-color="rgba(0,0,0,0.32)"/>' +
+    '</linearGradient>\n' +
+    /* canopy glass */
+    '<linearGradient id="cCG" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%"   stop-color="#55aaee"/>' +
+      '<stop offset="100%" stop-color="#040410"/>' +
+    '</linearGradient>\n' +
+    /* side pod shadow */
+    '<linearGradient id="cPG" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%"   stop-color="#880000"/>' +
+      '<stop offset="100%" stop-color="#3a0000"/>' +
+    '</linearGradient>\n' +
+    /* tyre rubber */
+    '<radialGradient id="cTG" cx="38%" cy="30%" r="65%">' +
+      '<stop offset="0%"   stop-color="#555"/>' +
+      '<stop offset="60%"  stop-color="#1a1a1a"/>' +
+      '<stop offset="100%" stop-color="#000"/>' +
+    '</radialGradient>\n' +
+    /* alloy rim */
+    '<radialGradient id="cRG" cx="42%" cy="36%" r="58%">' +
+      '<stop offset="0%"   stop-color="#e8e8e8"/>' +
+      '<stop offset="45%"  stop-color="#909090"/>' +
+      '<stop offset="100%" stop-color="#2a2a2a"/>' +
+    '</radialGradient>\n' +
+    /* helmet */
+    '<radialGradient id="cHG" cx="38%" cy="28%" r="62%">' +
+      '<stop offset="0%"   stop-color="#fff59d"/>' +
+      '<stop offset="50%"  stop-color="#f9a825"/>' +
+      '<stop offset="100%" stop-color="#e65100"/>' +
+    '</radialGradient>\n' +
+    /* under-tray */
+    '<linearGradient id="cUG" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%"   stop-color="#550000"/>' +
+      '<stop offset="100%" stop-color="#180000"/>' +
+    '</linearGradient>\n' +
+  '</defs>\n';
+}
+
+/* ── 3D race car ── lx=left x, by=bottom of body y, bw=body width, bh=body height, wr=wheel radius */
+function _pgRaceCar(lx, by, bw, bh, wr) {
+  var wy  = by + wr - 1;       // wheel centre y
+  var fwx = lx + 26;           // front wheel centre x
+  var rwx = lx + bw - 26;      // rear wheel centre x
+  var out = '';
+
+  /* ground shadow */
+  out += '<ellipse cx="'+(lx+bw/2)+'" cy="'+(wy+wr+3)+'" rx="'+(bw/2+5)+'" ry="5" fill="rgba(0,0,0,0.40)"/>\n';
+
+  /* under-tray gives body a 3D thickness edge */
+  out += '<rect x="'+(lx+12)+'" y="'+by+'" width="'+(bw-24)+'" height="8" rx="2" fill="url(#cUG)"/>\n';
+
+  /* ── REAR WING (multi-layer for depth) ── */
+  out += '<rect x="'+(rwx-2)+'"  y="'+(by-bh-18)+'" width="20" height="7"  rx="1.5" fill="#660000"/>\n'; // blade shadow
+  out += '<rect x="'+(rwx-2)+'"  y="'+(by-bh-18)+'" width="20" height="3"  rx="1"   fill="#cc2020"/>\n'; // blade top face
+  out += '<rect x="'+(rwx+13)+'" y="'+(by-bh-18)+'" width="5"  height="26" rx="1"   fill="#4a0000"/>\n'; // strut shadow
+  out += '<rect x="'+(rwx+12)+'" y="'+(by-bh-18)+'" width="5"  height="26" rx="1"   fill="#880000"/>\n'; // strut
+
+  /* ── MAIN BODY ── */
+  out += '<rect x="'+lx+'" y="'+(by-bh)+'" width="'+bw+'" height="'+bh+'" rx="9" fill="url(#cBG)"/>\n';
+  /* lateral curvature shading */
+  out += '<rect x="'+lx+'" y="'+(by-bh)+'" width="'+bw+'" height="'+bh+'" rx="9" fill="url(#cSG)"/>\n';
+  /* top highlight streak */
+  out += '<rect x="'+(lx+14)+'" y="'+(by-bh)+'" width="'+(bw-30)+'" height="5.5" rx="3.5" fill="rgba(255,200,200,0.35)"/>\n';
+
+  /* ── RACING STRIPES ── */
+  out += '<rect x="'+(lx+bw*0.08)+'" y="'+(by-bh+8)+'" width="'+(bw*0.44)+'" height="4" rx="2" fill="rgba(255,255,255,0.90)"/>\n';
+  out += '<rect x="'+(lx+bw*0.08)+'" y="'+(by-bh+14)+'" width="'+(bw*0.27)+'" height="2.5" rx="1" fill="rgba(255,255,255,0.55)"/>\n';
+
+  /* ── NUMBER PLATE ── */
+  out += '<rect x="'+(lx+bw*0.09)+'" y="'+(by-bh+19)+'" width="30" height="18" rx="3" fill="white" opacity="0.94"/>\n';
+  out += '<text x="'+(lx+bw*0.09+15)+'" y="'+(by-bh+31)+'"' +
+         ' text-anchor="middle" font-size="12" font-weight="900"' +
+         ' font-family="Arial Black,sans-serif" fill="#cc0000">1</text>\n';
+
+  /* ── SIDEPOD / AIR INTAKE ── */
+  out += '<rect x="'+(lx+bw*0.23)+'" y="'+(by-bh+21)+'" width="'+(bw*0.44)+'" height="16" rx="4" fill="url(#cPG)"/>\n';
+  out += '<rect x="'+(lx+bw*0.24)+'" y="'+(by-bh+21)+'" width="'+(bw*0.43)+'" height="7"  rx="3" fill="rgba(0,0,0,0.50)"/>\n'; // duct opening
+
+  /* ── HEADLIGHT ── */
+  out += '<ellipse cx="'+(lx+10)+'" cy="'+(by-bh+21)+'" rx="6.5" ry="4.5" fill="#ffffaa" opacity="0.95"/>\n';
+  out += '<ellipse cx="'+(lx+10)+'" cy="'+(by-bh+21)+'" rx="4" ry="2.8" fill="white"/>\n';
+  out += '<ellipse cx="'+(lx+9)+'"  cy="'+(by-bh+19)+'" rx="2.2" ry="1.4" fill="rgba(255,255,255,0.75)"/>\n'; // glint
+
+  /* ── COCKPIT ── */
+  out += '<ellipse cx="'+(lx+bw*0.60)+'" cy="'+(by-bh)+'" rx="28" ry="22" fill="#060606"/>\n';
+  out += '<ellipse cx="'+(lx+bw*0.59)+'" cy="'+(by-bh-1)+'" rx="23" ry="18" fill="url(#cCG)"/>\n';
+  /* canopy glare streak */
+  out += '<ellipse cx="'+(lx+bw*0.575)+'" cy="'+(by-bh-10)+'" rx="12" ry="5"' +
+         ' fill="rgba(255,255,255,0.24)" transform="rotate(-14,'+(lx+bw*0.575)+','+(by-bh-10)+')"/>\n';
+  /* secondary glare dot */
+  out += '<ellipse cx="'+(lx+bw*0.63)+'" cy="'+(by-bh-6)+'" rx="4" ry="2"' +
+         ' fill="rgba(255,255,255,0.15)" transform="rotate(-10,'+(lx+bw*0.63)+','+(by-bh-6)+')"/>\n';
+
+  /* ── HELMET ── */
+  out += '<circle cx="'+(lx+bw*0.60)+'" cy="'+(by-bh+4)+'" r="13" fill="url(#cHG)"/>\n';
+  /* chin-bar shadow for depth */
+  out += '<ellipse cx="'+(lx+bw*0.60)+'" cy="'+(by-bh+13)+'" rx="10" ry="3.5" fill="rgba(0,0,0,0.40)"/>\n';
+  /* visor */
+  out += '<rect x="'+(lx+bw*0.528)+'" y="'+(by-bh+5)+'" width="16" height="8" rx="2.5" fill="#1a1a30"/>\n';
+  /* visor blue tint top edge */
+  out += '<rect x="'+(lx+bw*0.529)+'" y="'+(by-bh+5)+'" width="16" height="3" rx="1.5" fill="rgba(70,140,255,0.42)"/>\n';
+
+  /* ── WAVING ARM ── */
+  out += '<g style="transform-box:fill-box;transform-origin:50% 100%;animation:pgArmWave 0.72s ease-in-out infinite;">\n';
+  out += '  <rect x="'+(lx+bw*0.640)+'" y="'+(by-bh-10)+'" width="6.5" height="17" rx="3.2" fill="#f9a825"/>\n';
+  out += '  <circle cx="'+(lx+bw*0.643)+'" cy="'+(by-bh-10)+'" r="5" fill="#f5c07a"/>\n'; // gloved hand
+  out += '  <circle cx="'+(lx+bw*0.636)+'" cy="'+(by-bh-12)+'" r="2" fill="rgba(255,255,255,0.30)"/>\n'; // knuckle glint
+  out += '</g>\n';
+
+  /* ── FRONT WING (3-layer) ── */
+  out += '<polygon points="'+lx+','+(by-13)+' '+(lx-22)+','+(by-4)+' '+(lx-8)+','+by+'" fill="#770000"/>\n';
+  out += '<polygon points="'+lx+','+(by-13)+' '+(lx-22)+','+(by-4)+' '+(lx-3)+','+(by-4)+'" fill="#cc1818"/>\n'; // top face
+  out += '<line x1="'+(lx-14)+'" y1="'+(by-9)+'" x2="'+(lx-6)+'" y2="'+(by-3)+'" stroke="rgba(255,100,100,0.30)" stroke-width="1"/>\n'; // sheen
+
+  /* ── WHEELS ── */
+  out += _pgWheel(rwx, wy, wr);
+  out += _pgWheel(fwx, wy, wr);
+
+  return out;
+}
+
+/* ── Single 3D wheel with tyre, rim, spokes, highlights ── */
+function _pgWheel(cx, cy, r) {
+  var out = '';
+  /* tyre bevel ring (dark outer halo) */
+  out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+(r+2.5)+'" fill="#060606"/>\n';
+  /* tyre rubber with radial gradient */
+  out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="url(#cTG)"/>\n';
+  /* tyre sidewall rim highlight ring */
+  out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none"' +
+         ' stroke="rgba(255,255,255,0.11)" stroke-width="2.5"/>\n';
+  /* alloy rim disc */
+  out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+(r*0.64)+'" fill="url(#cRG)"/>\n';
+  /* 5 spokes */
+  for (var i = 0; i < 5; i++) {
+    var a  = (i / 5) * Math.PI * 2 - Math.PI / 2;
+    var x1 = (cx + Math.cos(a) * r * 0.18).toFixed(1);
+    var y1 = (cy + Math.sin(a) * r * 0.18).toFixed(1);
+    var x2 = (cx + Math.cos(a) * r * 0.62).toFixed(1);
+    var y2 = (cy + Math.sin(a) * r * 0.62).toFixed(1);
+    out += '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'"' +
+           ' stroke="#888" stroke-width="2.2" stroke-linecap="round"/>\n';
+  }
+  /* centre hub cap */
+  out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+(r*0.18)+'" fill="#c0c0c0"/>\n';
+  out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+(r*0.09)+'" fill="#444"/>\n'; // hub centre bolt
+  /* tyre specular glint (upper-left) */
+  out += '<ellipse cx="'+(cx-r*0.38)+'" cy="'+(cy-r*0.44)+'"' +
+         ' rx="'+(r*0.24).toFixed(1)+'" ry="'+(r*0.12).toFixed(1)+'"' +
+         ' fill="rgba(255,255,255,0.30)"' +
+         ' transform="rotate(-38,'+cx+','+cy+')"/>\n';
+  return out;
+}
+
+/* ── Test-run helpers ────────────────────────────────────────────────────── */
+var _PG_TEST_DUR = [1800, 1500, 1700, 3200, 2000];  // ms per stage
+
+function _pgBothBtns(disabled, testHtml, errHtml) {
+  var bt = document.getElementById('btnPipelineTest');
+  var be = document.getElementById('btnPipelineError');
+  if (bt) { bt.disabled = disabled; if (testHtml) bt.innerHTML = testHtml; }
+  if (be) { be.disabled = disabled; if (errHtml)  be.innerHTML = errHtml; }
+}
+
+/* ── Test Run: all stages succeed ────────────────────────────────────────── */
+function pgTestRun() {
+  pgReset();
+  _pgSimMode = true;
+  pgSpeed = 1.1;
+  _pgBothBtns(true,
+    '<i class="bi bi-hourglass-split me-1"></i>Running\u2026',
+    '<i class="bi bi-bug me-1"></i>Test Error');
+
+  var t = 300;
+  PIPE_STAGES.forEach(function (s, i) {
+    var tA = t, tC = t + _PG_TEST_DUR[i];
+    pgTestTimers.push(setTimeout(pgActivate.bind(null, i), tA));
+    pgTestTimers.push(setTimeout(function (idx, last) {
+      pgComplete(idx);
+      if (last) {
+        setTimeout(function () {
+          pgFinish('done');
+          _pgBothBtns(false,
+            '<i class="bi bi-play-fill me-1"></i>Test Run',
+            '<i class="bi bi-bug me-1"></i>Test Error');
+          pgSpeed = 0.04;
+        }, 350);
+      }
+    }.bind(null, i, i === PIPE_STAGES.length - 1), tC));
+    t = tC + 80;
+  });
+}
+
+/* ── Test Error: random stage fails ──────────────────────────────────────── */
+function pgTestError() {
+  pgReset();
+  _pgSimMode = true;
+  pgSpeed = 1.1;
+  _pgBothBtns(true,
+    '<i class="bi bi-play-fill me-1"></i>Test Run',
+    '<i class="bi bi-hourglass-split me-1"></i>Running\u2026');
+
+  var failAt = Math.floor(Math.random() * PIPE_STAGES.length);
+  var restore = function () {
+    pgSpeed = 0.04;
+    _pgBothBtns(false,
+      '<i class="bi bi-play-fill me-1"></i>Test Run',
+      '<i class="bi bi-bug me-1"></i>Test Error');
+  };
+
+  var t = 300;
+  for (var i = 0; i <= failAt; i++) {
+    var tA = t;
+    if (i < failAt) {
+      var tC = t + _PG_TEST_DUR[i];
+      pgTestTimers.push(setTimeout(pgActivate.bind(null, i), tA));
+      pgTestTimers.push(setTimeout(pgComplete.bind(null, i), tC));
+      t = tC + 80;
+    } else {
+      // Fail this stage after partial fill (40–65% through its duration)
+      var tE = t + Math.floor(_PG_TEST_DUR[i] * (0.40 + Math.random() * 0.25));
+      pgTestTimers.push(setTimeout(pgActivate.bind(null, failAt), tA));
+      pgTestTimers.push(setTimeout(function () {
+        pgError(failAt);
+        pgFinish('error');
+        setTimeout(restore, 400);
+      }, tE));
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Test Pipeline engine — mirrors the build pipeline with cyan styling
+   ══════════════════════════════════════════════════════════════════════════ */
+
+var TP_STAGES = [
+  { label: 'Launch',  sub: 'Start App' },
+  { label: 'Connect', sub: 'HTTP Connect' },
+  { label: 'Verify',  sub: 'Check Response' },
+  { label: 'Report',  sub: 'Test Report' },
+];
+
+var tpStates  = ['pending','pending','pending','pending'];
+var tpFills   = [0, 0, 0, 0];
+var tpTargets = [0, 0, 0, 0];
+var tpCurrent = -1;
+var tpRafId   = null;
+var tpSpeed   = 0.04;
+var tpTestTimers = [];
+var _tpSimMode   = false;
+var _tpPendingTimers = [];
+
+/* ── End flag SVG for TP (unique IDs) ─────────────────────────────────────── */
+var _TP_END_FLAG = [
+  '<div class="pg-flag-wrap" id="tpEndWrap">',
+  '<svg class="pg-flag-svg" id="tpEndSvg" viewBox="0 0 62 100" width="62" height="96">',
+  '  <defs>',
+  '    <pattern id="tpChkPat" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">',
+  '      <rect width="8" height="8" fill="white"/>',
+  '      <rect width="4" height="4" fill="black"/>',
+  '      <rect x="4" y="4" width="4" height="4" fill="black"/>',
+  '    </pattern>',
+  '    <clipPath id="tpChkClip"><polygon points="47,13 5,16 5,36 47,38"/></clipPath>',
+  '    <linearGradient id="tpEndPG" x1="0" y1="0" x2="1" y2="0">',
+  '      <stop offset="0%"   stop-color="#3a3a3a"/>',
+  '      <stop offset="32%"  stop-color="#ababab"/>',
+  '      <stop offset="65%"  stop-color="#808080"/>',
+  '      <stop offset="100%" stop-color="#2a2a2a"/>',
+  '    </linearGradient>',
+  '    <linearGradient id="tpEndBG" x1="0" y1="0" x2="0" y2="1">',
+  '      <stop offset="0%"   stop-color="#686868"/>',
+  '      <stop offset="100%" stop-color="#1e1e1e"/>',
+  '    </linearGradient>',
+  '  </defs>',
+  '  <ellipse cx="50" cy="93" rx="13" ry="5" fill="url(#tpEndBG)"/>',
+  '  <rect x="51" y="10" width="5" height="83" rx="1.5" fill="rgba(0,0,0,0.38)"/>',
+  '  <rect x="47" y="8" width="6" height="83" rx="2" fill="url(#tpEndPG)"/>',
+  '  <circle cx="50" cy="8" r="4.5" fill="#909090"/>',
+  '  <circle cx="49" cy="7" r="2"   fill="#d8d8d8"/>',
+  '  <g id="tpEndBanner" style="transform-origin:47px 25px">',
+  '    <polygon id="tpEndPoly"    points="47,13 5,16 5,36 47,38" fill="url(#tpChkPat)" clip-path="url(#tpChkClip)"/>',
+  '    <polygon id="tpEndOverlay" points="47,13 5,16 5,36 47,38" fill="rgba(0,0,0,0)" style="transition:fill 0.45s"/>',
+  '    <text x="26" y="30" text-anchor="middle" font-size="7" font-weight="900"',
+  '          font-family="sans-serif" letter-spacing="0.5"',
+  '          stroke="#000" stroke-width="2.5" stroke-linejoin="round" paint-order="stroke"',
+  '          fill="white">FINISH</text>',
+  '  </g>',
+  '</svg>',
+  '</div>',
+].join('\n');
+
+/* ── Build the TP pipeline DOM ─────────────────────────────────────────── */
+function tpInit() {
+  var track = document.getElementById('tpTrack');
+  if (!track) return;
+  var html = '<div class="pg-flag-wrap" id="tpStartWrap">' +
+               _pgFlagSvg('tpStart', 'START', 11, '15,13 57,16 57,36 15,38', 15) +
+             '</div>' +
+    '<div class="pg-arr-wrap" id="tpArrStart">' + _PG_ARROW_SVG + '<div class="pg-particle"></div></div>';
+  TP_STAGES.forEach(function (s, i) {
+    html += '<div class="pg-wrap" id="tpWrap_' + i + '">' +
+              '<div class="pg-dot" id="tpDot_' + i + '"></div>' +
+              '<div class="pg-tube" id="tpTube_' + i + '">' +
+                '<div class="pg-fill" id="tpFill_' + i + '"></div>' +
+                '<div class="pg-sheen"></div>' +
+                '<div class="pg-lbl">' + s.label + '</div>' +
+              '</div>' +
+              '<div class="pg-sub" id="tpSub_' + i + '">' + s.sub + '</div>' +
+            '</div>';
+    if (i < TP_STAGES.length - 1) {
+      html += '<div class="pg-arr-wrap" id="tpArr_' + i + '">' +
+                _PG_ARROW_SVG + '<div class="pg-particle"></div></div>';
+    }
+  });
+  html += '<div class="pg-arr-wrap" id="tpArrEnd">' + _PG_ARROW_SVG + '<div class="pg-particle"></div></div>' +
+          _TP_END_FLAG;
+  track.innerHTML = html;
+}
+
+/* ── rAF fill animation loop ─────────────────────────────────────────────── */
+function tpRafLoop() {
+  var any = false;
+  for (var i = 0; i < TP_STAGES.length; i++) {
+    if (Math.abs(tpFills[i] - tpTargets[i]) > 0.01) {
+      var step = (tpStates[i] === 'done' || tpStates[i] === 'error') ? 3.0 : tpSpeed;
+      tpFills[i] += (tpFills[i] < tpTargets[i] ? 1 : -1) * Math.min(step, Math.abs(tpFills[i] - tpTargets[i]));
+      any = true;
+      var el = document.getElementById('tpFill_' + i);
+      if (el) el.style.width = tpFills[i].toFixed(2) + '%';
+    }
+  }
+  tpRafId = any ? requestAnimationFrame(tpRafLoop) : null;
+}
+function _tpRafStart() { if (!tpRafId) tpRafId = requestAnimationFrame(tpRafLoop); }
+
+/* ── State helpers ────────────────────────────────────────────────────────── */
+function _tpSetClass(idx, state) {
+  var cls = state ? 'pg-' + state : '';
+  ['tpWrap_', 'tpTube_'].forEach(function (pfx) {
+    var el = document.getElementById(pfx + idx);
+    if (el) el.className = el.className.replace(/\bpg-(active|done|error|pending)\b/g,'').trim() + (cls ? ' ' + cls : '');
+  });
+}
+
+function tpActivate(idx) {
+  if (tpCurrent === idx && tpStates[idx] === 'active') return;
+  if (tpCurrent >= 0 && tpStates[tpCurrent] === 'active') tpComplete(tpCurrent);
+  for (var s = Math.max(0, tpCurrent + 1); s < idx; s++) {
+    if (tpStates[s] === 'pending') tpSkip(s);
+  }
+  tpCurrent = idx;
+  tpStates[idx] = 'active';
+  tpTargets[idx] = 82;
+  _tpSetClass(idx, 'active');
+  if (idx === 0) {
+    var as = document.getElementById('tpArrStart');
+    if (as) as.classList.add('pg-flowing');
+    tpFlagSet('tpStart', '#0066aa', true);
+  }
+  if (idx > 0) {
+    var arr = document.getElementById('tpArr_' + (idx - 1));
+    if (arr) arr.classList.add('pg-flowing');
+  }
+  var statusEl = document.getElementById('tpStatus');
+  if (statusEl) statusEl.textContent = '\u25cf ' + TP_STAGES[idx].sub + '\u2026';
+  _tpRafStart();
+}
+
+function tpComplete(idx) {
+  tpStates[idx] = 'done';
+  tpTargets[idx] = 100;
+  _tpSetClass(idx, 'done');
+  if (idx === 0) {
+    var as = document.getElementById('tpArrStart');
+    if (as) as.classList.remove('pg-flowing');
+  }
+  if (idx > 0) {
+    var arr = document.getElementById('tpArr_' + (idx - 1));
+    if (arr) arr.classList.remove('pg-flowing');
+  }
+  _tpRafStart();
+}
+
+function tpSkip(idx) {
+  tpStates[idx] = 'done';
+  tpFills[idx]  = 100;
+  tpTargets[idx] = 100;
+  _tpSetClass(idx, 'done');
+  var el = document.getElementById('tpFill_' + idx);
+  if (el) el.style.width = '100%';
+}
+
+function tpError(idx) {
+  tpStates[idx] = 'error';
+  tpTargets[idx] = tpFills[idx];
+  _tpSetClass(idx, 'error');
+  var arr0 = (idx === 0) ? document.getElementById('tpArrStart') : null;
+  if (arr0) arr0.classList.remove('pg-flowing');
+  var arr = (idx > 0) ? document.getElementById('tpArr_' + (idx - 1)) : null;
+  if (arr) arr.classList.remove('pg-flowing');
+}
+
+function tpFinish(status) {
+  _tpCardBtns(false);
+  _tpPipelineDone = (status === 'done');
+  if (status === 'done') {
+    for (var i = 0; i < TP_STAGES.length; i++) {
+      if (tpStates[i] !== 'error') tpComplete(i);
+    }
+    tpFlagSet('tpStart', '#007744', false);
+    _tpCardGlow(false);
+    var ae = document.getElementById('tpArrEnd');
+    if (ae) ae.classList.add('pg-flowing');
+    setTimeout(function () {
+      var ae2 = document.getElementById('tpArrEnd');
+      if (ae2) ae2.classList.remove('pg-flowing');
+      tpEndFlagSuccess();
+      _maybeShowCelebrate();
+    }, 700);
+    var statusEl = document.getElementById('tpStatus');
+    if (statusEl) statusEl.textContent = '\u2713 Tests passed \u2014 app verified.';
+    var badge = document.getElementById('tpBadge');
+    if (badge) { badge.className = 'badge bg-success small'; badge.textContent = 'Passed'; }
+    if (!_tpSimMode) _playPipelineSound('success');
+  } else {
+    if (tpCurrent >= 0 && tpStates[tpCurrent] === 'active') tpError(tpCurrent);
+    tpFlagSet('tpStart', '#1a5c3a', false);
+    _tpCardGlow(false);
+    tpEndFlagError();
+    var statusEl = document.getElementById('tpStatus');
+    if (statusEl) statusEl.textContent = '\u2717 Test failed at: ' + (tpCurrent >= 0 ? TP_STAGES[tpCurrent].sub : 'unknown');
+    var badge = document.getElementById('tpBadge');
+    if (badge) { badge.className = 'badge bg-danger small'; badge.textContent = 'Failed'; }
+    if (!_tpSimMode) _playPipelineSound('fail');
+  }
+}
+
+function tpReset() {
+  tpTestTimers.forEach(clearTimeout);
+  tpTestTimers = [];
+  _tpPendingTimers.forEach(clearTimeout);
+  _tpPendingTimers = [];
+  tpSpeed   = 0.04;
+  tpCurrent = -1;
+  _tpPipelineDone = false;
+  _tpSimMode = false;
+  for (var i = 0; i < TP_STAGES.length; i++) {
+    tpStates[i]  = 'pending';
+    tpFills[i]   = 0;
+    tpTargets[i] = 0;
+    _tpSetClass(i, '');
+    var fill = document.getElementById('tpFill_' + i);
+    if (fill) fill.style.width = '0%';
+    var arr = document.getElementById('tpArr_' + i);
+    if (arr) arr.classList.remove('pg-flowing');
+  }
+  ['tpArrStart', 'tpArrEnd'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('pg-flowing');
+  });
+  _tpCardGlow(false);
+  tpFlagSet('tpStart', '#363636', false);
+  tpEndFlagReset();
+  var statusEl = document.getElementById('tpStatus');
+  if (statusEl) statusEl.textContent = '';
+  var badge = document.getElementById('tpBadge');
+  if (badge) { badge.className = 'badge bg-secondary small'; badge.textContent = 'Idle'; }
+  if (tpRafId) { cancelAnimationFrame(tpRafId); tpRafId = null; }
+}
+
+/* ── Card glow + flag helpers ─────────────────────────────────────────────── */
+function _tpCardGlow(on) {
+  var card = document.getElementById('tpCard');
+  if (card) card.classList.toggle('pg-card-active', on);
+}
+
+function tpFlagSet(flagId, color, waving) {
+  var poly   = document.getElementById(flagId + 'Poly');
+  var banner = document.getElementById(flagId + 'Banner');
+  if (poly)   poly.setAttribute('fill', color);
+  if (banner) {
+    banner.classList.remove('pg-banner-waving');
+    if (waving) banner.classList.add('pg-banner-waving');
+  }
+}
+
+function tpEndFlagSuccess() {
+  var banner  = document.getElementById('tpEndBanner');
+  var overlay = document.getElementById('tpEndOverlay');
+  var svg     = document.getElementById('tpEndSvg');
+  if (overlay) overlay.setAttribute('fill', 'rgba(0,0,0,0)');
+  if (banner)  { banner.classList.remove('pg-banner-waving'); banner.classList.add('pg-banner-waving'); }
+  if (svg)     svg.style.filter = 'drop-shadow(0 0 10px rgba(245,210,11,0.85))';
+}
+
+function tpEndFlagError() {
+  var banner  = document.getElementById('tpEndBanner');
+  var overlay = document.getElementById('tpEndOverlay');
+  var svg     = document.getElementById('tpEndSvg');
+  if (overlay) overlay.setAttribute('fill', 'rgba(180,0,0,0.58)');
+  if (banner)  banner.classList.remove('pg-banner-waving');
+  if (svg)     svg.style.filter = 'drop-shadow(0 0 8px rgba(200,30,30,0.70))';
+}
+
+function tpEndFlagReset() {
+  var banner  = document.getElementById('tpEndBanner');
+  var overlay = document.getElementById('tpEndOverlay');
+  var svg     = document.getElementById('tpEndSvg');
+  if (overlay) overlay.setAttribute('fill', 'rgba(0,0,0,0)');
+  if (banner)  banner.classList.remove('pg-banner-waving');
+  if (svg)     svg.style.filter = '';
+}
+
+/* ── Real test pipeline run (auto-triggered after build) ──────────────────── */
+async function _runTestPipeline(mode) {
+  tpReset();
+  _tpCardBtns(true);
+  _tpCardGlow(true);
+  tpFlagSet('tpStart', '#0066aa', true);
+  var badge = document.getElementById('tpBadge');
+  if (badge) { badge.className = 'badge bg-info small'; badge.textContent = 'Running\u2026'; }
+
+  // Log panel
+  var res = document.getElementById('testResult');
+  if (res) { res.textContent = mode === 'full'
+    ? 'Running installer silently and launching installed app\u2026'
+    : 'Launching bundled exe and waiting for HTTP response\u2026'; }
+  var tbadge = document.getElementById('testBadge');
+  if (tbadge) { tbadge.className = 'badge bg-info small'; tbadge.textContent = mode === 'full' ? 'Installing\u2026' : 'Testing run\u2026'; }
+
+  // Stage 0: Launch — start immediately
+  tpActivate(0);
+  // Stage 1: Connect — after ~2 s
+  _tpPendingTimers.push(setTimeout(function () { if (tpStates[0] !== 'error') { tpComplete(0); tpActivate(1); } }, 2200));
+  // Stage 2: Verify — after ~9 s
+  _tpPendingTimers.push(setTimeout(function () { if (tpStates[1] !== 'error') { tpComplete(1); tpActivate(2); } }, 9000));
+  // Stage 3: Report — after ~17 s
+  _tpPendingTimers.push(setTimeout(function () { if (tpStates[2] !== 'error') { tpComplete(2); tpActivate(3); } }, 17000));
+
+  var api = (mode === 'full') ? '/api/build/test-install' : '/api/build/test-run';
+  try {
+    var r = await fetch(api, { method: 'POST' });
+    var d = await r.json();
+    // Cancel pending stage timers — result is in
+    _tpPendingTimers.forEach(clearTimeout);
+    _tpPendingTimers = [];
+
+    // Show result in Test Output Log
+    _showTestResult(d);
+
+    if (d.ok) {
+      // Snap all remaining stages to done
+      for (var i = 0; i < TP_STAGES.length; i++) {
+        if (tpStates[i] !== 'done') tpComplete(i);
+      }
+      setTimeout(function () { tpFinish('done'); }, 300);
+    } else {
+      // Fail at the currently active stage
+      setTimeout(function () { tpFinish('error'); }, 300);
+    }
+  } catch (e) {
+    _tpPendingTimers.forEach(clearTimeout);
+    _tpPendingTimers = [];
+    var res2 = document.getElementById('testResult');
+    if (res2) res2.textContent = 'Test request error: ' + e;
+    setTimeout(function () { tpFinish('error'); }, 300);
+  }
+}
+
+/* ── Manual "Test Output" button — real test against last compiled output ─── */
+async function doTestOutput() {
+  var mode = _pgBuildMode || 'bundle-only';
+  _tpCardBtns(true);
+  try {
+    await _runTestPipeline(mode);
+  } finally {
+    _tpCardBtns(false);
+  }
+}
+
+/* ── _maybeShowCelebrate — car + fireworks only when BOTH pipelines done ──── */
+function _maybeShowCelebrate() {
+  if (_pgPipelineDone && _tpPipelineDone) {
+    pgCelebrate();
+  }
+}
+
+/* ── TP simulation buttons ────────────────────────────────────────────────── */
+var _TP_TEST_DUR = [1400, 1800, 2000, 1200];  // ms per stage
+
+function _tpCardBtns(disabled) {
+  var bo = document.getElementById('btnTpCardOutput');
+  var be = document.getElementById('btnTpCardError');
+  if (bo) bo.disabled = disabled;
+  if (be) be.disabled = disabled;
+}
+
+function _tpBothBtns(disabled, testHtml, errHtml) {
+  var bt = document.getElementById('btnTPipelineTest');
+  var be = document.getElementById('btnTPipelineError');
+  if (bt) { bt.disabled = disabled; if (testHtml) bt.innerHTML = testHtml; }
+  if (be) { be.disabled = disabled; if (errHtml)  be.innerHTML = errHtml; }
+  _tpCardBtns(disabled);
+}
+
+function tpTestRun() {
+  tpReset();
+  _tpSimMode = true;
+  tpSpeed = 1.1;
+  _tpBothBtns(true,
+    '<i class="bi bi-hourglass-split me-1"></i>Running\u2026',
+    '<i class="bi bi-bug me-1"></i>TP Error');
+  _tpCardGlow(true);
+  tpFlagSet('tpStart', '#0066aa', true);
+
+  var t = 300;
+  TP_STAGES.forEach(function (s, i) {
+    var tA = t, tC = t + _TP_TEST_DUR[i];
+    tpTestTimers.push(setTimeout(tpActivate.bind(null, i), tA));
+    tpTestTimers.push(setTimeout(function (idx, last) {
+      tpComplete(idx);
+      if (last) {
+        setTimeout(function () {
+          tpFinish('done');
+          _tpBothBtns(false,
+            '<i class="bi bi-play-fill me-1"></i>TP Run',
+            '<i class="bi bi-bug me-1"></i>TP Error');
+          tpSpeed = 0.04;
+        }, 350);
+      }
+    }.bind(null, i, i === TP_STAGES.length - 1), tC));
+    t = tC + 80;
+  });
+}
+
+function tpTestError() {
+  tpReset();
+  _tpSimMode = true;
+  tpSpeed = 1.1;
+  _tpBothBtns(true,
+    '<i class="bi bi-play-fill me-1"></i>TP Run',
+    '<i class="bi bi-hourglass-split me-1"></i>Running\u2026');
+  _tpCardGlow(true);
+  tpFlagSet('tpStart', '#0066aa', true);
+
+  var failAt = Math.floor(Math.random() * TP_STAGES.length);
+  var restore = function () {
+    tpSpeed = 0.04;
+    _tpBothBtns(false,
+      '<i class="bi bi-play-fill me-1"></i>TP Run',
+      '<i class="bi bi-bug me-1"></i>TP Error');
+  };
+
+  var t = 300;
+  for (var i = 0; i <= failAt; i++) {
+    var tA = t;
+    if (i < failAt) {
+      var tC = t + _TP_TEST_DUR[i];
+      tpTestTimers.push(setTimeout(tpActivate.bind(null, i), tA));
+      tpTestTimers.push(setTimeout(tpComplete.bind(null, i), tC));
+      t = tC + 80;
+    } else {
+      var tE = t + Math.floor(_TP_TEST_DUR[i] * (0.40 + Math.random() * 0.25));
+      tpTestTimers.push(setTimeout(tpActivate.bind(null, failAt), tA));
+      tpTestTimers.push(setTimeout(function () {
+        tpError(failAt);
+        tpFinish('error');
+        setTimeout(restore, 400);
+      }, tE));
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Pipeline Sounds
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Shared cache — scanned once per session */
+var _soundsCache = null;
+
+/* Play a configured sound server-side (fire-and-forget) */
+function _playPipelineSound(type) {
+  var path = (document.getElementById(type === 'success' ? 'SOUND_SUCCESS' : 'SOUND_FAIL') || {value: ''}).value.trim();
+  if (!path) return;
+  fetch('/api/sounds/play', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path: path})
+  }).catch(function () {});
+}
+
+/* Preview a sound from the UI buttons */
+function testSound(type) {
+  var path = (document.getElementById(type === 'success' ? 'SOUND_SUCCESS' : 'SOUND_FAIL') || {value: ''}).value.trim();
+  if (!path) { showToast('No ' + type + ' sound configured.', 'warning'); return; }
+  fetch('/api/sounds/play', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path: path})
+  })
+  .then(function (r) { return r.json(); })
+  .then(function (d) {
+    if (!d.ok) showToast('Could not play sound: ' + (d.error || 'unknown error'), 'danger');
+  })
+  .catch(function (e) { showToast('Sound error: ' + e, 'danger'); });
+}
+
+/* Scan system sounds and populate both dropdowns */
+async function loadSoundList(type) {
+  var menuId = type === 'success' ? 'successSoundMenu' : 'failSoundMenu';
+  var menu = document.getElementById(menuId);
+  if (!menu) return;
+
+  if (_soundsCache) { _renderSoundMenu(_soundsCache, type); return; }
+
+  menu.innerHTML = '<li><span class="dropdown-item-text text-secondary small px-3 py-1">' +
+                   '<span class="spinner-border spinner-border-sm me-1"></span>Scanning…</span></li>';
+  try {
+    var r = await fetch('/api/sounds/scan');
+    var d = await r.json();
+    _soundsCache = d.sounds || [];
+    _renderSoundMenu(_soundsCache, type);
+  } catch (e) {
+    menu.innerHTML = '<li><span class="dropdown-item-text text-danger small px-3 py-1">Scan failed</span></li>';
+  }
+}
+
+function _renderSoundMenu(sounds, type) {
+  var menuId  = type === 'success' ? 'successSoundMenu' : 'failSoundMenu';
+  var inputId = type === 'success' ? 'SOUND_SUCCESS'    : 'SOUND_FAIL';
+  var menu    = document.getElementById(menuId);
+  if (!menu) return;
+
+  if (!sounds.length) {
+    menu.innerHTML = '<li><span class="dropdown-item-text text-secondary small px-3">No sounds found</span></li>';
+    return;
+  }
+
+  /* Group by directory */
+  var groups = {};
+  sounds.forEach(function (s) {
+    if (!groups[s.dir]) groups[s.dir] = [];
+    groups[s.dir].push(s);
+  });
+
+  var html = '';
+  Object.keys(groups).forEach(function (dir) {
+    html += '<li><h6 class="dropdown-header" style="font-size:.65rem;letter-spacing:.06em;">' +
+            escHtml(dir) + '</h6></li>';
+    groups[dir].forEach(function (s, idx) {
+      html += '<li><a class="dropdown-item small py-1" href="#" ' +
+              'data-path="' + escHtml(s.path) + '" data-target="' + inputId + '">' +
+              '<i class="bi bi-music-note me-2 text-secondary" style="font-size:.75rem;"></i>' +
+              escHtml(s.name) + '</a></li>';
+    });
+    html += '<li><hr class="dropdown-divider my-1"></li>';
+  });
+
+  menu.innerHTML = html;
+  menu.querySelectorAll('a[data-path]').forEach(function (a) {
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      var inp = document.getElementById(this.dataset.target);
+      if (inp) {
+        inp.value = this.dataset.path;
+        saveSetting(this.dataset.target, this.dataset.path);
+      }
+    });
+  });
+}
+
+/* Browse for any audio file using the Windows file picker */
+async function browseSoundFile(type) {
+  var inputId = type === 'success' ? 'SOUND_SUCCESS' : 'SOUND_FAIL';
+  var current = (document.getElementById(inputId) || {value: ''}).value.trim();
+  var initialDir = current ? current.replace(/[^\\\/]+$/, '') : (
+    (window.location.host || '').includes('localhost')
+      ? String.raw`C:\Windows\Media`
+      : ''
+  );
+  try {
+    var r = await fetch('/api/gh/browse-file', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        filter_desc: 'Audio Files (*.wav;*.mp3;*.ogg;*.m4a;*.flac;*.wma)',
+        filter_ext:  '*.wav;*.mp3;*.ogg;*.m4a;*.flac;*.wma',
+        initial:     initialDir
+      })
+    });
+    var d = await r.json();
+    if (d.ok && d.path) {
+      var inp = document.getElementById(inputId);
+      if (inp) {
+        inp.value = d.path;
+        saveSetting(inputId, d.path);
+        showToast('Sound updated.', 'success');
+      }
+    }
+  } catch (e) {
+    showToast('Could not open file picker: ' + e, 'danger');
+  }
 }
 </script>
 </body>

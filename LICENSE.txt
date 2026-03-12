@@ -1,0 +1,21 @@
+AS-IS SOFTWARE LICENSE
+======================
+
+Copyright (c) 2026 TechnoSage
+
+This software is provided "AS IS", without warranty of any kind, express or
+implied, including but not limited to the warranties of merchantability,
+fitness for a particular purpose, and non-infringement.  In no event shall
+the authors or copyright holders be liable for any claim, damages, or other
+liability, whether in an action of contract, tort, or otherwise, arising from,
+out of, or in connection with the software or the use or other dealings in the
+software.
+
+USE AT YOUR OWN RISK.  The entire risk as to the quality and performance of
+the software is with you.  Should the software prove defective, you assume the
+cost of all necessary servicing, repair, or correction.
+
+You are granted a non-exclusive, non-transferable license to use this software
+for personal or internal business purposes only.  Redistribution in source or
+binary form is not permitted without the prior written consent of the copyright
+holder.

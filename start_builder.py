@@ -32,14 +32,25 @@ from builder_app import create_builder_app   # noqa: E402
 app = create_builder_app()
 
 
+def _ssl_context():
+    """Return (cert, key) paths if mkcert certs exist, else None (plain HTTP)."""
+    base = os.path.dirname(os.path.abspath(__file__))
+    cert = os.path.join(base, "certs", "localhost.pem")
+    key  = os.path.join(base, "certs", "localhost-key.pem")
+    if os.path.isfile(cert) and os.path.isfile(key):
+        return cert, key
+    return None
+
+
 def _open_browser() -> None:
-    import time
-    import webbrowser
+    import time, webbrowser
     time.sleep(1.2)
-    webbrowser.open("http://127.0.0.1:5001")
+    scheme = "https" if _ssl_context() else "http"
+    webbrowser.open(f"{scheme}://127.0.0.1:5001")
 
 
 if __name__ == "__main__":
+    ssl = _ssl_context()
     threading.Thread(target=_open_browser, daemon=True).start()
 
     app.run(
@@ -47,4 +58,5 @@ if __name__ == "__main__":
         port=5001,
         debug=False,
         use_reloader=False,
+        ssl_context=ssl,
     )

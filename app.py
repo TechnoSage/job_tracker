@@ -126,6 +126,7 @@ def create_app(config_class=Config):
             except Exception:
                 db.session.rollback()
         _seed_default_settings(app)
+        _apply_build_meta(app)
         # Seed built-in scraper rows (safe to call multiple times)
         from scrapers import registry as scraper_registry
         scraper_registry.seed_db(app)
@@ -156,16 +157,52 @@ def create_app(config_class=Config):
         except Exception:
             _pdc = {'range1_days': 7, 'range1_color': '#28a745',
                     'range2_days': 30, 'range2_color': '#fd7e14', 'range3_color': '#adb5bd'}
+        try:
+            from models import EmailReview
+            pending_email_count = EmailReview.query.filter_by(review_status="pending").count()
+        except Exception:
+            pending_email_count = 0
         return dict(unread_count=unread, recent_notifications=recent_notifs,
                     last_scan=last_scan,
                     unemp_enabled=unemp_enabled,
                     unemp_url=unemp_url,
                     unemp_state=unemp_state,
                     posted_date_colors=_pdc,
-                    app_version=_read_app_version())
+                    app_version=_read_app_version(),
+                    pending_email_count=pending_email_count)
 
     _register_routes(app)
     return app
+
+
+def _apply_build_meta(app):
+    """Read build_meta.json (written by Build Dashboard before each build) and
+    update runtime settings so the compiled app uses the configured values.
+
+    build_meta.json is placed in the project root before compiling and is
+    bundled into the exe via --add-data so sys._MEIPASS contains it when frozen.
+    In development the file lives next to app.py and is read directly.
+    """
+    import json as _json
+    meta_path = os.path.join(_resource_dir(), "build_meta.json")
+    if not os.path.isfile(meta_path):
+        return
+    try:
+        meta = _json.loads(open(meta_path, encoding="utf-8").read())
+    except Exception:
+        return
+    updates = {
+        "support_contact_email": meta.get("support_email", ""),
+    }
+    for key, value in updates.items():
+        if value:  # only override when the meta file has a non-empty value
+            row = Setting.query.filter_by(key=key).first()
+            if row:
+                row.value = value
+            else:
+                db.session.add(Setting(key=key, value=value,
+                                       description="Injected by Build Dashboard"))
+    db.session.commit()
 
 
 def _seed_default_settings(app):
@@ -211,6 +248,7 @@ def _seed_default_settings(app):
         ("posted_date_range2_days",  "30",       "Days threshold for second posted-date color range"),
         ("posted_date_range2_color", "#fd7e14",  "Color for moderately old job postings (range 2)"),
         ("scan_timeout_minutes",     "30",       "Max scan duration in minutes; daemon restarts on timeout (0 = disabled)"),
+        ("support_contact_email",    "",         "Support contact email injected by Build Dashboard before compiling"),
     ]
     for key, value, description in defaults:
         if not Setting.query.filter_by(key=key).first():
@@ -1735,11 +1773,13 @@ def _register_routes(app):
 
     @app.route("/support")
     def support_page():
-        applicant_name  = Setting.get("applicant_name", "")
-        applicant_email = Setting.get("applicant_email", "")
+        applicant_name        = Setting.get("applicant_name", "")
+        applicant_email       = Setting.get("applicant_email", "")
+        support_contact_email = Setting.get("support_contact_email", "") or "support@technosagedv.com"
         return render_template("support.html",
                                applicant_name=applicant_name,
-                               applicant_email=applicant_email)
+                               applicant_email=applicant_email,
+                               support_contact_email=support_contact_email)
 
     # ------------------------------------------------------------------
     # Change Log page
@@ -2869,3 +2909,99 @@ def _register_routes(app):
         from models import EmailReview
         count = EmailReview.query.filter_by(review_status="pending").count()
         return jsonify({"count": count})
+
+    # ── Email Response page ──────────────────────────────────────────────────
+
+    @app.route("/email-response")
+    def email_response():
+        from models import EmailReview
+        confirmed = (
+            EmailReview.query
+            .filter_by(review_status="confirmed")
+            .order_by(EmailReview.created_at.desc())
+            .all()
+        )
+        # Apps without any confirmed email match
+        confirmed_app_ids = db.session.query(EmailReview.suggested_app_id).filter(
+            EmailReview.review_status == "confirmed",
+            EmailReview.suggested_app_id.isnot(None)
+        ).subquery()
+        unmatched_apps = (
+            Application.query
+            .filter(
+                ~Application.id.in_(confirmed_app_ids),
+                Application.status.notin_(["draft", "withdrawn"])
+            )
+            .order_by(Application.updated_at.desc())
+            .all()
+        )
+        pending_emails = (
+            EmailReview.query
+            .filter_by(review_status="pending")
+            .order_by(EmailReview.created_at.desc())
+            .all()
+        )
+        return render_template(
+            "email_response.html",
+            confirmed=confirmed,
+            unmatched_apps=unmatched_apps,
+            pending_emails=pending_emails,
+        )
+
+    @app.route("/api/email-response/manual-match", methods=["POST"])
+    def api_email_response_manual_match():
+        """Manually link a pending EmailReview to an Application and confirm it."""
+        from models import EmailReview, EmailMatchFeedback
+        from email_checker import _sender_domain
+        data = request.get_json() or {}
+        review_id = data.get("review_id")
+        app_id    = data.get("app_id")
+        if not review_id or not app_id:
+            return jsonify({"ok": False, "error": "review_id and app_id required"})
+
+        review  = EmailReview.query.get_or_404(review_id)
+        app_obj = Application.query.get_or_404(app_id)
+
+        if review.review_status == "confirmed":
+            return jsonify({"ok": False, "error": "Review already confirmed."})
+
+        # Override suggested match with user's explicit choice
+        review.suggested_app_id = app_id
+
+        now_str = datetime.now().strftime("%Y-%m-%d")
+        classification = review.classification or "declined"
+
+        if classification == "declined":
+            app_obj.status = "rejected"
+            notif_title = f"Declined: {app_obj.job.title if app_obj.job else 'Application'}"
+            notif_msg   = f"{app_obj.job.company if app_obj.job else 'Company'} sent a decline. Status updated to Rejected."
+        else:
+            if app_obj.status == "submitted":
+                app_obj.status = "phone_screen"
+            notif_title = f"Interview Invite: {app_obj.job.title if app_obj.job else 'Application'}"
+            notif_msg   = f"{app_obj.job.company if app_obj.job else 'Company'} wants to schedule an interview!"
+
+        auto_note = (
+            f"\n\n[Manually matched {now_str}] {classification.title()} email "
+            f"from {review.sender}. Saved to: {review.eml_path or 'N/A'}"
+        )
+        app_obj.notes = ((app_obj.notes or "") + auto_note).strip()
+
+        notif = Notification(
+            type="follow_up",
+            title=notif_title,
+            message=notif_msg,
+            job_id=app_obj.job_id,
+            application_id=app_obj.id,
+        )
+        db.session.add(notif)
+
+        s_domain = _sender_domain(review.sender)
+        if s_domain:
+            db.session.add(EmailMatchFeedback(
+                sender_domain=s_domain, app_id=app_obj.id, is_confirmed=True
+            ))
+
+        review.review_status = "confirmed"
+        db.session.commit()
+        return jsonify({"ok": True})
