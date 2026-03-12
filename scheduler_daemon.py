@@ -101,9 +101,11 @@ logger = logging.getLogger("daemon")
 # ---------------------------------------------------------------------------
 # PID file — written by the daemon so the web app can check if it is running
 # ---------------------------------------------------------------------------
-PID_FILE = os.path.join(PROJECT_DIR, "scheduler_daemon.pid")
+PID_FILE        = os.path.join(PROJECT_DIR, "scheduler_daemon.pid")
+ICON_SIGNAL     = os.path.join(PROJECT_DIR, "icon_refresh.signal")
 
 _stop_event = threading.Event()   # set to request graceful shutdown
+_tray_icon  = None                # pystray.Icon instance while tray is running
 
 
 def _write_pid() -> None:
@@ -500,13 +502,36 @@ def _make_icon_image():
     return img
 
 
+def _icon_refresh_loop() -> None:
+    """Poll for ICON_SIGNAL and hot-swap the tray icon without restarting."""
+    global _tray_icon
+    while not _stop_event.is_set():
+        _stop_event.wait(3)          # check every 3 seconds
+        if os.path.exists(ICON_SIGNAL):
+            try:
+                os.remove(ICON_SIGNAL)
+            except OSError:
+                pass
+            if _tray_icon is not None:
+                try:
+                    _tray_icon.icon = _make_icon_image()
+                    logger.info("Tray icon refreshed from Settings.")
+                except Exception as exc:
+                    logger.warning("Tray icon refresh failed: %s", exc)
+
+
 def run_with_tray() -> None:
     """Start the scan loop in a background thread and show a tray icon."""
+    global _tray_icon
     import pystray  # type: ignore
 
     # Start scan loop in daemon thread
     loop_thread = threading.Thread(target=_scan_loop, name="scan-loop", daemon=True)
     loop_thread.start()
+
+    # Start icon-refresh watcher thread
+    refresh_thread = threading.Thread(target=_icon_refresh_loop, name="icon-refresh", daemon=True)
+    refresh_thread.start()
 
     settings = _read_settings() or {}
     port = settings.get("app_port", "5000")
@@ -538,6 +563,7 @@ def run_with_tray() -> None:
         "Job Tracker — background scanner",
         menu,
     )
+    _tray_icon = icon
 
     logger.info("Tray icon started — right-click for options.")
     icon.run()          # blocks main thread; exits when on_exit() calls icon.stop()
