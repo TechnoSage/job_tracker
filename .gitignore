@@ -45,6 +45,7 @@ pyvenv.cfg
 *.pyd
 logs/
 scheduler_daemon.pid
+icon_refresh.signal
 build_meta.json
 
 # Crash reports

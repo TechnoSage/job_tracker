@@ -2756,19 +2756,30 @@ def _register_routes(app):
 
     @app.route("/api/daemon/icon-select", methods=["POST"])
     def api_daemon_icon_select():
-        """Save the chosen icon path + size as settings."""
+        """Save the chosen icon path + size as settings and signal the running daemon."""
         data = request.get_json(silent=True) or {}
         path = data.get("path", "")
         size = data.get("size", "")
         Setting.set("daemon_icon_path", path)
         Setting.set("daemon_icon_size", size)
+        # Touch signal file so the running daemon hot-swaps its tray icon within ~3 s
+        try:
+            _signal = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "icon_refresh.signal")
+            open(_signal, "w").close()
+        except OSError:
+            pass
         return jsonify({"ok": True})
 
     @app.route("/api/daemon/icon-reset", methods=["POST"])
     def api_daemon_icon_reset():
-        """Reset tray icon to the built-in default."""
+        """Reset tray icon to the built-in default and signal the running daemon."""
         Setting.set("daemon_icon_path", "")
         Setting.set("daemon_icon_size", "")
+        try:
+            _signal = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "icon_refresh.signal")
+            open(_signal, "w").close()
+        except OSError:
+            pass
         return jsonify({"ok": True})
 
     # ------------------------------------------------------------------
