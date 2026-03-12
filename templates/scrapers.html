@@ -61,6 +61,27 @@
   animation: neonJobsGlow 1.8s ease-in-out infinite;
 }
 
+/* ── Jobs-found card glow ───────────────────────────────────────────── */
+@keyframes jobsFoundGlow {
+  0%, 100% {
+    box-shadow:
+      0 6px 18px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.35),
+      0 0 0 2px rgba(57,255,20,.22),
+      0 1px 0 rgba(255,255,255,.045) inset, 0 -2px 4px rgba(0,0,0,.3) inset;
+    border-color: rgba(57,255,20,.35);
+  }
+  50% {
+    box-shadow:
+      0 6px 18px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.35),
+      0 0 0 4px rgba(57,255,20,.14), 0 0 22px rgba(57,255,20,.1),
+      0 1px 0 rgba(255,255,255,.045) inset, 0 -2px 4px rgba(0,0,0,.3) inset;
+    border-color: rgba(57,255,20,.58);
+  }
+}
+.source-card.jobs-found-glow {
+  animation: jobsFoundGlow 2.4s ease-in-out infinite;
+}
+
 /* ── Unavailable source cards ───────────────────────────────────────── */
 .unavailable-card {
   border-radius: 0.9rem;
@@ -92,6 +113,43 @@
 
 /* ── View toggle pills ──────────────────────────────────────────────── */
 .view-toggle .btn { border-radius: 2rem; }
+
+/* ── API Key required — pulsing amber outline ───────────────────────── */
+@keyframes keyRequiredPulse {
+  0%, 100% {
+    box-shadow:
+      0 6px 18px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.35),
+      0 0 0 2px rgba(255,165,0,.35),
+      0 1px 0 rgba(255,255,255,.045) inset, 0 -2px 4px rgba(0,0,0,.3) inset;
+    border-color: rgba(255,165,0,.45);
+  }
+  50% {
+    box-shadow:
+      0 6px 18px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.35),
+      0 0 0 4px rgba(255,165,0,.18), 0 0 14px rgba(255,165,0,.28),
+      0 1px 0 rgba(255,255,255,.045) inset, 0 -2px 4px rgba(0,0,0,.3) inset;
+    border-color: rgba(255,165,0,.75);
+  }
+}
+.source-card.key-required {
+  animation: keyRequiredPulse 2.6s ease-in-out infinite;
+}
+
+/* ── Key Setup panel inside card ────────────────────────────────────── */
+.key-setup-panel {
+  background: rgba(255,165,0,.07);
+  border: 1px solid rgba(255,165,0,.22);
+  border-radius: 0.55rem;
+  padding: 0.6rem 0.75rem 0.65rem;
+  margin-bottom: 0.6rem;
+}
+.key-setup-panel.key-ok {
+  background: rgba(25,135,84,.08);
+  border-color: rgba(25,135,84,.28);
+}
+.key-setup-header { font-size: 0.8rem; font-weight: 600; }
+.key-field-label  { font-size: 0.71rem; color: #adb5bd; margin-bottom: 0.2rem; }
+.key-status-msg   { font-size: 0.75rem; min-height: 1.1rem; }
 </style>
 
 <div class="d-flex align-items-center justify-content-between mt-3 mb-3 flex-wrap gap-2">
@@ -150,11 +208,11 @@
   <div class="btn-group btn-group-sm" role="group">
     <button type="button" class="btn btn-primary active" id="btnViewActive" onclick="switchView('active')">
       <i class="bi bi-check2-circle me-1"></i>Active Sources
-      <span class="badge bg-light text-dark ms-1" style="font-size:.7rem;">{{ sources|length }}</span>
+      <span class="badge bg-light text-dark ms-1" style="font-size:.7rem;">{{ active_sources|length }}</span>
     </button>
     <button type="button" class="btn btn-outline-secondary" id="btnViewUnavailable" onclick="switchView('unavailable')">
       <i class="bi bi-slash-circle me-1"></i>Unavailable
-      <span class="badge bg-secondary ms-1" style="font-size:.7rem;">{{ unavailable_sources|length }}</span>
+      <span class="badge bg-secondary ms-1" style="font-size:.7rem;">{{ (disabled_sources|length) + (unavailable_sources|length) }}</span>
     </button>
   </div>
   <span class="text-muted small" id="viewSubtitle">Job boards included in your scheduled scans</span>
@@ -163,9 +221,9 @@
 <!-- ── Active Source Cards Grid ──────────────────────────────────────── -->
 <div id="viewActive">
 <div class="row g-3" id="sourceCardsGrid">
-  {% for src in sources %}
-  <div class="col-md-6 col-xl-4 source-col" id="col-{{ src.name }}">
-    <div class="source-card card h-100 {% if not src.is_enabled %}opacity-50{% endif %}"
+  {% for src in active_sources %}
+  <div class="col-md-6 col-xl-4 source-col" id="col-{{ src.name }}" data-jobs="{{ src.last_jobs_found or 0 }}">
+    <div class="source-card card h-100{% if key_info.get(src.name) and not key_info[src.name].all_set %} key-required{% elif src.last_jobs_found and src.last_jobs_found > 0 %} jobs-found-glow{% endif %}"
          id="card-{{ src.name }}" data-name="{{ src.name }}">
       <div class="card-body p-3 d-flex flex-column">
 
@@ -180,6 +238,9 @@
             {% set type_colors = {'builtin':'secondary','rss':'info','json_api':'warning'} %}
             <span class="badge bg-{{ type_colors.get(src.source_type, 'secondary') }}" style="font-size:0.68rem">
               {{ src.source_type.replace('_',' ') }}
+            </span>
+            <span id="jobsBadge-{{ src.name }}" class="badge" style="font-size:0.68rem; background:rgba(57,255,20,.18); color:#39ff14; border:1px solid rgba(57,255,20,.4);{% if not src.last_jobs_found or src.last_jobs_found == 0 %} display:none{% endif %}">
+              {{ src.last_jobs_found or 0 }} jobs
             </span>
           </div>
           <!-- Toggle switch -->
@@ -221,6 +282,87 @@
         </div>
         {% endif %}
 
+        <!-- ── Disable Prompt (inline, appears when toggle switched off) ── -->
+        <div class="disable-prompt rounded p-2 mb-2"
+             id="disablePrompt-{{ src.name }}"
+             style="display:none; background:rgba(220,53,69,.1); border:1px solid rgba(220,53,69,.3);">
+          <div class="fw-semibold text-danger small mb-1">
+            <i class="bi bi-dash-circle me-1"></i>Disable <em>{{ src.display_name }}</em>?
+          </div>
+          <input type="text"
+                 class="form-control form-control-sm mb-2"
+                 id="disableReason-{{ src.name }}"
+                 placeholder="Reason for disabling (optional)">
+          <div class="d-flex gap-2">
+            <button class="btn btn-xs btn-danger" onclick="confirmDisable('{{ src.name }}')">
+              <i class="bi bi-dash-circle me-1"></i>Disable
+            </button>
+            <button class="btn btn-xs btn-outline-secondary" onclick="cancelDisable('{{ src.name }}')">
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <!-- ── API Key Setup (only for scrapers that need keys) ─── -->
+        {% if key_info.get(src.name) %}
+        {% set kd = key_info[src.name] %}
+        <div class="key-setup-panel {% if kd.all_set %}key-ok{% endif %} mb-1"
+             id="keyPanel-{{ src.name }}">
+          <!-- Panel header -->
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="key-setup-header">
+              <i class="bi bi-key me-1 {% if kd.all_set %}text-success{% else %}text-warning{% endif %}"></i>
+              API Key Setup
+              {% if kd.all_set %}
+                <span class="badge bg-success ms-1" style="font-size:0.62rem;vertical-align:middle;">Configured</span>
+              {% else %}
+                <span class="badge bg-warning text-dark ms-1" style="font-size:0.62rem;vertical-align:middle;">Key Required</span>
+              {% endif %}
+            </span>
+            <div class="d-flex gap-1">
+              <a href="{{ kd.registration_url }}" target="_blank" rel="noopener"
+                 class="btn btn-xs btn-outline-info" title="Open registration page to get your free API key">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Get Key
+              </a>
+              <button class="btn btn-xs btn-outline-secondary"
+                      id="keyTestBtn-{{ src.name }}"
+                      onclick="testScraperKeys('{{ src.name }}')"
+                      title="Test current keys by connecting to the API now">
+                <i class="bi bi-wifi"></i>
+              </button>
+            </div>
+          </div>
+          <!-- Key input fields -->
+          {% for field in kd.fields %}
+          <div class="mb-1">
+            <div class="key-field-label">
+              {{ field.label }}
+              {% if kd.field_set.get(field.env_var) %}
+                <span class="badge bg-success ms-1" style="font-size:0.6rem;" id="badge-{{ src.name }}-{{ field.env_var }}">Set</span>
+              {% else %}
+                <span class="badge bg-warning text-dark ms-1" style="font-size:0.6rem;" id="badge-{{ src.name }}-{{ field.env_var }}">Not set</span>
+              {% endif %}
+            </div>
+            <input type="password"
+                   class="form-control form-control-sm key-input"
+                   id="keyField-{{ src.name }}-{{ field.env_var }}"
+                   data-env-var="{{ field.env_var }}"
+                   placeholder="{{ field.placeholder }}"
+                   autocomplete="off">
+          </div>
+          {% endfor %}
+          <!-- Save button + status message -->
+          <div class="d-flex align-items-center gap-2 mt-2">
+            <button class="btn btn-xs btn-warning"
+                    id="keySaveBtn-{{ src.name }}"
+                    onclick="saveScraperKeys('{{ src.name }}')">
+              <i class="bi bi-floppy me-1"></i>Save &amp; Test
+            </button>
+            <span class="key-status-msg text-muted" id="keyStatusMsg-{{ src.name }}"></span>
+          </div>
+        </div>
+        {% endif %}
+
         <!-- ── Spacer ─────────────────────────────────────────────── -->
         <div class="flex-grow-1"></div>
 
@@ -228,9 +370,9 @@
         <div class="d-flex flex-wrap gap-3 small text-muted mb-2 card-footer-line pt-2 mt-1">
           <span>
             <i class="bi bi-clock me-1"></i>
-            {{ src.last_run.strftime('%b %d %H:%M') if src.last_run else 'Never run' }}
+            <span id="statsRun-{{ src.name }}">{{ src.last_run.strftime('%b %d %H:%M') if src.last_run else 'Never run' }}</span>
           </span>
-          <span>
+          <span id="statsJobs-{{ src.name }}">
             <i class="bi bi-briefcase me-1"></i>
             {% if src.last_jobs_found and src.last_jobs_found > 0 %}
               <span class="jobs-found-neon">{{ src.last_jobs_found }}</span>
@@ -305,20 +447,98 @@
   <div class="col-12">
     <div class="text-center text-muted py-5">
       <i class="bi bi-cloud-slash fs-1 d-block mb-3"></i>
-      No sources configured yet. Add one using the buttons above.
+      No active sources. All sources are disabled — check the Unavailable tab.
     </div>
   </div>
   {% endfor %}
 </div><!-- /row #sourceCardsGrid -->
 </div><!-- /#viewActive -->
 
-<!-- ── Unavailable Sources Grid ──────────────────────────────────────── -->
+<!-- ── Unavailable Sources View ───────────────────────────────────────── -->
 <div id="viewUnavailable" style="display:none">
-  <div class="mb-3">
-    <p class="text-muted small mb-0">
+
+  <!-- ── Section A: User-disabled sources ──────────────────────────── -->
+  {% if disabled_sources %}
+  <div class="mb-2">
+    <h6 class="fw-semibold text-secondary mb-2">
+      <i class="bi bi-toggle-off me-1"></i>Disabled by You
+      <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">{{ disabled_sources|length }}</span>
+    </h6>
+    <p class="text-muted small mb-3">
+      These sources are switched off. Flip the toggle on any card to move it back to Active Sources.
+    </p>
+  </div>
+  <div class="row g-3 mb-4">
+    {% for src in disabled_sources %}
+    <div class="col-md-6 col-xl-4 source-col" id="col-{{ src.name }}">
+      <div class="source-card card h-100" id="card-{{ src.name }}" data-name="{{ src.name }}"
+           style="opacity:0.6; filter:saturate(0.5);">
+        <div class="card-body p-3 d-flex flex-column">
+
+          <!-- Row 1: Toggle + Badges -->
+          <div class="d-flex align-items-start justify-content-between mb-2">
+            <div class="d-flex flex-wrap gap-1 align-items-center">
+              {% if src.is_builtin %}
+                <span class="badge bg-secondary" style="font-size:0.68rem">built-in</span>
+              {% else %}
+                <span class="badge bg-info text-dark" style="font-size:0.68rem">custom</span>
+              {% endif %}
+              <span class="badge bg-danger" style="font-size:0.68rem">disabled</span>
+            </div>
+            <!-- Re-enable toggle -->
+            <div class="ms-2 flex-shrink-0 text-end">
+              <div class="form-check form-switch mb-0 d-flex justify-content-end">
+                <input class="form-check-input" type="checkbox" role="switch"
+                       id="toggle-{{ src.name }}"
+                       onchange="toggleSource(this, '{{ src.name }}')">
+              </div>
+              <small class="app-hint text-info fst-italic" style="font-size:.68rem;display:block;margin-top:2px;">re-enable</small>
+            </div>
+          </div>
+
+          <!-- Row 2: Title -->
+          <div class="mb-1">
+            <span class="fw-bold fs-6">{{ src.display_name }}</span>
+          </div>
+
+          <!-- Row 3: Disabled reason (if set) -->
+          {% if src.disabled_reason %}
+          <div class="small text-warning mb-1">
+            <i class="bi bi-chat-left-text me-1"></i>{{ src.disabled_reason }}
+          </div>
+          {% else %}
+          <div class="small text-muted fst-italic mb-1">No reason given</div>
+          {% endif %}
+
+          <!-- Row 4: Description -->
+          {% if src.description %}
+          <div class="text-secondary small mb-1" style="font-size:0.76rem;">{{ src.description }}</div>
+          {% endif %}
+
+          <div class="flex-grow-1"></div>
+
+          <!-- Row 5: Last run stats -->
+          <div class="d-flex flex-wrap gap-3 small text-muted card-footer-line pt-2 mt-1">
+            <span><i class="bi bi-clock me-1"></i>{{ src.last_run.strftime('%b %d %H:%M') if src.last_run else 'Never run' }}</span>
+            <span><i class="bi bi-briefcase me-1"></i>{{ src.last_jobs_found or 0 }} jobs</span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── Section B: Cannot-scrape sources (hardcoded) ──────────────── -->
+  <div class="mb-2">
+    <h6 class="fw-semibold text-secondary mb-2">
+      <i class="bi bi-slash-circle me-1"></i>Cannot Be Scraped
+      <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">{{ unavailable_sources|length }}</span>
+    </h6>
+    <p class="text-muted small mb-3">
       <i class="bi bi-info-circle me-1 text-info"></i>
-      These sources cannot currently be scraped. They are listed here for transparency
-      and to track when they may become available in the future.
+      These sources have no legal or technical scraping method available at this time.
     </p>
   </div>
   <div class="row g-3">
@@ -671,21 +891,66 @@ function switchView(view) {
 
 // ── Toggle source ─────────────────────────────────────────────────────────────
 function toggleSource(cb, name) {
-  fetch('/scrapers/' + name + '/toggle', { method: 'POST', headers: XHR })
+  if (!cb.checked) {
+    // Switching OFF — show inline reason prompt first; revert switch until confirmed
+    cb.checked = true;
+    var prompt = document.getElementById('disablePrompt-' + name);
+    if (prompt) {
+      prompt.style.display = '';
+      var reasonEl = document.getElementById('disableReason-' + name);
+      if (reasonEl) { reasonEl.value = ''; reasonEl.focus(); }
+    } else {
+      // No prompt (e.g. called from Unavailable view with checked=false) — shouldn't happen
+      _doToggle(name, null);
+    }
+  } else {
+    // Switching ON (re-enabling from the Unavailable / disabled view)
+    _doToggle(name, null);
+  }
+}
+
+function showDisablePrompt(name) {
+  var prompt = document.getElementById('disablePrompt-' + name);
+  if (prompt) prompt.style.display = '';
+}
+
+function cancelDisable(name) {
+  var prompt = document.getElementById('disablePrompt-' + name);
+  if (prompt) prompt.style.display = 'none';
+  // Restore toggle to ON since we cancelled
+  var cb = document.getElementById('toggle-' + name);
+  if (cb) cb.checked = true;
+}
+
+function confirmDisable(name) {
+  var reasonEl = document.getElementById('disableReason-' + name);
+  var reason = reasonEl ? reasonEl.value.trim() : '';
+  _doToggle(name, reason);
+}
+
+function _doToggle(name, reason) {
+  var body = (reason !== null && reason !== undefined)
+    ? JSON.stringify({ reason: reason })
+    : '{}';
+  fetch('/scrapers/' + name + '/toggle', {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/json' },
+    body: body,
+  })
     .then(function(r) { return r.json(); })
     .then(function(d) {
       if (d.ok) {
-        var card = document.getElementById('card-' + name);
-        if (d.is_enabled) {
-          card.classList.remove('opacity-50');
-        } else {
-          card.classList.add('opacity-50');
-        }
+        location.reload();
       } else {
-        cb.checked = !cb.checked; // revert
+        // Revert toggle on failure
+        var cb = document.getElementById('toggle-' + name);
+        if (cb) cb.checked = !cb.checked;
       }
     })
-    .catch(function() { cb.checked = !cb.checked; });
+    .catch(function() {
+      var cb = document.getElementById('toggle-' + name);
+      if (cb) cb.checked = !cb.checked;
+    });
 }
 
 // ── Run source ────────────────────────────────────────────────────────────────
@@ -693,13 +958,83 @@ function runSource(btn, name) {
   btn.disabled = true;
   var orig = btn.innerHTML;
   btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+  var startTime = new Date().toISOString();
   fetch('/scrapers/' + name + '/run', { method: 'POST', headers: XHR })
     .then(function(r) { return r.json(); })
     .then(function(d) {
-      btn.innerHTML = '<i class="bi bi-check-lg"></i>';
-      setTimeout(function() { btn.innerHTML = orig; btn.disabled = false; }, 2500);
+      if (d.ok) {
+        _pollStats(name, startTime, 0, btn, orig);
+      } else {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+      }
     })
     .catch(function() { btn.innerHTML = orig; btn.disabled = false; });
+}
+
+function _pollStats(name, startTime, attempts, btn, origHtml) {
+  if (attempts > 30) { btn.innerHTML = origHtml; btn.disabled = false; return; }
+  setTimeout(function() {
+    fetch('/api/scrapers/' + name + '/stats')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.last_run && d.last_run > startTime) {
+          btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+          setTimeout(function() { btn.innerHTML = origHtml; btn.disabled = false; }, 2000);
+          updateCardStats(name, d);
+          resortCards();
+        } else {
+          _pollStats(name, startTime, attempts + 1, btn, origHtml);
+        }
+      })
+      .catch(function() { btn.innerHTML = origHtml; btn.disabled = false; });
+  }, 2000);
+}
+
+function updateCardStats(name, d) {
+  var jobs    = d.last_jobs_found || 0;
+  var jobsEl  = document.getElementById('statsJobs-' + name);
+  var runEl   = document.getElementById('statsRun-' + name);
+  var errbox  = document.getElementById('errbox-' + name);
+  var errtext = document.getElementById('errtext-' + name);
+  var card    = document.getElementById('card-' + name);
+  var col     = document.getElementById('col-' + name);
+  var badge   = document.getElementById('jobsBadge-' + name);
+
+  if (jobsEl) {
+    if (jobs > 0) {
+      jobsEl.innerHTML = '<i class="bi bi-briefcase me-1"></i><span class="jobs-found-neon">' + jobs + '</span> jobs';
+    } else {
+      jobsEl.innerHTML = '<i class="bi bi-briefcase me-1"></i>' + jobs + ' jobs';
+    }
+  }
+  if (runEl && d.last_run) {
+    var dt = new Date(d.last_run);
+    runEl.textContent = dt.toLocaleString('en-US', {month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false});
+  }
+  if (errbox && errtext) {
+    errtext.textContent = d.last_error || '';
+    errbox.style.display = d.last_error ? '' : 'none';
+  }
+  if (card) {
+    if (jobs > 0) { card.classList.add('jobs-found-glow'); }
+    else          { card.classList.remove('jobs-found-glow'); }
+  }
+  if (col) { col.dataset.jobs = jobs; }
+  if (badge) {
+    if (jobs > 0) { badge.textContent = jobs + ' jobs'; badge.style.display = ''; }
+    else          { badge.style.display = 'none'; }
+  }
+}
+
+function resortCards() {
+  var grid = document.getElementById('sourceCardsGrid');
+  if (!grid) return;
+  var cols = Array.from(grid.querySelectorAll('.source-col'));
+  cols.sort(function(a, b) {
+    return (parseInt(b.dataset.jobs) || 0) - (parseInt(a.dataset.jobs) || 0);
+  });
+  cols.forEach(function(col) { grid.appendChild(col); });
 }
 
 // ── Delete source ─────────────────────────────────────────────────────────────
@@ -1237,5 +1572,118 @@ function handleRenameKey(e, name) {
       .catch(function () {});
   }
 }());
+
+// ── Scraper API Key helpers ───────────────────────────────────────────────────
+function _escHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function saveScraperKeys(name) {
+  var btn     = document.getElementById('keySaveBtn-' + name);
+  var msg     = document.getElementById('keyStatusMsg-' + name);
+  var panel   = document.getElementById('keyPanel-' + name);
+  var origHtml = btn.innerHTML;
+
+  // Collect values from the password fields
+  var payload = {};
+  var hasValue = false;
+  panel.querySelectorAll('.key-input').forEach(function(inp) {
+    var val = inp.value.trim();
+    if (val) { payload[inp.dataset.envVar] = val; hasValue = true; }
+  });
+
+  if (!hasValue) {
+    msg.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Enter at least one key value.</span>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
+  msg.textContent = '';
+
+  try {
+    var r = await fetch('/api/scrapers/' + name + '/save-keys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    var d = await r.json();
+    if (d.ok) {
+      msg.innerHTML = '<span class="text-info"><i class="bi bi-wifi me-1"></i>Testing connection…</span>';
+      await _doTestKeys(name, payload);
+    } else {
+      msg.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>' + _escHtml(d.error || 'Save failed.') + '</span>';
+    }
+  } catch (e) {
+    msg.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Request failed.</span>';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = origHtml;
+}
+
+async function testScraperKeys(name) {
+  // Test using current env values (pass empty body — server uses os.environ)
+  var panel = document.getElementById('keyPanel-' + name);
+  var payload = {};
+  if (panel) {
+    panel.querySelectorAll('.key-input').forEach(function(inp) {
+      var val = inp.value.trim();
+      if (val) payload[inp.dataset.envVar] = val;
+    });
+  }
+  var btn = document.getElementById('keyTestBtn-' + name);
+  if (btn) { btn.disabled = true; }
+  await _doTestKeys(name, payload);
+  if (btn) { btn.disabled = false; }
+}
+
+async function _doTestKeys(name, payload) {
+  var msg    = document.getElementById('keyStatusMsg-' + name);
+  var panel  = document.getElementById('keyPanel-' + name);
+  var card   = document.getElementById('card-' + name);
+
+  try {
+    var r = await fetch('/api/scrapers/' + name + '/test-keys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {}),
+    });
+    var d = await r.json();
+
+    if (d.valid) {
+      if (msg) msg.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>' + _escHtml(d.message) + '</span>';
+      // Update panel style to "configured"
+      if (panel) {
+        panel.classList.add('key-ok');
+        panel.querySelectorAll('.badge.bg-warning').forEach(function(b) {
+          b.className = b.className.replace('bg-warning text-dark', 'bg-success');
+          b.textContent = 'Set';
+        });
+        // Update panel header badge
+        var hdrBadge = panel.querySelector('.badge.bg-warning');
+        if (hdrBadge) {
+          hdrBadge.className = hdrBadge.className.replace('bg-warning text-dark', 'bg-success');
+          hdrBadge.textContent = 'Configured';
+        }
+        // Switch key icon to success color
+        var keyIcon = panel.querySelector('.bi-key');
+        if (keyIcon) {
+          keyIcon.classList.remove('text-warning');
+          keyIcon.classList.add('text-success');
+        }
+      }
+      // Stop the pulsing amber border
+      if (card) card.classList.remove('key-required');
+    } else {
+      if (msg) msg.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>' + _escHtml(d.message || d.error) + '</span>';
+      if (panel) panel.classList.remove('key-ok');
+    }
+  } catch (e) {
+    if (msg) msg.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Test request failed.</span>';
+  }
+}
 </script>
 {% endblock %}
