@@ -150,9 +150,35 @@ html { scroll-behavior: smooth; }
   <a class="nav-link sub" href="#er-match-workflow">Manual Match Workflow</a>
 
   <a class="nav-link fw-semibold" href="#analytics">Analytics</a>
+  <a class="nav-link sub" href="#analytics-charts">Charts</a>
+
   <a class="nav-link fw-semibold" href="#sources">Job Sources</a>
+  <a class="nav-link sub" href="#sources-tabs">Active / Unavailable Tabs</a>
+  <a class="nav-link sub" href="#sources-builtin">Built-In Sources</a>
+  <a class="nav-link sub" href="#sources-apikeys">API Key Setup</a>
+  <a class="nav-link sub" href="#sources-custom">Custom Sources</a>
+  <a class="nav-link sub" href="#sources-unavailable">Cannot Be Scraped</a>
+
+  <a class="nav-link fw-semibold" href="#unemployment">Unemployment Tracker</a>
+  <a class="nav-link sub" href="#unemployment-enable">Enabling the Page</a>
+  <a class="nav-link sub" href="#unemployment-tracking">What It Tracks</a>
+  <a class="nav-link sub" href="#unemployment-export">Export &amp; Print</a>
+  <a class="nav-link sub" href="#unemployment-settings">Settings</a>
+
   <a class="nav-link fw-semibold" href="#notifications">Notifications</a>
+  <a class="nav-link sub" href="#notif-types">Notification Types</a>
+  <a class="nav-link sub" href="#notif-cleanup">Auto-Cleanup</a>
+
   <a class="nav-link fw-semibold" href="#settings">Settings</a>
+  <a class="nav-link sub" href="#settings-profile">Profile</a>
+  <a class="nav-link sub" href="#settings-skills">Job Filtering</a>
+  <a class="nav-link sub" href="#settings-email">Email Monitoring</a>
+  <a class="nav-link sub" href="#settings-schedule">Scheduled Scans</a>
+  <a class="nav-link sub" href="#settings-colors">Posted Date Colors</a>
+  <a class="nav-link sub" href="#settings-unemp">Unemployment</a>
+  <a class="nav-link sub" href="#settings-db">Database Tools</a>
+
+  <a class="nav-link fw-semibold" href="#server-logs">Server Logs</a>
 
   <div class="toc-section">Security</div>
   <a class="nav-link" href="#https-overview">HTTPS Overview</a>
@@ -221,14 +247,20 @@ html { scroll-behavior: smooth; }
       <div class="d-flex align-items-center gap-2 mb-1 rounded px-2 py-1" style="background:#0d6efd;color:#fff"><i class="bi bi-speedometer2"></i> Dashboard</div>
       <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-search"></i> Job Listings</div>
       <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-file-earmark-text"></i> Applications</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-envelope-check"></i> Email Response</div>
       <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-bar-chart-line"></i> Analytics</div>
       <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-broadcast"></i> Sources</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-piggy-bank"></i> Unemployment <span class="badge bg-secondary ms-1" style="font-size:.6rem">optional</span></div>
       <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-bell"></i> Notifications</div>
       <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-terminal"></i> Server Log</div>
       <div class="d-flex align-items-center gap-2 px-2 py-1 text-white-50"><i class="bi bi-gear"></i> Settings</div>
       <hr style="border-color:rgba(255,255,255,.1)">
       <div class="d-grid"><button class="btn btn-sm btn-outline-primary w-100" style="font-size:.75rem"><i class="bi bi-play-fill me-1"></i>Run Scan Now</button></div>
     </div>
+  </div>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    The <strong>Unemployment</strong> link only appears in the sidebar when Unemployment Tracking is enabled. Go to <strong>Settings → Unemployment</strong> and check <em>Enable Unemployment Tracking</em> to show it. See the <a href="#unemployment">Unemployment Tracker</a> section for full details.
   </div>
 
   <h3>Topbar</h3>
@@ -844,101 +876,472 @@ html { scroll-behavior: smooth; }
 <!-- ══════════════════════════════════════════════════════ ANALYTICS -->
 <section id="analytics">
   <h2><i class="bi bi-bar-chart-line me-2 text-secondary"></i>Analytics</h2>
-  <p>The Analytics page visualizes your job search data with charts covering your full application history.</p>
+  <p>The Analytics page at <code>/analytics</code> visualizes your complete job search history with seven metric cards and five interactive charts.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Metric cards</div>
+    <div class="row g-2 text-center" style="font-size:.78rem">
+      <div class="col"><div class="mockup-card"><div class="text-muted small">Total Jobs</div><div class="fw-bold text-info">847</div></div></div>
+      <div class="col"><div class="mockup-card"><div class="text-muted small">Applications</div><div class="fw-bold" style="color:#6ea8fe">34</div></div></div>
+      <div class="col"><div class="mockup-card"><div class="text-muted small">Interviews</div><div class="fw-bold text-warning">5</div></div></div>
+      <div class="col"><div class="mockup-card"><div class="text-muted small">Offers</div><div class="fw-bold text-success">1</div></div></div>
+      <div class="col"><div class="mockup-card"><div class="text-muted small">Rejected</div><div class="fw-bold text-danger">8</div></div></div>
+      <div class="col"><div class="mockup-card"><div class="text-muted small">Response Rate</div><div class="fw-bold">41%</div></div></div>
+      <div class="col"><div class="mockup-card"><div class="text-muted small">Offer Rate</div><div class="fw-bold">3%</div></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="analytics-charts">
+  <h3>Charts</h3>
   <ul>
-    <li><strong>Application Pipeline chart</strong> — Bar chart showing count at each status stage. Quickly see where applications are stalling.</li>
-    <li><strong>Jobs by Source chart</strong> — Pie/donut chart showing which scrapers are producing the most jobs for you.</li>
-    <li><strong>Application trend</strong> — Timeline of when you applied, helping you see if your activity is consistent.</li>
-    <li><strong>Response rate by source</strong> — Which job boards produce the most replies relative to applications sent.</li>
+    <li><strong>Application Pipeline</strong> — Bar chart showing your application count at each status stage (Submitted, Phone Screen, Interview, Offer, Rejected, Withdrawn). Use it to spot where applications are stalling.</li>
+    <li><strong>Jobs by Source</strong> — Doughnut chart showing which scraper sources produced the most job listings for you. Helps you decide which sources to prioritize.</li>
+    <li><strong>Weekly Activity</strong> — Line chart over the past 8 weeks showing two lines: <em>Jobs Found</em> (from scans) vs. <em>Applications Submitted</em>. Helps you see if your activity is consistent.</li>
+    <li><strong>Jobs by Category</strong> — Doughnut breakdown of all found jobs by auto-detected category: Software, IT, Customer Service, General.</li>
+    <li><strong>Match Score Distribution</strong> — Histogram of all job scores grouped into ranges (0–20, 20–40, 40–60, 60–80, 80–100). A spike in the 60–80 range means your skills are well-aligned with available positions.</li>
   </ul>
   <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
-    If the Application Pipeline shows a big drop between Submitted and Phone Screen, try refining your cover letter or increasing the minimum score threshold so you focus on better-matching jobs.
+    If the Pipeline shows a large drop between Submitted and Phone Screen, try raising your minimum match score in Settings so you focus applications on the highest-scoring jobs only.
   </div>
 </section>
 
 <!-- ══════════════════════════════════════════════════════== SOURCES -->
 <section id="sources">
   <h2><i class="bi bi-broadcast me-2 text-secondary"></i>Job Sources (Scrapers)</h2>
-  <p>Sources are the web scrapers that pull job listings into the tracker. Each source targets a specific job board or company careers page.</p>
+  <p>The Sources page at <code>/scrapers</code> manages every job board scraper. Sources pull listings into the tracker on a schedule or when you click <em>Run Now</em>.</p>
+</section>
+
+<section id="sources-tabs">
+  <h3>Active / Unavailable Tabs</h3>
+  <p>The page has two tabs: <strong>Active</strong> (sources included in scans) and <strong>Unavailable</strong> (sources you have disabled or that cannot be scraped).</p>
+
+  <p>Every source card has a toggle switch in the top-right corner:</p>
 
   <div class="mockup">
-    <div class="mockup-label">Source row example</div>
-    <div class="mockup-card d-flex align-items-center gap-3" style="font-size:.82rem">
-      <div style="flex:1">
-        <div class="fw-semibold">LinkedIn — Software Developer</div>
-        <div class="text-muted small">https://linkedin.com/jobs/search/?keywords=python&amp;location=remote</div>
+    <div class="mockup-label">Source card header with toggle</div>
+    <div class="mockup-card d-flex align-items-start justify-content-between gap-3" style="font-size:.82rem">
+      <div>
+        <div class="d-flex gap-1 mb-1">
+          <span class="badge bg-secondary">built-in</span>
+          <span class="badge bg-info text-dark">json api</span>
+          <span class="badge" style="background:rgba(57,255,20,.18);color:#39ff14;border:1px solid rgba(57,255,20,.4)">14 jobs</span>
+        </div>
+        <div class="fw-semibold">RemoteOK</div>
+        <div class="text-muted small">remoteok.io — fully remote positions</div>
       </div>
-      <span class="badge bg-success">Active</span>
-      <div class="d-flex gap-1">
-        <button class="btn btn-sm btn-outline-primary py-0"><i class="bi bi-play-fill"></i></button>
-        <button class="btn btn-sm btn-outline-secondary py-0"><i class="bi bi-pencil"></i></button>
-        <button class="btn btn-sm btn-outline-danger py-0"><i class="bi bi-trash"></i></button>
-      </div>
-      <div class="form-check form-switch mb-0">
-        <input class="form-check-input" type="checkbox" checked>
+      <div class="text-end">
+        <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" checked></div>
+        <div class="text-muted" style="font-size:.65rem">include in scans</div>
       </div>
     </div>
   </div>
 
   <ul>
-    <li><strong>Toggle switch</strong> — Enable or disable a source. Disabled sources are skipped during scans.</li>
-    <li><strong>Run button</strong> <i class="bi bi-play-fill"></i> — Run this single source immediately without running a full scan.</li>
-    <li><strong>Edit button</strong> <i class="bi bi-pencil"></i> — Change the source URL, name, or category.</li>
-    <li><strong>Delete button</strong> <i class="bi bi-trash"></i> — Permanently remove this source. Jobs already fetched are kept.</li>
+    <li><strong>Toggle ON</strong> — Card stays in the Active tab. Source is included in all scheduled and manual scans.</li>
+    <li><strong>Toggle OFF</strong> — A confirmation prompt appears with an optional <em>Reason</em> text field. Confirm to move the card to the Unavailable tab under "Disabled by You".</li>
+    <li><strong>Re-enable</strong> — Toggle the switch back ON from the Unavailable tab. The card returns to Active immediately.</li>
+  </ul>
+
+  <h4>Active tab card features</h4>
+  <ul>
+    <li><strong>Sort order</strong> — Cards are automatically ordered by jobs found in the last scan (most productive first). Cards with zero results sort alphabetically at the bottom.</li>
+    <li><strong>Green glow</strong> — Cards that found jobs in the most recent scan pulse with a soft green border outline.</li>
+    <li><strong>Jobs badge</strong> — A green badge in the card header shows the job count found last scan. Hidden when count is zero.</li>
+    <li><strong>Live refresh</strong> — After clicking <i class="bi bi-play-fill"></i> Run Now, the card stats (count, timestamp, any error) update in real time via polling — no page reload needed. Cards re-sort in place when the scan completes.</li>
+    <li><strong>Health status</strong> — Each card shows <span class="badge bg-success">Current</span> / <span class="badge bg-danger">Broken</span> / <span class="badge bg-secondary">Not checked</span> with the last check timestamp.</li>
+    <li><strong>Error detail</strong> — If a scan fails, the error message appears in a red box on the card.</li>
+  </ul>
+</section>
+
+<section id="sources-builtin">
+  <h3>Built-In Sources</h3>
+  <p>These sources ship with Job Tracker and are seeded into the database automatically on first run.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Built-in sources</div>
+    <table class="table table-sm table-borderless mb-0" style="font-size:.8rem">
+      <thead><tr><th>Source</th><th>Board</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="fw-semibold">RemoteOK</td><td>remoteok.io</td><td>Fully remote positions only</td></tr>
+        <tr><td class="fw-semibold">Remotive</td><td>remotive.io</td><td>Remote-first tech &amp; startup jobs</td></tr>
+        <tr><td class="fw-semibold">We Work Remotely</td><td>weworkremotely.com</td><td>Remote-only positions</td></tr>
+        <tr><td class="fw-semibold">ZipRecruiter</td><td>ziprecruiter.com</td><td>General job board</td></tr>
+        <tr><td class="fw-semibold">LinkedIn</td><td>linkedin.com</td><td>Limited availability</td></tr>
+        <tr><td class="fw-semibold">USAJobs</td><td>usajobs.gov</td><td>U.S. federal jobs — <strong>requires free API key</strong></td></tr>
+        <tr><td class="fw-semibold">CareerOneStop</td><td>careeronestop.org</td><td>Dept. of Labor jobs — <strong>requires free API key</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="sources-apikeys">
+  <h3>API Key Setup</h3>
+  <p>USAJobs and CareerOneStop require free API credentials before they can fetch jobs. Cards for these sources display an <strong>amber pulsing outline</strong> when credentials are not yet configured.</p>
+
+  <div class="mockup" style="max-width:480px">
+    <div class="mockup-label">API key setup panel (on the source card)</div>
+    <div class="mockup-card" style="font-size:.8rem">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="fw-semibold text-warning"><i class="bi bi-key me-1"></i>API Keys Required</span>
+        <a href="#" class="btn btn-xs btn-outline-info py-0" style="font-size:.72rem"><i class="bi bi-box-arrow-up-right me-1"></i>Get Free Key</a>
+      </div>
+      <div class="mb-2">
+        <div class="text-muted small mb-1">API Key</div>
+        <div class="d-flex gap-1">
+          <input type="password" class="form-control form-control-sm" placeholder="Paste your API key here" style="flex:1">
+          <span class="badge bg-danger align-self-center">Not set</span>
+        </div>
+      </div>
+      <div class="mb-2">
+        <div class="text-muted small mb-1">User Agent (your email)</div>
+        <div class="d-flex gap-1">
+          <input type="password" class="form-control form-control-sm" placeholder="your@email.com" style="flex:1">
+          <span class="badge bg-secondary align-self-center">Not set</span>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-outline-success"><i class="bi bi-floppy me-1"></i>Save &amp; Test</button>
+        <span class="text-muted small">Keys are saved to .env</span>
+      </div>
+    </div>
+  </div>
+
+  <ol>
+    <li>Click <strong>Get Free Key</strong> — opens the provider's developer registration page in a new tab.</li>
+    <li>Register and copy your API key (and email/user-agent if required).</li>
+    <li>Paste each credential into the password fields on the card.</li>
+    <li>Click <strong>Save &amp; Test</strong> — the app writes the keys to <code>.env</code>, updates the running process immediately, and makes a live test call to the API.</li>
+    <li>A <span class="badge bg-success">Connection successful</span> message confirms the key works. If it fails, the exact API error is shown so you know what to fix.</li>
+  </ol>
+  <div class="warn-box"><i class="bi bi-exclamation-triangle me-2"></i>
+    Never share your API keys. They are stored in the local <code>.env</code> file and never sent anywhere except to the respective job board API.
+  </div>
+</section>
+
+<section id="sources-custom">
+  <h3>Custom Sources</h3>
+  <p>Add any RSS feed or JSON API as a custom source using the <strong>+ Add Source</strong> form at the top of the Sources page.</p>
+  <ul>
+    <li>Provide a display name, source type (RSS / JSON API), and URL template.</li>
+    <li>Optionally add search terms (one per line, or comma-separated) — the scraper substitutes them into the URL.</li>
+    <li>Click the <i class="bi bi-play-fill"></i> Run Now button after adding a source to test it immediately.</li>
+    <li>Custom sources can be <strong>renamed</strong> (click the pencil icon next to the name), <strong>edited</strong> (URL, search terms), and <strong>deleted</strong> — jobs already fetched are kept.</li>
+  </ul>
+</section>
+
+<section id="sources-unavailable">
+  <h3>Cannot Be Scraped</h3>
+  <p>The Unavailable tab has two sections:</p>
+  <ul>
+    <li><strong>Disabled by You</strong> — Sources you have turned off. Each card shows your optional disable reason. Toggle back on to return the source to Active.</li>
+    <li><strong>Cannot Be Scraped</strong> — Read-only informational cards for sources with technical or legal barriers that prevent automated access (LinkedIn full API, Indeed, Glassdoor, JobRight AI). Each card explains why the source cannot be scraped and whether a future API option may become available.</li>
+  </ul>
+
+  <h4>Source discovery &amp; health checks</h4>
+  <ul>
+    <li><strong>Check Health</strong> — Tests all active sources for connectivity and updates the Current / Broken status badge on each card.</li>
+    <li><strong>Discover Sources</strong> — Scans common job board URL patterns for available RSS and API feeds you can add.</li>
+    <li><strong>Discover Boards</strong> — Searches major job boards (LinkedIn, Indeed, etc.) for skill-specific search URLs matching your configured skills.</li>
+  </ul>
+</section>
+
+<!-- ════════════════════════════════════════════════ UNEMPLOYMENT -->
+<section id="unemployment">
+  <h2><i class="bi bi-piggy-bank me-2 text-warning"></i>Unemployment Tracker</h2>
+  <p>The Unemployment Tracker helps you meet state unemployment benefit requirements by automatically counting the job applications you log each claim week and alerting you when you fall short.</p>
+
+  <div class="warn-box"><i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>The Unemployment page is hidden by default.</strong> You must enable it in Settings before it appears in the sidebar. See <a href="#unemployment-enable">Enabling the Page</a> below.
+  </div>
+</section>
+
+<section id="unemployment-enable">
+  <h3>Enabling the Page</h3>
+  <ol>
+    <li>Open <strong>Settings</strong> (gear icon in the sidebar or topbar).</li>
+    <li>Scroll to the <strong>Unemployment</strong> section.</li>
+    <li>Check the <strong>Enable Unemployment Tracking</strong> checkbox.</li>
+    <li>The <strong>Unemployment</strong> link appears instantly in the sidebar — no restart needed.</li>
+  </ol>
+
+  <div class="mockup" style="max-width:420px">
+    <div class="mockup-label">Settings → Unemployment section</div>
+    <div class="mockup-card" style="font-size:.82rem">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="fw-semibold">Unemployment Tracking</span>
+        <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" checked></div>
+      </div>
+      <div class="row g-2">
+        <div class="col-6">
+          <div class="text-muted small mb-1">State</div>
+          <select class="form-select form-select-sm"><option>New York</option></select>
+        </div>
+        <div class="col-6">
+          <div class="text-muted small mb-1">Required apps / week</div>
+          <input type="number" class="form-control form-control-sm" value="3">
+        </div>
+        <div class="col-12">
+          <div class="text-muted small mb-1">State Agency URL</div>
+          <input type="text" class="form-control form-control-sm" value="https://labor.ny.gov/ui/">
+        </div>
+        <div class="col-6">
+          <div class="text-muted small mb-1">Claim Week Start Date</div>
+          <input type="date" class="form-control form-control-sm">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="unemployment-tracking">
+  <h3>What It Tracks</h3>
+  <p>The Unemployment page at <code>/unemployment</code> automatically counts all job applications you have logged (via the Applications page) and groups them by claim week.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Claim weeks table</div>
+    <div class="mockup-card" style="font-size:.8rem">
+      <div class="row g-2 mb-2 fw-semibold text-muted" style="font-size:.7rem;text-transform:uppercase">
+        <div class="col-4">Claim Week</div>
+        <div class="col-2 text-center">Applications</div>
+        <div class="col-2 text-center">Required</div>
+        <div class="col-4 text-center">Status</div>
+      </div>
+      <div class="row g-2 mb-1 align-items-center border-bottom border-secondary border-opacity-25 pb-1">
+        <div class="col-4">Mar 3 – Mar 9</div>
+        <div class="col-2 text-center fw-bold" style="color:#39ff14">5</div>
+        <div class="col-2 text-center">3</div>
+        <div class="col-4 text-center"><span style="color:#39ff14"><i class="bi bi-check-circle-fill me-1"></i>Met</span></div>
+      </div>
+      <div class="row g-2 mb-1 align-items-center border-bottom border-secondary border-opacity-25 pb-1">
+        <div class="col-4">Feb 24 – Mar 2</div>
+        <div class="col-2 text-center fw-bold" style="color:#39ff14">4</div>
+        <div class="col-2 text-center">3</div>
+        <div class="col-4 text-center"><span style="color:#39ff14"><i class="bi bi-check-circle-fill me-1"></i>Met</span></div>
+      </div>
+      <div class="row g-2 align-items-center">
+        <div class="col-4">Feb 17 – Feb 23</div>
+        <div class="col-2 text-center fw-bold text-danger">2</div>
+        <div class="col-2 text-center">3</div>
+        <div class="col-4 text-center"><span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>Short</span></div>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li>Each row is one claim week. Dates are calculated automatically from your configured <em>Claim Week Start Date</em>.</li>
+    <li>The <strong>Applications</strong> column counts only jobs with a status of Submitted, Phone Screen, Interview, Offer, Rejected, or Withdrawn — draft applications do not count.</li>
+    <li>A <strong>neon green checkmark ✓</strong> appears when the weekly required minimum is met.</li>
+    <li>A red <strong>Short</strong> indicator appears when a past week did not meet the requirement — a <code>unemployment_alarm</code> notification is also created.</li>
+    <li>Click any week row to expand it and see the individual job applications counted for that week.</li>
   </ul>
 
   <div class="key-term"><i class="bi bi-info-circle me-2"></i>
-    Add a new source by pasting a job search URL into the <strong>Add Source</strong> form at the top of the page. Job Tracker will detect the board type and configure the scraper automatically.
+    The tracker counts applications <em>you have already logged</em> in Job Tracker. Make sure to log every application through the Apply or Quick Apply buttons on the Job Listings page, or manually add applications on the Applications page.
+  </div>
+
+  <div class="mockup" style="max-width:380px">
+    <div class="mockup-label">Summary cards (top of page)</div>
+    <div class="row g-2 text-center" style="font-size:.78rem">
+      <div class="col-6"><div class="mockup-card"><div class="text-muted small">Claim Weeks</div><div class="fw-bold text-info">8</div></div></div>
+      <div class="col-6"><div class="mockup-card"><div class="text-muted small">Total Applied</div><div class="fw-bold" style="color:#39ff14">31</div></div></div>
+      <div class="col-6"><div class="mockup-card"><div class="text-muted small">Benefits Start</div><div class="fw-bold">Jan 13</div></div></div>
+      <div class="col-6"><div class="mockup-card"><div class="text-muted small">Weeks Met</div><div class="fw-bold text-success">7 / 8</div></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="unemployment-export">
+  <h3>Export &amp; Print</h3>
+  <p>Export your claim week data for submission to your state unemployment office using the buttons at the top of the page:</p>
+  <ul>
+    <li><strong>Export CSV</strong> — Downloads a comma-separated file with week dates and application counts. Works with Excel, Google Sheets, or any spreadsheet app.</li>
+    <li><strong>Export Excel</strong> — Downloads a formatted <code>.xlsx</code> spreadsheet ready for submission.</li>
+    <li><strong>Print Summary</strong> — Opens the browser print dialog with a clean two-column printable layout showing all claim weeks and counts.</li>
+  </ul>
+</section>
+
+<section id="unemployment-settings">
+  <h3>Settings Reference</h3>
+  <p>All unemployment settings live in <strong>Settings → Unemployment</strong>.</p>
+  <table class="table table-sm" style="font-size:.82rem">
+    <thead><tr><th>Setting</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Enable Unemployment Tracking</strong></td><td>Shows or hides the Unemployment page in the sidebar nav</td></tr>
+      <tr><td><strong>State</strong></td><td>Your state — shown on export headers and the page title</td></tr>
+      <tr><td><strong>State Agency URL</strong></td><td>Link to your state's unemployment portal; displayed as a quick-access button on the page</td></tr>
+      <tr><td><strong>Claim Week Start Date</strong></td><td>The first day of your very first claim week; all subsequent weeks are calculated from this date</td></tr>
+      <tr><td><strong>Required Applications / Week</strong></td><td>Minimum applications needed each week; weeks below this count show a red indicator and trigger an <code>unemployment_alarm</code> notification</td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Set a <strong>Claim Week Start Date</strong> matching the exact start of your first benefit week (check your state's claim confirmation letter). Getting this date right ensures every week boundary aligns with what your state expects.
   </div>
 </section>
 
 <!-- ══════════════════════════════════════════════════ NOTIFICATIONS -->
 <section id="notifications">
   <h2><i class="bi bi-bell me-2 text-secondary"></i>Notifications</h2>
-  <p>Notifications are generated automatically when important events happen — new high-scoring matches, follow-up reminders, scheduler errors, and more. The bell icon in the topbar shows your unread count.</p>
+  <p>All system alerts appear at <code>/notifications</code>. The bell icon in the topbar shows a red badge with your unread count.</p>
+</section>
+
+<section id="notif-types">
+  <h3>Notification Types</h3>
+  <table class="table table-sm" style="font-size:.82rem">
+    <thead><tr><th>Type</th><th>When it fires</th></tr></thead>
+    <tbody>
+      <tr><td><i class="bi bi-briefcase text-success me-1"></i> <strong>new_job</strong></td><td>A scan finds a job scoring above your minimum match threshold</td></tr>
+      <tr><td><i class="bi bi-clock text-warning me-1"></i> <strong>follow_up</strong></td><td>An application's follow-up date has passed with no reply recorded</td></tr>
+      <tr><td><i class="bi bi-calendar-event text-info me-1"></i> <strong>interview</strong></td><td>An upcoming interview is approaching (based on the interview date you set)</td></tr>
+      <tr><td><i class="bi bi-trophy text-success me-1"></i> <strong>offer</strong></td><td>An application status is changed to Offer</td></tr>
+      <tr><td><i class="bi bi-bell text-secondary me-1"></i> <strong>reminder</strong></td><td>General reminder (manual or system-generated)</td></tr>
+      <tr><td><i class="bi bi-piggy-bank text-danger me-1"></i> <strong>unemployment_alarm</strong></td><td>A claim week ends with fewer applications than the required minimum</td></tr>
+      <tr><td><i class="bi bi-exclamation-triangle text-danger me-1"></i> <strong>scan_error</strong></td><td>A scraper fails during a scheduled or manual scan</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Actions per notification</h4>
   <ul>
-    <li><strong>Mark as read</strong> — Click the checkmark on any notification to mark it read. The topbar count decreases.</li>
-    <li><strong>Dismiss all</strong> — Clears all notifications at once.</li>
-    <li>Notification types include: <em>New Matches</em>, <em>Follow-up Due</em>, <em>Email Response Detected</em>, <em>Scan Completed</em>, <em>Scan Error</em>.</li>
+    <li><strong>Mark as read</strong> — Removes the unread badge; notification stays in the list.</li>
+    <li><strong>Archive</strong> — Moves the notification out of the main view into the archive.</li>
+    <li><strong>Dismiss</strong> — Removes the notification from view (can be recovered from archive if auto-delete has not run).</li>
   </ul>
+</section>
+
+<section id="notif-cleanup">
+  <h3>Auto-Cleanup</h3>
+  <p>Notifications accumulate over time. Configure automatic cleanup in <strong>Settings → Notifications</strong>:</p>
+  <ul>
+    <li><strong>Auto-archive</strong> — Notifications older than N days are automatically archived (default: 30 days). Toggle on/off independently.</li>
+    <li><strong>Auto-delete archived</strong> — Archived notifications older than N days are permanently deleted (default: 60 days). Toggle on/off independently.</li>
+  </ul>
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Leave auto-archive at 30 days and auto-delete at 60 days. This keeps the list clean while giving you a month of history to refer back to if needed.
+  </div>
 </section>
 
 <!-- ═════════════════════════════════════════════════════= SETTINGS -->
 <section id="settings">
   <h2><i class="bi bi-gear me-2 text-secondary"></i>Settings</h2>
-  <p>Settings stores your personal profile and controls how the app behaves. Changes take effect immediately — no restart needed.</p>
+  <p>Settings at <code>/settings</code> stores your personal profile and controls every aspect of how Job Tracker behaves. Changes take effect immediately — no restart needed.</p>
+  <p>Sections can be <strong>reordered</strong> by drag-and-drop. Toggle between <em>Manual</em> layout (drag freely) and <em>Auto</em> layout (balanced columns) using the button at the top of the page.</p>
+</section>
 
-  <h4>Your Profile</h4>
+<section id="settings-profile">
+  <h3>Your Profile</h3>
   <ul>
-    <li><strong>Name, Email, Phone</strong> — Used to pre-fill application forms and cover letters.</li>
-    <li><strong>Location &amp; Miles</strong> — Sets the default job search radius for location-based scrapers.</li>
+    <li><strong>Name, Email, Phone</strong> — Pre-fills application forms and cover letters.</li>
+    <li><strong>Location &amp; Miles radius</strong> — Your state and commute radius for location-based job filtering.</li>
+    <li><strong>Years of Experience</strong> — Used in cover letter generation.</li>
     <li><strong>LinkedIn &amp; GitHub URLs</strong> — Included in application templates.</li>
-    <li><strong>Resume Path</strong> — Absolute path to your resume file, used for skill extraction and cover letter AI.</li>
+    <li><strong>Resume Path</strong> — Absolute path to your resume file (PDF or DOCX). Click the browse button to open a file picker. Used for skill extraction and AI cover letter context.</li>
   </ul>
+</section>
 
-  <h4>Skills Configuration</h4>
+<section id="settings-skills">
+  <h3>Job Filtering</h3>
   <ul>
-    <li><strong>Required Skills</strong> — Skills that must appear in a job description to score well. Missing required skills significantly lower the score.</li>
-    <li><strong>Preferred Skills</strong> — Nice-to-have skills that boost the score if present.</li>
-    <li><strong>Resume Skills</strong> — Skills extracted from your resume (auto-populated, or edit manually).</li>
-    <li><strong>Minimum Match Score</strong> — Jobs below this score are excluded from scan notifications and the Recent Matches list.</li>
+    <li><strong>Minimum Match Score</strong> (0–100 slider) — Jobs below this threshold are excluded from new-match notifications and the Recent Matches table. Recommended range: 50–65.</li>
+    <li><strong>Required Skills</strong> — Comma-separated. Each match in a job posting title, description, or tags adds <strong>+20 points</strong> to the score.</li>
+    <li><strong>Preferred Skills</strong> — Comma-separated. Each match adds <strong>+8 points</strong>.</li>
+    <li><strong>Job Duration Filter</strong> — Uncheck durations you do not want (e.g. uncheck Internship, Temporary). Leave all unchecked to see every duration.</li>
+    <li><strong>Use Resume</strong> toggle — When enabled, skills extracted from your resume file replace the manual Required/Preferred skill lists for scoring.</li>
   </ul>
+</section>
 
-  <h4>Email Settings</h4>
+<section id="settings-email">
+  <h3>Response Email Monitoring</h3>
+  <p>Connect one or more email accounts so Job Tracker can scan your inbox for application replies.</p>
   <ul>
-    <li><strong>IMAP / SMTP settings</strong> — Configure your email account so the tracker can monitor your inbox for job responses.</li>
-    <li><strong>Check interval</strong> — How often the scheduler checks for new emails.</li>
+    <li><strong>Gmail</strong> — Requires a Google App Password (Google Account → Security → 2-Step Verification → App Passwords).</li>
+    <li><strong>Outlook / Hotmail</strong> — Requires a Microsoft App Password (account.microsoft.com → Security → Advanced security options).</li>
+    <li><strong>Custom IMAP</strong> — Any IMAP-compatible mailbox. Enter the IMAP host, port, username, and password.</li>
   </ul>
-
-  <h4>Scheduler (Daemon)</h4>
-  <p>Start or stop the background scheduler from the Daemon section in Settings. See <a href="#daemon">Scheduler Daemon</a> for full details.</p>
-
-  <h4>Other Settings</h4>
   <ul>
-    <li><strong>Follow-up Days</strong> — Default number of days after applying before a follow-up reminder is triggered.</li>
-    <li><strong>Timezone</strong> — Used for scan scheduling and date display.</li>
-    <li><strong>AI Cover Letters</strong> — Toggle AI-assisted cover letter generation on or off.</li>
+    <li>Click <strong>Test</strong> before saving to verify the credentials connect successfully.</li>
+    <li>Each account has a toggle to temporarily pause checking without deleting the account.</li>
+    <li><strong>Check Now</strong> triggers an immediate inbox scan across all enabled accounts.</li>
   </ul>
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Use a dedicated app password (not your main account password) so you can revoke it at any time without affecting your main login.
+  </div>
+</section>
+
+<section id="settings-schedule">
+  <h3>Scheduled Scans</h3>
+  <ul>
+    <li><strong>Enable automatic scans</strong> toggle — Turn scheduled scanning on or off.</li>
+    <li><strong>Frequency</strong> — Daily · Weekly · Monthly</li>
+    <li><strong>Scan Times</strong> — Add one or more HH:MM times (e.g. 08:00 and 20:00 for morning and evening scans).</li>
+    <li><strong>Weekdays</strong> — Visible when frequency is Weekly; select which days to scan.</li>
+    <li><strong>Month days</strong> — Visible when frequency is Monthly; select which calendar day(s).</li>
+    <li><strong>Timezone</strong> — All scan times are in this timezone (default: America/New_York).</li>
+  </ul>
+  <p>See <a href="#daemon">Scheduler Daemon</a> for how to start the background process that runs these scans.</p>
+</section>
+
+<section id="settings-colors">
+  <h3>Posted Date Colors</h3>
+  <p>Color-codes job listings on the Job Listings page based on how recently they were posted.</p>
+  <div class="mockup" style="max-width:380px">
+    <div class="mockup-label">Three age tiers</div>
+    <div class="d-flex flex-column gap-2" style="font-size:.82rem">
+      <div class="d-flex align-items-center gap-2"><div style="width:14px;height:14px;border-radius:3px;background:#28a745"></div><strong>Tier 1</strong> — Within 7 days (green) — fresh listing</div>
+      <div class="d-flex align-items-center gap-2"><div style="width:14px;height:14px;border-radius:3px;background:#fd7e14"></div><strong>Tier 2</strong> — Within 30 days (orange) — still relevant</div>
+      <div class="d-flex align-items-center gap-2"><div style="width:14px;height:14px;border-radius:3px;background:#adb5bd"></div><strong>Tier 3</strong> — Older (grey) — may be filled</div>
+    </div>
+  </div>
+  <p>Click the color swatch next to each tier to open a color picker. Change the day thresholds to match your own definition of "fresh". Changes apply to the Job Listings page immediately.</p>
+</section>
+
+<section id="settings-unemp">
+  <h3>Unemployment</h3>
+  <p>See the dedicated <a href="#unemployment-settings">Unemployment Settings Reference</a> table in the Unemployment Tracker section above.</p>
+</section>
+
+<section id="settings-db">
+  <h3>Database Tools</h3>
+  <ul>
+    <li><strong>Reset Database</strong> — Deletes all jobs, applications, notifications, and scan logs. Your settings and source configuration are preserved. <em>Irreversible.</em></li>
+    <li><strong>Repair Database</strong> — Runs schema migrations to add any columns that are missing from an older database version. Safe to run at any time.</li>
+    <li><strong>Backup</strong> — Downloads a copy of the SQLite database file (<code>job_tracker.db</code>) to your computer.</li>
+  </ul>
+  <div class="warn-box"><i class="bi bi-exclamation-triangle me-2"></i>
+    Always download a <strong>Backup</strong> before using <strong>Reset Database</strong>. There is no undo.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ SERVER LOGS -->
+<section id="server-logs">
+  <h2><i class="bi bi-terminal me-2 text-secondary"></i>Server Logs</h2>
+  <p>The Server Logs page at <code>/server</code> shows the Flask application log output directly in your browser — no need to open a terminal or find the log file.</p>
+
+  <div class="mockup" style="max-width:460px">
+    <div class="mockup-label">Server Logs page</div>
+    <div class="mockup-card" style="font-size:.75rem;font-family:monospace">
+      <div class="d-flex gap-2 mb-2">
+        <button class="btn btn-sm btn-outline-secondary py-0">Capture</button>
+        <button class="btn btn-sm btn-outline-danger py-0">Clear</button>
+      </div>
+      <div style="background:#0d1117;border-radius:.4rem;padding:.5rem;line-height:1.6;max-height:120px;overflow:hidden">
+        <div class="text-muted">2026-03-12 08:00:01 [INFO] scheduler: Starting morning scan</div>
+        <div style="color:#39ff14">2026-03-12 08:00:04 [INFO] remoteok: 47 jobs fetched, 3 new matches</div>
+        <div style="color:#6ea8fe">2026-03-12 08:00:08 [INFO] remotive: 29 jobs fetched, 1 new match</div>
+        <div class="text-danger">2026-03-12 08:00:12 [ERROR] usajobs: API key missing — skipping</div>
+        <div class="text-muted">2026-03-12 08:00:15 [INFO] scheduler: Scan complete — 4 new matches</div>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Capture</strong> — Freezes the displayed log at its current state so you can read it without new entries scrolling it down.</li>
+    <li><strong>Clear</strong> — Empties the log display (does not delete the log file).</li>
+    <li>Log entries are color-coded: INFO in grey/green, WARNING in yellow, ERROR in red.</li>
+    <li>The full log is also written to <code>job_tracker.log</code> in the project root.</li>
+  </ul>
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Check Server Logs after a scan to see exactly how many jobs each source returned and whether any source threw an error. This is the fastest way to diagnose a source that appears to be returning zero results.
+  </div>
 </section>
 
 <!-- ═══════════════════════════════════════════════════════ SECURITY -->
