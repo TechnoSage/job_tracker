@@ -6,9 +6,13 @@ Built-in scrapers
   • RemoteOK      — https://remoteok.com/api          (JSON API, free)
   • Remotive      — https://remotive.com/api/remote-jobs (JSON API, free)
   • We Work Remotely — RSS feeds
-  • Indeed        — RSS feeds (multiple search terms)
+  • Indeed        — python-jobspy (reverse-engineered internal API) with RSS fallback
   • LinkedIn      — Public guest-search API (HTML, no auth required)
-  • ZipRecruiter  — RSS feed + JSON-LD HTML fallback
+
+Unavailable sources (see UNAVAILABLE_SOURCES at module bottom)
+──────────────────────────────────────────────────────────────
+  • ZipRecruiter  — RSS API deprecated Mar 2025; HTML blocked by Cloudflare Bot Management
+  • O*NET         — Occupational database, not a job board (free API for skill matching only)
 
 Adding a new scraper
 ────────────────────
@@ -410,9 +414,21 @@ class WWRScraper(JobScraper):
 
 
 class IndeedScraper(JobScraper):
+    """
+    Indeed job scraper.
+
+    Primary method: python-jobspy (reverse-engineered internal Indeed API).
+    Fallback: public RSS feed (deprecated by Indeed but still partially functional).
+
+    Install python-jobspy with:  pip install python-jobspy
+    If not installed the RSS fallback is used automatically.
+    """
     name = "indeed"
     display_name = "Indeed"
-    description = "Indeed job search via public RSS feed — multiple C#/.NET/Oracle queries."
+    description = (
+        "Indeed job search via python-jobspy (internal API reverse-engineering). "
+        "Falls back to RSS if python-jobspy is not installed."
+    )
     default_search_terms = [
         "C# developer remote",
         ".NET developer remote",
@@ -423,6 +439,88 @@ class IndeedScraper(JobScraper):
     ]
 
     def fetch(self, search_terms=None):
+        try:
+            import jobspy  # noqa: F401
+            return self._fetch_jobspy(search_terms)
+        except ImportError:
+            logger.warning(
+                "python-jobspy not installed — falling back to Indeed RSS (deprecated). "
+                "Install with: pip install python-jobspy"
+            )
+            return self._fetch_rss(search_terms)
+
+    def _fetch_jobspy(self, search_terms=None):
+        from jobspy import scrape_jobs
+
+        terms = self._search_terms(search_terms)
+        jobs = []
+        seen = set()
+
+        for query in terms:
+            try:
+                df = scrape_jobs(
+                    site_name=["indeed"],
+                    search_term=query,
+                    location="Remote",
+                    results_wanted=25,
+                    hours_old=168,   # 7 days
+                    country_indeed="USA",
+                )
+            except Exception as exc:
+                logger.warning("python-jobspy Indeed failed for '%s': %s", query, exc)
+                continue
+
+            for _, row in df.iterrows():
+                url_val = str(row.get("job_url") or "")
+                ext_id = f"indeed_{hash(url_val)}"
+                if ext_id in seen:
+                    continue
+                seen.add(ext_id)
+
+                # Parse posted date
+                posted = None
+                date_val = row.get("date_posted")
+                if date_val is not None:
+                    try:
+                        posted = datetime.strptime(str(date_val)[:10], "%Y-%m-%d")
+                    except Exception:
+                        pass
+
+                # Build salary string from min/max columns
+                salary_str = ""
+                lo = row.get("min_amount")
+                hi = row.get("max_amount")
+                interval = row.get("interval", "")
+                if lo and hi:
+                    salary_str = f"${int(lo):,} – ${int(hi):,}"
+                    if interval:
+                        salary_str += f" / {interval}"
+
+                tags = []
+                job_type = row.get("job_type")
+                if job_type:
+                    tags = [str(job_type)]
+
+                jobs.append({
+                    "external_id": ext_id,
+                    "title": str(row.get("title") or ""),
+                    "company": str(row.get("company") or ""),
+                    "location": str(row.get("location") or "Remote"),
+                    "description": str(row.get("description") or ""),
+                    "tags": tags,
+                    "salary_range": salary_str,
+                    "url": url_val,
+                    "source": self.name,
+                    "posted_date": posted,
+                })
+
+            time.sleep(2.0)   # polite delay between queries
+
+        logger.info("Indeed (jobspy): %d jobs", len(jobs))
+        return jobs
+
+    def _fetch_rss(self, search_terms=None):
+        """Legacy RSS fallback — Indeed deprecated their public RSS in 2023."""
         terms = self._search_terms(search_terms)
         jobs = []
         seen = set()
@@ -458,9 +556,9 @@ class IndeedScraper(JobScraper):
                     "posted_date": _parse_date(entry.get("published", "")),
                 })
 
-            time.sleep(1.0)   # Indeed rate-limits aggressively
+            time.sleep(1.0)
 
-        logger.info("Indeed: %d jobs", len(jobs))
+        logger.info("Indeed (RSS fallback): %d jobs", len(jobs))
         return jobs
 
 
@@ -988,8 +1086,61 @@ registry.register_builtin(RemotiveScraper())
 registry.register_builtin(WWRScraper())
 registry.register_builtin(IndeedScraper())
 registry.register_builtin(LinkedInScraper())
-registry.register_builtin(ZipRecruiterScraper())
+# ZipRecruiter removed — RSS API deprecated Mar 2025, HTML blocked by Cloudflare
+# registry.register_builtin(ZipRecruiterScraper())
 # registry.register_builtin(MyNewScraper())   ← add your own here
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Unavailable sources — displayed on the Sources page as informational cards
+# ══════════════════════════════════════════════════════════════════════════════
+
+UNAVAILABLE_SOURCES = [
+    {
+        "name": "ziprecruiter",
+        "display_name": "ZipRecruiter",
+        "icon": "bi-briefcase-x",
+        "status": "unavailable",
+        "status_label": "Unavailable",
+        "status_color": "danger",
+        "reason": "RSS API Deprecated + Cloudflare Blocked",
+        "detail": (
+            "ZipRecruiter's ZipSearch RSS API was officially deprecated and shut down on "
+            "March 31, 2025. The HTML search results page is now protected by Cloudflare "
+            "Bot Management (enterprise tier), which blocks all automated scraping tools "
+            "including python-jobspy (returns 403 Forbidden). "
+            "There is no reliable free method to fetch ZipRecruiter listings at this time."
+        ),
+        "future": (
+            "May become available if ZipRecruiter launches a new public API or partner "
+            "program. Check ziprecruiter.com/developers for updates."
+        ),
+        "url": "https://www.ziprecruiter.com",
+    },
+    {
+        "name": "onet",
+        "display_name": "O*NET Online",
+        "icon": "bi-database-x",
+        "status": "not_a_job_board",
+        "status_label": "Not a Job Board",
+        "status_color": "warning",
+        "reason": "Occupational Database — No Job Listings",
+        "detail": (
+            "O*NET (Occupational Information Network) is a free U.S. government database "
+            "of occupational data — not a job listings site. It provides detailed profiles "
+            "of 900+ occupations including required skills, typical tasks, knowledge areas, "
+            "and salary ranges. It has a free official REST API (services.onetcenter.org) "
+            "that returns occupational data, not job postings."
+        ),
+        "future": (
+            "Planned future integration: use the O*NET API to enhance skill matching — "
+            "compare the skills in your resume against O*NET occupation profiles to score "
+            "how well each job listing fits your background."
+        ),
+        "url": "https://www.onetonline.org",
+        "api_url": "https://services.onetcenter.org",
+    },
+]
 
 
 # ── Legacy shim — keeps old import working ───────────────────────────────────

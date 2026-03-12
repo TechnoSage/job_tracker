@@ -1383,11 +1383,12 @@ def _register_routes(app):
 
     @app.route("/scrapers")
     def scrapers():
-        from scrapers import registry
+        from scrapers import registry, UNAVAILABLE_SOURCES
         sources = ScraperSource.query.order_by(
             ScraperSource.is_builtin.desc(), ScraperSource.display_name
         ).all()
-        return render_template("scrapers.html", sources=sources)
+        return render_template("scrapers.html", sources=sources,
+                               unavailable_sources=UNAVAILABLE_SOURCES)
 
     @app.route("/scrapers/<name>/toggle", methods=["POST"])
     def toggle_scraper(name):
