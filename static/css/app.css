@@ -262,6 +262,19 @@ html, body { height: 100%; overflow: hidden; }
   color: #fff !important;
 }
 
+/* Neon-green icons in expanded sidebar (matches collapsed state) */
+#sidebar .nav-link i {
+  color: #39ff14;
+  text-shadow:
+    0 0 6px rgba(57, 255, 20, .65),
+    0 0 12px rgba(57, 255, 20, .25);
+}
+/* Active page — white icon so it reads on blue background */
+#sidebar .nav-link.active i {
+  color: #fff !important;
+  text-shadow: none;
+}
+
 /* ---- Metric cards ---- */
 .metric-card {
   border-radius: 1.1rem;
