@@ -36,71 +36,81 @@
     <ul class="nav nav-pills flex-column mb-auto">
       <li class="nav-item">
         <a href="{{ url_for('dashboard') }}"
-           class="nav-link {% if request.endpoint == 'dashboard' %}active{% else %}text-white{% endif %}">
-          <i class="bi bi-speedometer2 me-2"></i>Dashboard
+           class="nav-link {% if request.endpoint == 'dashboard' %}active{% else %}text-white{% endif %}"
+           data-tooltip="Dashboard — Overview &amp; metrics">
+          <i class="bi bi-speedometer2 me-2"></i><span class="nav-label">Dashboard</span>
         </a>
       </li>
       <li class="nav-item">
         <a href="{{ url_for('jobs') }}"
-           class="nav-link {% if request.endpoint in ('jobs','job_detail','archived_jobs') %}active{% else %}text-white{% endif %}">
-          <i class="bi bi-search me-2"></i>Job Listings
+           class="nav-link {% if request.endpoint in ('jobs','job_detail','archived_jobs') %}active{% else %}text-white{% endif %}"
+           data-tooltip="Job Listings — Browse all fetched jobs">
+          <i class="bi bi-search me-2"></i><span class="nav-label">Job Listings</span>
         </a>
       </li>
       <li class="nav-item">
         <a href="{{ url_for('applications') }}"
-           class="nav-link {% if request.endpoint in ('applications','application_detail') %}active{% else %}text-white{% endif %}">
-          <i class="bi bi-file-earmark-text me-2"></i>Applications
+           class="nav-link {% if request.endpoint in ('applications','application_detail') %}active{% else %}text-white{% endif %}"
+           data-tooltip="Applications — Track jobs you applied to">
+          <i class="bi bi-file-earmark-text me-2"></i><span class="nav-label">Applications</span>
         </a>
       </li>
       <li class="nav-item">
         <a href="{{ url_for('email_response') }}"
-           class="nav-link {% if request.endpoint == 'email_response' %}active{% else %}text-white{% endif %}">
-          <i class="bi bi-envelope-open me-2"></i>Email Response
+           class="nav-link {% if request.endpoint == 'email_response' %}active{% else %}text-white{% endif %}"
+           data-tooltip="Email Response — Review incoming replies">
+          <i class="bi bi-envelope-open me-2"></i><span class="nav-label">Email Response</span>
           {% if pending_email_count > 0 %}
-            <span class="badge bg-warning text-dark ms-1">{{ pending_email_count }}</span>
+            <span class="badge bg-warning text-dark ms-1 nav-label">{{ pending_email_count }}</span>
           {% endif %}
         </a>
       </li>
       <li class="nav-item">
         <a href="{{ url_for('analytics') }}"
-           class="nav-link {% if request.endpoint == 'analytics' %}active{% else %}text-white{% endif %}">
-          <i class="bi bi-bar-chart-line me-2"></i>Analytics
+           class="nav-link {% if request.endpoint == 'analytics' %}active{% else %}text-white{% endif %}"
+           data-tooltip="Analytics — Charts &amp; search trends">
+          <i class="bi bi-bar-chart-line me-2"></i><span class="nav-label">Analytics</span>
         </a>
       </li>
       <li class="nav-item">
         <a href="{{ url_for('scrapers') }}"
-           class="nav-link {% if request.endpoint == 'scrapers' %}active{% else %}text-white{% endif %}">
-          <i class="bi bi-cloud-download me-2"></i>Sources
+           class="nav-link {% if request.endpoint == 'scrapers' %}active{% else %}text-white{% endif %}"
+           data-tooltip="Sources — Manage job board scrapers">
+          <i class="bi bi-cloud-download me-2"></i><span class="nav-label">Sources</span>
         </a>
       </li>
       {% if unemp_enabled %}
       <li class="nav-item">
         <a href="{{ url_for('unemployment') }}"
-           class="nav-link {% if request.endpoint == 'unemployment' %}active{% else %}text-white{% endif %}">
-          <i class="bi bi-building-check me-2 text-info"></i>Unemployment
-          {% if unemp_state %}<span class="badge bg-secondary ms-1 small">{{ unemp_state }}</span>{% endif %}
+           class="nav-link {% if request.endpoint == 'unemployment' %}active{% else %}text-white{% endif %}"
+           data-tooltip="Unemployment — Weekly certification tracker">
+          <i class="bi bi-building-check me-2 text-info"></i><span class="nav-label">Unemployment</span>
+          {% if unemp_state %}<span class="badge bg-secondary ms-1 small nav-label">{{ unemp_state }}</span>{% endif %}
         </a>
       </li>
       {% endif %}
       <li class="nav-item mt-2 border-top border-secondary pt-2">
         <a href="{{ url_for('notifications') }}"
-           class="nav-link {% if request.endpoint == 'notifications' %}active{% else %}text-white{% endif %} position-relative">
-          <i class="bi bi-bell me-2"></i>Notifications
+           class="nav-link {% if request.endpoint == 'notifications' %}active{% else %}text-white{% endif %} position-relative"
+           data-tooltip="Notifications — Alerts &amp; follow-up reminders">
+          <i class="bi bi-bell me-2"></i><span class="nav-label">Notifications</span>
           {% if unread_count > 0 %}
-            <span class="badge bg-danger ms-1">{{ unread_count }}</span>
+            <span class="badge bg-danger ms-1 nav-label">{{ unread_count }}</span>
           {% endif %}
         </a>
       </li>
       <li class="nav-item">
         <a href="{{ url_for('server_page') }}"
-           class="nav-link {% if request.endpoint == 'server_page' %}active{% else %}text-white{% endif %}">
-          <i class="bi bi-terminal me-2"></i>Server Log
+           class="nav-link {% if request.endpoint == 'server_page' %}active{% else %}text-white{% endif %}"
+           data-tooltip="Server Log — Live Flask application log">
+          <i class="bi bi-terminal me-2"></i><span class="nav-label">Server Log</span>
         </a>
       </li>
       <li class="nav-item">
         <a href="{{ url_for('settings') }}"
-           class="nav-link {% if request.endpoint == 'settings' %}active{% else %}text-white{% endif %}">
-          <i class="bi bi-gear me-2"></i>Settings
+           class="nav-link {% if request.endpoint == 'settings' %}active{% else %}text-white{% endif %}"
+           data-tooltip="Settings — Configure the app">
+          <i class="bi bi-gear me-2"></i><span class="nav-label">Settings</span>
         </a>
       </li>
     </ul>
@@ -109,18 +119,21 @@
     {% if request.endpoint == 'settings' %}
     <div id="settingsSaveDock" class="mt-auto pt-2 border-top border-secondary">
       <button type="submit" form="settingsForm" id="sidebarSaveBtn"
-              class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center gap-2 mb-2">
+              class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center gap-2 mb-2 sidebar-action-btn"
+              data-tooltip="Save Settings — Apply all changes">
         <i class="bi bi-save2 flex-shrink-0"></i>
         <span class="sidebar-save-label">Save Settings</span>
       </button>
-      <button type="button" class="btn btn-outline-primary btn-sm w-100" id="runScanBtn">
-        <i class="bi bi-arrow-clockwise me-1"></i>Run Scan Now
+      <button type="button" class="btn btn-outline-primary btn-sm w-100 sidebar-action-btn" id="runScanBtn"
+              data-tooltip="Run Scan Now — Fetch new jobs from all active sources">
+        <i class="bi bi-arrow-clockwise"></i><span class="sidebar-btn-label ms-1">Run Scan Now</span>
       </button>
     </div>
     {% else %}
     <div class="mt-auto pt-3 border-top border-secondary">
-      <button type="button" class="btn btn-outline-primary btn-sm w-100" id="runScanBtn">
-        <i class="bi bi-arrow-clockwise me-1"></i>Run Scan Now
+      <button type="button" class="btn btn-outline-primary btn-sm w-100 sidebar-action-btn" id="runScanBtn"
+              data-tooltip="Run Scan Now — Fetch new jobs from all active sources">
+        <i class="bi bi-arrow-clockwise"></i><span class="sidebar-btn-label ms-1">Run Scan Now</span>
       </button>
     </div>
     {% endif %}
