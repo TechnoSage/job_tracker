@@ -994,6 +994,9 @@ html[data-bs-theme="light"] #log {
       <button id="btnClean" class="btn btn-outline-warning btn-sm" onclick="openCleanModal()">
         <i class="bi bi-trash3 me-1"></i>Clean Outputs
       </button>
+      <button id="btnCleanLogs" class="btn btn-outline-secondary btn-sm" onclick="doCleanLogs()" title="Delete all build log files from the Log/ folder">
+        <i class="bi bi-journal-x me-1"></i>Clean Logs
+      </button>
       <button id="btnBundle" class="btn btn-outline-info btn-sm" onclick="doBuild('bundle-only')">
         <i class="bi bi-box-seam me-1"></i>Bundle Only
       </button>
@@ -1263,7 +1266,7 @@ html[data-bs-theme="light"] #log {
             <input class="form-check-input" type="radio" name="cleanMode" id="cleanAll" value="all" checked>
             <label class="form-check-label small" for="cleanAll">
               <strong>Everything</strong>
-              <span class="d-block text-muted" style="font-size:.72rem;">Compile temp dirs <em>and</em> output folder</span>
+              <span class="d-block text-muted" style="font-size:.72rem;">Compile temp dirs <em>and</em> output folder (logs always preserved)</span>
             </label>
           </div>
           <div class="form-check">
@@ -1277,7 +1280,7 @@ html[data-bs-theme="light"] #log {
             <input class="form-check-input" type="radio" name="cleanMode" id="cleanOutput" value="output">
             <label class="form-check-label small" for="cleanOutput">
               <strong>Output Folder Only</strong>
-              <span class="d-block text-muted" style="font-size:.72rem;">Exe, installer, logs — keeps compile temp</span>
+              <span class="d-block text-muted" style="font-size:.72rem;">Exe, installer — keeps compile temp &amp; logs</span>
             </label>
           </div>
         </div>
@@ -2662,6 +2665,26 @@ function _startClean(cleanMode) {
     updateBadge('error');
     document.getElementById('buildMsg').textContent = 'Request error: ' + e;
   });
+}
+
+function doCleanLogs() {
+  if (!confirm('Delete all build log files from the Log/ folder?')) return;
+  var btn = document.getElementById('btnCleanLogs');
+  if (btn) btn.disabled = true;
+  fetch('/api/build/clean-logs', {method: 'POST'})
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (btn) btn.disabled = false;
+      if (d.ok) {
+        showToast('Logs cleared — ' + (d.deleted || 0) + ' file(s) removed.', 'success');
+      } else {
+        showToast('Log clean failed: ' + (d.errors || []).join('; '), 'danger');
+      }
+    })
+    .catch(function (e) {
+      if (btn) btn.disabled = false;
+      showToast('Log clean error: ' + e, 'danger');
+    });
 }
 
 /* ── Build History ─────────────────────────────────────────────────────────── */

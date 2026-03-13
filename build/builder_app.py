@@ -1115,7 +1115,7 @@ def _run_clean(clean_mode: str = "all") -> None:
 
     clean_mode:
       "temp"   — compile temp dirs only (build_output, obf_src inside project)
-      "output" — configured output folder only (exe, installer, logs, etc.)
+      "output" — configured output folder only (exe, installer; Log/ preserved)
       "all"    — both (default)
     """
     settings = _load_settings()
@@ -1140,10 +1140,21 @@ def _run_clean(clean_mode: str = "all") -> None:
 
     if clean_mode in ("output", "all"):
         # Configured output root (may be on another drive, e.g. D:\Compile Playground\…)
+        # Logs are preserved — use the dedicated Clean Logs action to remove them.
         out_root = _resolve_output_dir(settings)
         if out_root.exists():
-            shutil.rmtree(out_root, ignore_errors=True)
-            _append(f"  Removed:      {out_root}")
+            log_dir = out_root / "Log"
+            for item in out_root.iterdir():
+                if item.resolve() == log_dir.resolve():
+                    continue   # skip Log/ subfolder
+                if item.is_dir():
+                    shutil.rmtree(item, ignore_errors=True)
+                else:
+                    try:
+                        item.unlink()
+                    except Exception:
+                        pass
+            _append(f"  Cleaned:      {out_root}  (Log/ preserved)")
         else:
             _append(f"  Already gone: {out_root}")
 
@@ -2027,6 +2038,32 @@ def create_builder_app() -> Flask:
         t = threading.Thread(target=lambda: _run_clean(clean_mode), daemon=True)
         t.start()
         return jsonify({"ok": True})
+
+    @app.route("/api/build/clean-logs", methods=["POST"])
+    def api_build_clean_logs():
+        """Delete every file inside the output Log/ subdirectory."""
+        settings = _load_settings()
+        log_dir  = _resolve_output_dir(settings) / "Log"
+
+        deleted = 0
+        errors  = []
+        if log_dir.exists():
+            for f in log_dir.iterdir():
+                try:
+                    if f.is_file():
+                        f.unlink()
+                        deleted += 1
+                    elif f.is_dir():
+                        shutil.rmtree(f, ignore_errors=True)
+                        deleted += 1
+                except Exception as e:
+                    errors.append(str(e))
+        else:
+            return jsonify({"ok": True, "deleted": 0, "note": "Log directory does not exist"})
+
+        if errors:
+            return jsonify({"ok": False, "deleted": deleted, "errors": errors})
+        return jsonify({"ok": True, "deleted": deleted, "log_dir": str(log_dir)})
 
     @app.route("/api/build/log")
     def api_build_log():
