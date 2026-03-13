@@ -239,43 +239,162 @@ html { scroll-behavior: smooth; }
 <section id="navigation">
   <h2><i class="bi bi-layout-sidebar me-2 text-secondary"></i>Navigation</h2>
 
-  <h3>Sidebar</h3>
-  <p>The left sidebar is always visible and gives you one-click access to every major page.
-  The active page is highlighted in blue.</p>
+  <h3>Topbar</h3>
+  <p>The topbar spans the full width of every page. The <strong>left side</strong> holds the sidebar toggle and the app brand; the <strong>right side</strong> holds live status and quick-action buttons.</p>
 
   <div class="mockup">
-    <div class="mockup-label">Sidebar — normal view (Dashboard active)</div>
-    <div style="width:190px; background:#1a1d21; border:1px solid rgba(255,255,255,.08); border-radius:.6rem; padding:.75rem .6rem; font-size:.8rem">
-      <div class="d-flex align-items-center gap-2 mb-3 fw-bold"><i class="bi bi-briefcase-fill text-primary"></i> Job Tracker</div>
-      <div class="d-flex align-items-center gap-2 mb-1 rounded px-2 py-1" style="background:#0d6efd;color:#fff"><i class="bi bi-speedometer2"></i> Dashboard</div>
-      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-search"></i> Job Listings</div>
-      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-file-earmark-text"></i> Applications</div>
-      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-envelope-check"></i> Email Response</div>
-      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-bar-chart-line"></i> Analytics</div>
-      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-broadcast"></i> Sources</div>
-      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-piggy-bank"></i> Unemployment <span class="badge bg-secondary ms-1" style="font-size:.6rem">optional</span></div>
-      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-bell"></i> Notifications</div>
-      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-terminal"></i> Server Log</div>
-      <div class="d-flex align-items-center gap-2 px-2 py-1 text-white-50"><i class="bi bi-gear"></i> Settings</div>
+    <div class="mockup-label">Topbar — full width (left brand + right controls)</div>
+    <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2" style="background:#1a1d21;border:1px solid rgba(255,255,255,.08);border-radius:.6rem;font-size:.8rem;min-width:0">
+      <!-- Left: toggle + brand -->
+      <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <button class="btn btn-sm btn-outline-secondary py-1 px-2"><i class="bi bi-list"></i></button>
+        <div class="d-flex align-items-center gap-2">
+          <div style="width:34px;height:34px;border-radius:9px;background:#1c1f24;border:1px solid rgba(255,255,255,.07);box-shadow:0 5px 14px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.055),inset 0 -2px 5px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center">
+            <i class="bi bi-briefcase-fill" style="color:#39ff14;font-size:1rem;text-shadow:0 0 6px rgba(57,255,20,.7),0 0 14px rgba(57,255,20,.3)"></i>
+          </div>
+          <div class="lh-1">
+            <div class="fw-bold text-white" style="font-size:.88rem">Job Tracker</div>
+            <div style="font-size:.56rem;letter-spacing:.05em;color:#39ff14">v1.0.0</div>
+          </div>
+        </div>
+      </div>
+      <!-- Right: status + buttons -->
+      <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <div style="font-size:.68rem">
+          <div class="text-muted" style="font-size:.58rem;text-transform:uppercase;letter-spacing:.05em"><i class="bi bi-radar me-1"></i>Last Scan</div>
+          <span class="badge bg-success me-1" style="font-size:.58rem">success</span><span class="text-white-50">Mar 13 08:02</span>
+        </div>
+        <div class="vr" style="opacity:.3;height:28px"></div>
+        <div style="font-size:.68rem">
+          <div class="text-muted" style="font-size:.58rem;text-transform:uppercase;letter-spacing:.05em"><i class="bi bi-clock me-1"></i>Current Date/Time</div>
+          <div class="text-white fw-semibold">Thu 2026-03-13 &nbsp;09:45:22</div>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary py-1 px-2"><i class="bi bi-bell"></i></button>
+        <button class="btn btn-sm btn-outline-secondary py-1 px-2"><i class="bi bi-gear"></i></button>
+        <button class="btn btn-sm btn-outline-secondary py-1 px-2"><i class="bi bi-moon-fill"></i></button>
+        <button class="btn btn-sm btn-outline-secondary py-1 px-2"><i class="bi bi-question-circle"></i></button>
+        <button class="btn btn-sm btn-outline-info py-1 px-2"><i class="bi bi-journal-text"></i></button>
+        <button class="btn btn-sm btn-outline-secondary py-1 px-2"><i class="bi bi-clock-history"></i></button>
+        <button class="btn btn-sm btn-outline-warning py-1 px-2"><i class="bi bi-headset"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <h4>Topbar controls</h4>
+  <ul>
+    <li><i class="bi bi-list"></i> <strong>Sidebar toggle</strong> — Collapses or expands the left sidebar. The collapsed/expanded state is remembered across page navigation and browser sessions.</li>
+    <li><strong>App brand</strong> — The <i class="bi bi-briefcase-fill" style="color:#39ff14"></i> briefcase icon (3D raised, neon-green) and "Job Tracker" title sit right of the toggle. Clicking either navigates to the Dashboard.</li>
+    <li><strong>Last Scan</strong> — Badge turns green on success, red on error. Shows the date and time it last ran.</li>
+    <li><strong>Current Date/Time</strong> — Live clock updated every second.</li>
+    <li><i class="bi bi-bell"></i> <strong>Notifications</strong> — Opens Notifications. A red badge shows unread count.</li>
+    <li><i class="bi bi-gear"></i> <strong>Settings</strong> — Opens the Settings page.</li>
+    <li><i class="bi bi-moon-fill"></i> <strong>Dark / Light mode</strong> — Toggles the colour theme. State is saved between sessions.</li>
+    <li><i class="bi bi-question-circle"></i> <strong>Hints toggle</strong> — Shows or hides contextual hint text. See <a href="#hints">Hints System</a>.</li>
+    <li><i class="bi bi-journal-text text-info"></i> <strong>Help</strong> — Opens this documentation in a new tab.</li>
+    <li><i class="bi bi-clock-history"></i> <strong>Change Log</strong> — Shows the recent update history popup.</li>
+    <li><i class="bi bi-headset text-warning"></i> <strong>Support</strong> — Opens the customer support page.</li>
+  </ul>
+
+  <h3>Sidebar — Expanded</h3>
+  <p>The left sidebar gives one-click access to every major page. All icons glow in <strong style="color:#39ff14">neon green</strong> — the active page button switches to a solid blue highlight with a white icon.</p>
+
+  <div class="mockup">
+    <div class="mockup-label">Sidebar — expanded (Dashboard active, neon-green icons)</div>
+    <div style="width:205px;background:#1a1d21;border:1px solid rgba(255,255,255,.08);border-radius:.6rem;padding:.75rem .6rem;font-size:.8rem">
+      <!-- Active link -->
+      <div class="d-flex align-items-center gap-2 mb-1 rounded px-2 py-1" style="background:#0d6efd;color:#fff">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </div>
+      <!-- Inactive links with neon icons -->
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-search" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.65)"></i> Job Listings</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-file-earmark-text" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.65)"></i> Applications</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-envelope-open" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.65)"></i> Email Response</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-bar-chart-line" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.65)"></i> Analytics</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-cloud-download" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.65)"></i> Sources</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-bell" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.65)"></i> Notifications</div>
+      <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-terminal" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.65)"></i> Server Log</div>
+      <div class="d-flex align-items-center gap-2 px-2 py-1 text-white-50"><i class="bi bi-gear" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.65)"></i> Settings</div>
       <hr style="border-color:rgba(255,255,255,.1)">
       <div class="d-grid"><button class="btn btn-sm btn-outline-primary w-100" style="font-size:.75rem"><i class="bi bi-arrow-clockwise me-1"></i>Run Scan Now</button></div>
     </div>
   </div>
 
   <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
-    The <strong>Unemployment</strong> link only appears in the sidebar when Unemployment Tracking is enabled. Go to <strong>Settings → Unemployment</strong> and check <em>Enable Unemployment Tracking</em> to show it. See the <a href="#unemployment">Unemployment Tracker</a> section for full details.
+    The <strong>Unemployment</strong> link only appears when Unemployment Tracking is enabled in <strong>Settings → Unemployment</strong>. See the <a href="#unemployment">Unemployment Tracker</a> section for details.
   </div>
 
+  <h3>Sidebar — Minimized (Collapsed)</h3>
+  <p>Clicking the <i class="bi bi-list"></i> toggle button collapses the sidebar to a slim 64 px icon rail. Each navigation item becomes a <strong>3D raised button</strong> — the same raised card appearance used throughout the app — with a neon-green glowing icon. The collapsed state is remembered across all page navigations and browser sessions with no flash on load.</p>
+
+  <div class="row g-3 mb-3">
+    <div class="col-sm-auto">
+      <div class="mockup">
+        <div class="mockup-label">Collapsed sidebar — Dashboard active</div>
+        <div style="width:64px;background:#1a1d21;border:1px solid rgba(255,255,255,.08);border-radius:.6rem;padding:.6rem .35rem;display:flex;flex-direction:column;align-items:center;gap:5px">
+          <!-- Active button (blue) -->
+          <div style="width:44px;height:44px;border-radius:10px;background:#0d6efd;border:1px solid rgba(13,110,253,.6);box-shadow:0 5px 14px rgba(13,110,253,.45),0 2px 5px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center">
+            <i class="bi bi-speedometer2" style="font-size:1.2rem;color:#fff"></i>
+          </div>
+          <!-- Inactive buttons (3D dark, neon icon) -->
+          <div style="width:44px;height:44px;border-radius:10px;background:#1c1f24;border:1px solid rgba(255,255,255,.07);box-shadow:0 5px 14px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.055),inset 0 -2px 5px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center">
+            <i class="bi bi-search" style="font-size:1.2rem;color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.7),0 0 14px rgba(57,255,20,.3)"></i>
+          </div>
+          <div style="width:44px;height:44px;border-radius:10px;background:#1c1f24;border:1px solid rgba(255,255,255,.07);box-shadow:0 5px 14px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.055),inset 0 -2px 5px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center">
+            <i class="bi bi-file-earmark-text" style="font-size:1.2rem;color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.7),0 0 14px rgba(57,255,20,.3)"></i>
+          </div>
+          <div style="width:44px;height:44px;border-radius:10px;background:#1c1f24;border:1px solid rgba(255,255,255,.07);box-shadow:0 5px 14px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.055),inset 0 -2px 5px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center">
+            <i class="bi bi-envelope-open" style="font-size:1.2rem;color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.7),0 0 14px rgba(57,255,20,.3)"></i>
+          </div>
+          <div style="width:44px;height:44px;border-radius:10px;background:#1c1f24;border:1px solid rgba(255,255,255,.07);box-shadow:0 5px 14px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.055),inset 0 -2px 5px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center">
+            <i class="bi bi-gear" style="font-size:1.2rem;color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.7),0 0 14px rgba(57,255,20,.3)"></i>
+          </div>
+          <hr style="border-color:rgba(255,255,255,.12);width:80%;margin:.2rem 0">
+          <!-- Run Scan button -->
+          <div style="width:44px;height:44px;border-radius:10px;background:#1c1f24;border:1px solid rgba(13,110,253,.4);box-shadow:0 5px 14px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.055),inset 0 -2px 5px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center">
+            <i class="bi bi-arrow-clockwise" style="font-size:1.2rem;color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.7),0 0 14px rgba(57,255,20,.3)"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="mockup">
+        <div class="mockup-label">Collapsed — hover tooltip (speech bubble)</div>
+        <div style="display:flex;align-items:center;gap:0;font-size:.8rem">
+          <!-- Hovered button -->
+          <div style="width:44px;height:44px;border-radius:10px;background:#23272e;border:1px solid rgba(255,255,255,.09);box-shadow:0 8px 20px rgba(0,0,0,.65),0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;transform:translateY(-2px);position:relative">
+            <i class="bi bi-cloud-download" style="font-size:1.2rem;color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.7)"></i>
+          </div>
+          <!-- Arrow -->
+          <div style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:5px solid rgba(57,255,20,.45);margin-left:8px"></div>
+          <!-- Bubble -->
+          <div style="background:#1c1f24;border:1px solid rgba(57,255,20,.45);border-radius:.55rem;padding:.35rem .7rem;color:#f0f0f0;font-size:.75rem;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.55);margin-left:0">
+            Sources — Manage job board scrapers
+          </div>
+        </div>
+        <p class="text-muted mt-2 mb-0" style="font-size:.75rem">Each button shows a description tooltip to the right on hover. Button lifts 2 px to indicate it's interactive.</p>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>3D raised buttons</strong> — Each collapsed nav item is a 44×44 px raised square with depth shadows matching the metric cards on the Dashboard.</li>
+    <li><strong style="color:#39ff14">Neon-green icons</strong> — All icons glow neon green (<code>#39ff14</code>) with a soft outer glow. The active-page button keeps a solid blue background with a white icon.</li>
+    <li><strong>Speech-bubble tooltips</strong> — Hover any button to see a dark tooltip with a neon-green border pop out to the right, describing the page. Tooltips never get clipped — the sidebar uses <code>overflow: visible</code> in collapsed mode.</li>
+    <li><strong>Hover lift</strong> — Buttons rise 2 px on hover, same as page cards.</li>
+    <li><strong>Instant state restore</strong> — The collapsed state is applied before the browser's first paint on every page load (using an inline script inside the sidebar element plus a transition-suppression style tag in <code>&lt;head&gt;</code>), so there is never a visible flash of the expanded sidebar.</li>
+    <li><strong>Run Scan Now &amp; Save Settings</strong> — The bottom action buttons collapse to the same 3D icon style with their own tooltips.</li>
+  </ul>
+
   <h3 id="save-settings-button">Save Settings Button</h3>
-  <p>When you are on the <strong>Settings page</strong>, a <strong>Save Settings</strong> button appears at the bottom of the sidebar, directly above Run Scan Now. There is no separate Save button at the bottom of the Settings page — the sidebar button is the only way to save.</p>
+  <p>When on the <strong>Settings page</strong>, a <strong>Save Settings</strong> button appears at the bottom of the sidebar above Run Scan Now. It is the only way to save — there is no separate Save at the bottom of the page.</p>
 
   <div class="row g-3 mb-3">
     <div class="col-sm-6">
       <div class="mockup">
-        <div class="mockup-label">Sidebar — Settings page, no changes made</div>
-        <div style="width:190px; background:#1a1d21; border:1px solid rgba(255,255,255,.08); border-radius:.6rem; padding:.75rem .6rem; font-size:.8rem">
-          <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-speedometer2"></i> Dashboard</div>
-          <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50">…</div>
+        <div class="mockup-label">Sidebar — Settings page, no changes</div>
+        <div style="width:200px;background:#1a1d21;border:1px solid rgba(255,255,255,.08);border-radius:.6rem;padding:.75rem .6rem;font-size:.8rem">
+          <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-speedometer2" style="color:#39ff14"></i> Dashboard</div>
+          <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50 ps-4">…</div>
           <div class="d-flex align-items-center gap-2 mb-1 rounded px-2 py-1" style="background:#0d6efd;color:#fff"><i class="bi bi-gear"></i> Settings</div>
           <hr style="border-color:rgba(255,255,255,.1)">
           <button class="btn btn-sm btn-outline-secondary w-100 mb-2 d-flex align-items-center gap-2" style="font-size:.75rem">
@@ -287,13 +406,13 @@ html { scroll-behavior: smooth; }
     </div>
     <div class="col-sm-6">
       <div class="mockup">
-        <div class="mockup-label">Sidebar — Settings page, unsaved changes present</div>
-        <div style="width:190px; background:#1a1d21; border:1px solid rgba(255,255,255,.08); border-radius:.6rem; padding:.75rem .6rem; font-size:.8rem">
-          <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-speedometer2"></i> Dashboard</div>
-          <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50">…</div>
+        <div class="mockup-label">Sidebar — Settings page, unsaved changes (red glow)</div>
+        <div style="width:200px;background:#1a1d21;border:1px solid rgba(255,255,255,.08);border-radius:.6rem;padding:.75rem .6rem;font-size:.8rem">
+          <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50"><i class="bi bi-speedometer2" style="color:#39ff14"></i> Dashboard</div>
+          <div class="d-flex align-items-center gap-2 mb-1 px-2 py-1 text-white-50 ps-4">…</div>
           <div class="d-flex align-items-center gap-2 mb-1 rounded px-2 py-1" style="background:#0d6efd;color:#fff"><i class="bi bi-gear"></i> Settings</div>
           <hr style="border-color:rgba(255,255,255,.1)">
-          <button class="btn btn-sm w-100 mb-2 d-flex align-items-center gap-2" style="font-size:.75rem; color:#fff; border-color:rgba(220,53,69,.9); box-shadow:0 0 0 3px rgba(220,53,69,.2),0 0 14px rgba(220,53,69,.3); animation: none;">
+          <button class="btn btn-sm w-100 mb-2 d-flex align-items-center gap-2" style="font-size:.75rem;color:#fff;border-color:rgba(220,53,69,.9);box-shadow:0 0 0 3px rgba(220,53,69,.2),0 0 14px rgba(220,53,69,.3)">
             <i class="bi bi-save2"></i><span>Save Settings</span>
           </button>
           <button class="btn btn-sm btn-outline-primary w-100" style="font-size:.75rem"><i class="bi bi-arrow-clockwise me-1"></i>Run Scan Now</button>
@@ -302,38 +421,45 @@ html { scroll-behavior: smooth; }
     </div>
   </div>
 
-  <ul>
-    <li><strong>No changes</strong> — Button appears with a standard grey outline. Clicking it saves the current settings (useful to confirm or after reverting).</li>
-    <li><strong>Unsaved changes</strong> — The button pulses with a soft <strong>red glow outline</strong> as soon as any field value differs from what was loaded. The glow disappears automatically when you save or when you revert all fields back to their original values.</li>
-    <li>Every field on the Settings page is tracked: text inputs, dropdowns, checkboxes, toggles, color pickers, and dynamically added entries (e.g. scan times, email accounts).</li>
-  </ul>
-
-  <h4>Collapsed sidebar</h4>
-  <p>When the sidebar is collapsed (click the <i class="bi bi-list"></i> hamburger button in the topbar to collapse it), the Save Settings button shrinks to an icon-only state — the label hides but the button and its red glow are still fully visible and functional.</p>
-
-  <div class="mockup" style="max-width:160px">
-    <div class="mockup-label">Collapsed sidebar — Settings page, unsaved changes</div>
-    <div style="width:60px; background:#1a1d21; border:1px solid rgba(255,255,255,.08); border-radius:.6rem; padding:.5rem .3rem; font-size:.8rem; display:flex; flex-direction:column; align-items:center; gap:.4rem">
-      <i class="bi bi-speedometer2 text-white-50" style="font-size:1.2rem"></i>
-      <i class="bi bi-search text-white-50" style="font-size:1.2rem"></i>
-      <i class="bi bi-gear" style="font-size:1.2rem;color:#6ea8fe"></i>
-      <hr style="border-color:rgba(255,255,255,.1);width:100%;margin:.2rem 0">
-      <button class="btn btn-sm w-100 p-2" style="border-color:rgba(220,53,69,.9); box-shadow:0 0 0 2px rgba(220,53,69,.2),0 0 10px rgba(220,53,69,.28);" title="Save Settings">
-        <i class="bi bi-save2" style="color:#fff"></i>
-      </button>
-      <button class="btn btn-sm btn-outline-primary w-100 p-2">
-        <i class="bi bi-arrow-clockwise" style="font-size:1.2rem"></i>
-      </button>
+  <div class="mockup" style="max-width:280px">
+    <div class="mockup-label">Collapsed — Settings page, unsaved changes (3D buttons)</div>
+    <div style="display:flex;align-items:flex-start;gap:12px">
+      <div style="width:64px;background:#1a1d21;border:1px solid rgba(255,255,255,.08);border-radius:.6rem;padding:.6rem .35rem;display:flex;flex-direction:column;align-items:center;gap:5px">
+        <div style="width:44px;height:44px;border-radius:10px;background:#1c1f24;border:1px solid rgba(255,255,255,.07);box-shadow:0 5px 14px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.055),inset 0 -2px 5px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center">
+          <i class="bi bi-speedometer2" style="font-size:1.2rem;color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.7)"></i>
+        </div>
+        <div style="width:44px;height:44px;border-radius:10px;background:#0d6efd;border:1px solid rgba(13,110,253,.6);box-shadow:0 5px 14px rgba(13,110,253,.45),inset 0 1px 0 rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center">
+          <i class="bi bi-gear" style="font-size:1.2rem;color:#fff"></i>
+        </div>
+        <hr style="border-color:rgba(255,255,255,.12);width:80%;margin:.2rem 0">
+        <!-- Save button with red glow -->
+        <div style="width:44px;height:44px;border-radius:10px;background:#1c1f24;border-color:rgba(220,53,69,.9);border-width:1px;border-style:solid;box-shadow:0 0 0 2px rgba(220,53,69,.2),0 0 12px rgba(220,53,69,.3),0 5px 14px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center">
+          <i class="bi bi-save2" style="font-size:1.2rem;color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.7)"></i>
+        </div>
+        <div style="width:44px;height:44px;border-radius:10px;background:#1c1f24;border:1px solid rgba(13,110,253,.4);box-shadow:0 5px 14px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.055);display:flex;align-items:center;justify-content:center">
+          <i class="bi bi-arrow-clockwise" style="font-size:1.2rem;color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.7)"></i>
+        </div>
+      </div>
+      <div style="font-size:.75rem;color:#adb5bd;padding-top:.5rem">
+        <div class="mb-2"><i class="bi bi-gear text-primary me-1"></i>Settings page active (blue)</div>
+        <div><i class="bi bi-save2" style="color:rgba(220,53,69,.9)" ></i> Save button pulses red when there are unsaved changes — even when collapsed</div>
+      </div>
     </div>
   </div>
 
+  <ul>
+    <li><strong>No changes</strong> — Button appears with a standard grey outline.</li>
+    <li><strong>Unsaved changes</strong> — Pulses with a soft <strong>red glow outline</strong>. Glow disappears when you save or revert all fields.</li>
+    <li>Every field on the Settings page is tracked: text inputs, dropdowns, checkboxes, toggles, color pickers, and dynamically added entries.</li>
+  </ul>
+
   <h3 id="unsaved-changes-dialog">Unsaved Changes Dialog</h3>
-  <p>If you change anything on the Settings page and then click a navigation link without saving, a <strong>blocking dialog</strong> appears asking what to do. You cannot navigate elsewhere until you respond — this prevents accidentally losing changes.</p>
+  <p>If you change anything on the Settings page and click a navigation link without saving, a <strong>blocking dialog</strong> appears. You cannot navigate until you respond.</p>
 
   <div class="mockup" style="max-width:420px">
     <div class="mockup-label">Unsaved Changes dialog</div>
-    <div style="background:#1c1f24; border:1px solid rgba(220,53,69,.55); border-radius:.9rem; overflow:hidden; font-size:.82rem; max-width:340px">
-      <div style="padding:.875rem 1.1rem .65rem; border-bottom:1px solid rgba(255,255,255,.07); display:flex; justify-content:space-between; align-items:center; cursor:move">
+    <div style="background:#1c1f24;border:1px solid rgba(220,53,69,.55);border-radius:.9rem;overflow:hidden;font-size:.82rem;max-width:340px">
+      <div style="padding:.875rem 1.1rem .65rem;border-bottom:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between;align-items:center;cursor:move">
         <div class="d-flex align-items-center gap-2">
           <i class="bi bi-exclamation-triangle-fill text-danger"></i>
           <span class="fw-semibold" style="color:#f8d7da">Unsaved Changes</span>
@@ -355,50 +481,17 @@ html { scroll-behavior: smooth; }
   </div>
 
   <ul>
-    <li><strong>Save &amp; Leave</strong> — Saves all current Settings in the background (same as clicking Save Settings), then navigates to the page you clicked. No data is lost.</li>
-    <li><strong>Discard &amp; Leave</strong> — Abandons all unsaved changes and navigates away. Changed fields return to their saved values.</li>
-    <li>The dialog lists exactly which fields were modified so you know what would be lost.</li>
-    <li>The badge in the title bar shows the count of changed fields.</li>
-    <li>You can <strong>drag the dialog</strong> by its header bar to move it out of the way — it will not close until you click one of the two buttons.</li>
-    <li>Changed fields are highlighted with a <span style="color:rgba(220,53,69,.9)">soft red outline</span> on the Settings page itself, matching the dialog's field list.</li>
-    <li>The dialog also fires if you attempt to close or reload the browser tab with unsaved changes (the browser shows its own warning in that case).</li>
-    <li>Help and Support links (which open in a new tab) are never intercepted — only in-app navigation triggers the dialog.</li>
-  </ul>
-
-  <h3>Topbar</h3>
-  <p>The topbar at the top of every page shows live status information and quick-action buttons.</p>
-
-  <div class="mockup">
-    <div class="mockup-label">Topbar — right section</div>
-    <div class="mockup-topbar">
-      <div style="font-size:.72rem">
-        <div class="text-muted" style="font-size:.62rem;text-transform:uppercase;letter-spacing:.05em">Last Scan</div>
-        <span class="badge bg-success me-1">OK</span><span class="text-white-50">Mar 04 09:15</span>
-      </div>
-      <div class="vr mx-1" style="opacity:.3;height:30px"></div>
-      <div style="font-size:.72rem">
-        <div class="text-muted" style="font-size:.62rem;text-transform:uppercase;letter-spacing:.05em">Current Date/Time</div>
-        <div class="text-white fw-semibold">Tue 2026-03-04 &nbsp;09:45:22</div>
-      </div>
-      <button class="btn btn-sm btn-outline-secondary ms-2"><i class="bi bi-question-circle"></i></button>
-      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-bell"></i></button>
-      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-gear"></i></button>
-      <button class="btn btn-sm btn-outline-info"><i class="bi bi-question-circle-fill"></i></button>
-    </div>
-  </div>
-
-  <h4>Topbar controls</h4>
-  <ul>
-    <li><strong>Last Scan</strong> — Badge turns green when the last scan completed without errors; red if errors occurred. Shows the date and time it last ran.</li>
-    <li><strong>Current Date/Time</strong> — Live clock updated every second.</li>
-    <li><i class="bi bi-question-circle"></i> <strong>Hints toggle</strong> — Shows or hides contextual hint text throughout the app. State is remembered between sessions. See <a href="#hints">Hints System</a>.</li>
-    <li><i class="bi bi-bell"></i> <strong>Notifications</strong> — Opens the Notifications page. A red badge shows how many unread notifications you have.</li>
-    <li><i class="bi bi-gear"></i> <strong>Settings</strong> — Opens the Settings page.</li>
-    <li><i class="bi bi-question-circle-fill text-info"></i> <strong>Help</strong> — Opens this documentation page in a new tab.</li>
+    <li><strong>Save &amp; Leave</strong> — Saves all Settings in the background, then navigates. No data lost.</li>
+    <li><strong>Discard &amp; Leave</strong> — Abandons changes and navigates away.</li>
+    <li>The dialog lists exactly which fields were modified.</li>
+    <li>You can <strong>drag the dialog</strong> by its header to move it — it will not close until you click a button.</li>
+    <li>Changed fields are highlighted with a <span style="color:rgba(220,53,69,.9)">soft red outline</span> on the Settings page itself.</li>
+    <li>The dialog also fires on browser close/reload with unsaved changes.</li>
+    <li>Help and Support links (new tab) are never intercepted — only in-app navigation triggers the dialog.</li>
   </ul>
 
   <h3>Run Scan Now</h3>
-  <p>The blue <strong>Run Scan Now</strong> button at the bottom of the sidebar immediately triggers a full job scan across all enabled sources. A progress modal opens showing real-time results. See <a href="#running-scan">Running a Scan</a> for details.</p>
+  <p>The <strong>Run Scan Now</strong> button at the bottom of the sidebar triggers a full job scan across all enabled sources. A progress modal opens with real-time results. See <a href="#running-scan">Running a Scan</a> for details.</p>
 </section>
 
 <!-- ═══════════════════════════════════════════════════════ DASHBOARD -->
@@ -1046,6 +1139,46 @@ html { scroll-behavior: smooth; }
   </ul>
 
   <h4>Active tab card features</h4>
+
+  <div class="mockup mb-3">
+    <div class="mockup-label">Source cards — compact sizing (each card fits its own content)</div>
+    <div class="d-flex gap-2 flex-wrap align-items-start" style="font-size:.78rem">
+      <!-- Tall card (has keywords) -->
+      <div style="width:180px;background:#1c1f24;border:1px solid rgba(255,255,255,.065);border-radius:.8rem;padding:.7rem;box-shadow:0 6px 16px rgba(0,0,0,.5)">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <div>
+            <span class="badge bg-secondary me-1" style="font-size:.6rem">built-in</span>
+            <span class="badge bg-info text-dark" style="font-size:.6rem">rss</span>
+            <span class="badge ms-1" style="font-size:.6rem;background:rgba(57,255,20,.18);color:#39ff14;border:1px solid rgba(57,255,20,.4)">23 jobs</span>
+          </div>
+          <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" checked style="cursor:default"></div>
+        </div>
+        <div class="fw-semibold text-white mb-1">We Work Remotely</div>
+        <div class="text-muted" style="font-size:.68rem">weworkremotely.com</div>
+        <div class="mt-2 pt-2" style="border-top:1px solid rgba(255,255,255,.07);font-size:.68rem;color:#adb5bd">
+          <div class="mb-1">Keywords: python, flask</div>
+          <button class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:.65rem"><i class="bi bi-play-fill"></i> Run Now</button>
+        </div>
+      </div>
+      <!-- Short card (no keywords) -->
+      <div style="width:180px;background:#1c1f24;border:1px solid rgba(255,255,255,.065);border-radius:.8rem;padding:.7rem;box-shadow:0 6px 16px rgba(0,0,0,.5)">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <div>
+            <span class="badge bg-secondary me-1" style="font-size:.6rem">built-in</span>
+            <span class="badge bg-info text-dark" style="font-size:.6rem">json api</span>
+          </div>
+          <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" checked style="cursor:default"></div>
+        </div>
+        <div class="fw-semibold text-white mb-1">RemoteOK</div>
+        <div class="text-muted" style="font-size:.68rem">remoteok.io</div>
+        <div class="mt-2 pt-2" style="border-top:1px solid rgba(255,255,255,.07);font-size:.68rem">
+          <button class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:.65rem"><i class="bi bi-play-fill"></i> Run Now</button>
+        </div>
+      </div>
+      <div style="font-size:.74rem;color:#adb5bd;align-self:center;max-width:140px">Cards size to their own content — the tall card has keyword config; the short card does not. They are never forced to match each other's height.</div>
+    </div>
+  </div>
+
   <ul>
     <li><strong>Compact sizing</strong> — Each card sizes to its own content. Cards in the same row are <em>not</em> forced to equal height, so a simple source with no extra options takes up only the space it needs.</li>
     <li><strong>Sort order</strong> — Cards are automatically ordered by jobs found in the last scan (most productive first). Cards with zero results sort alphabetically at the bottom.</li>
