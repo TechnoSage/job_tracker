@@ -3040,6 +3040,9 @@ var PIPE_STAGES = [
                /downloading installer/i, /\[ok\] inno setup/i] },
   { label: 'Protect',   sub: 'Code Protection',
     patterns: [/pyarmor.*encrypting/i, /pyarmor.*gen/i, /obfuscat/i] },
+  { label: 'Clean',     sub: 'Remove Old Build',
+    patterns: [/pre-build clean/i, /removing previous compile/i,
+               /removing old (build dir|bundle)/i, /pre-build clean complete/i] },
   { label: 'Bundle',    sub: 'Compile & Pack',
     patterns: [/pyinstaller.*bundling/i, /nuitka.*compiling to native/i,
                /nuitka: starting python/i, /running c compilation/i,
@@ -3050,9 +3053,9 @@ var PIPE_STAGES = [
 ];
 
 /* Runtime state */
-var pgStates  = ['pending','pending','pending','pending','pending','pending'];
-var pgFills   = [0, 0, 0, 0, 0, 0];   // current fill % (float)
-var pgTargets = [0, 0, 0, 0, 0, 0];   // target fill %
+var pgStates  = ['pending','pending','pending','pending','pending','pending','pending'];
+var pgFills   = [0, 0, 0, 0, 0, 0, 0];   // current fill % (float)
+var pgTargets = [0, 0, 0, 0, 0, 0, 0];   // target fill %
 var pgCurrent = -1;
 var pgRafId   = null;
 var pgSpeed   = 0.04;               // % per rAF frame (real build = slow)
@@ -3625,7 +3628,7 @@ function _pgWheel(cx, cy, r) {
 }
 
 /* ── Test-run helpers ────────────────────────────────────────────────────── */
-var _PG_TEST_DUR = [1800, 1500, 1700, 3200, 2000];  // ms per stage
+var _PG_TEST_DUR = [1800, 1500, 1700, 3200, 900, 2000, 2200];  // ms per stage (Scan,Deps,Tools,Protect,Clean,Bundle,Installer)
 
 function _pgBothBtns(disabled, testHtml, errHtml) {
   var bt = document.getElementById('btnPipelineTest');
