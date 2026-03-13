@@ -1137,6 +1137,13 @@ def _run_clean(clean_mode: str = "all") -> None:
                 _append(f"  Removed:      {p}")
             else:
                 _append(f"  Already gone: {p}")
+        # Bundle Only is a compile artifact in the output dir — always remove it
+        bundle_only = _resolve_output_dir(settings) / "Bundle Only"
+        if bundle_only.exists():
+            shutil.rmtree(bundle_only, ignore_errors=True)
+            _append(f"  Removed:      {bundle_only}")
+        else:
+            _append(f"  Already gone: {bundle_only}")
 
     if clean_mode in ("output", "all"):
         # Configured output root (may be on another drive, e.g. D:\Compile Playground\…)
