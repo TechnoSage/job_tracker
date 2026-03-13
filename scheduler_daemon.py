@@ -446,6 +446,33 @@ def _ensure_tray_deps() -> bool:
         return False
 
 
+def _read_icon_settings() -> tuple[str, str]:
+    """Read daemon_icon_path and daemon_icon_size directly from SQLite.
+
+    Bypasses Flask/SQLAlchemy entirely to avoid database locking issues
+    when the web server is also running.
+    """
+    import sqlite3 as _sqlite3
+    db_path = os.path.join(PROJECT_DIR, "instance", "job_tracker.db")
+    icon_path = ""
+    icon_size = ""
+    try:
+        con = _sqlite3.connect(db_path, timeout=5)
+        cur = con.cursor()
+        cur.execute(
+            "SELECT key, value FROM setting WHERE key IN ('daemon_icon_path', 'daemon_icon_size')"
+        )
+        for key, value in cur.fetchall():
+            if key == "daemon_icon_path":
+                icon_path = value or ""
+            elif key == "daemon_icon_size":
+                icon_size = value or ""
+        con.close()
+    except Exception as exc:
+        logger.debug("Could not read icon settings from DB: %s", exc)
+    return icon_path, icon_size
+
+
 def _make_icon_image():
     """Return a 64×64 RGBA PIL Image for the tray icon.
 
@@ -455,36 +482,17 @@ def _make_icon_image():
     from PIL import Image, ImageDraw, ImageFont  # type: ignore
 
     # Try to load the user-configured icon --------------------------------
-    icon_path = ""
-    icon_size = ""
-    try:
-        from app import create_app          # type: ignore
-        flask_app = create_app()
-        with flask_app.app_context():
-            from models import Setting      # type: ignore
-            icon_path = Setting.get("daemon_icon_path", "")
-            icon_size = Setting.get("daemon_icon_size", "")
-    except Exception:
-        pass
+    icon_path, icon_size = _read_icon_settings()
 
     if icon_path and os.path.isfile(icon_path):
         try:
             src = Image.open(icon_path)
-            if src.format == "ICO" and hasattr(src, "ico"):
-                sizes = src.ico.sizes()
-                target = (64, 64)
-                if icon_size:
-                    try:
-                        w, h = map(int, icon_size.split("x"))
-                        target = (w, h)
-                    except Exception:
-                        pass
-                best = min(sizes, key=lambda s: abs(s[0] - target[0]) + abs(s[1] - target[1]))
-                src.size = best
-                src = src.copy()
+            # For ICO files, Pillow loads the largest frame by default.
+            # Convert to RGBA and resize to the target tray size.
             return src.convert("RGBA").resize((64, 64), Image.LANCZOS)
-        except Exception:
-            pass  # fall through to default
+        except Exception as exc:
+            logger.debug("Failed to load custom icon '%s': %s", icon_path, exc)
+            # fall through to default
 
     # Built-in default: blue circle with 'JT' --------------------------------
     size = 64

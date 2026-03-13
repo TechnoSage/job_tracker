@@ -1369,6 +1369,32 @@
 </form>
 
 <!-- ================================================================
+     Unsaved Changes Overlay + Dialog
+     ================================================================ -->
+<div id="unsavedOverlay"></div>
+<div id="unsavedDialog" role="alertdialog" aria-modal="true" aria-labelledby="unsavedDialogTitle">
+  <div id="unsavedDialogHandle">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+      <span id="unsavedDialogTitle" class="fw-semibold" style="color:#f8d7da">Unsaved Changes</span>
+    </div>
+    <span id="unsavedChangeCount" class="badge bg-danger">0</span>
+  </div>
+  <div id="unsavedDialogBody">
+    <p class="small text-secondary mb-2">You have unsaved changes. Save them before leaving, or discard and continue.</p>
+    <ul id="unsavedFieldList" class="small text-warning mb-0 ps-3" style="max-height:120px;overflow-y:auto;"></ul>
+    <div class="d-flex gap-2 justify-content-end mt-3">
+      <button id="unsavedDiscardBtn" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-x-lg me-1"></i>Discard &amp; Leave
+      </button>
+      <button id="unsavedSaveBtn" class="btn btn-sm btn-danger">
+        <i class="bi bi-save2 me-1"></i>Save &amp; Leave
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
      Reset Confirmation Modal
      ================================================================ -->
 <div class="modal fade" id="dbResetModal" tabindex="-1" aria-labelledby="dbResetModalLabel" aria-hidden="true">
@@ -1542,6 +1568,51 @@
 }
 .scan-timeout-card .card-header {
   border-radius: calc(.5rem - 1px) calc(.5rem - 1px) 0 0 !important;
+}
+
+/* ── Changed-field highlight ─────────────────────────────────────────── */
+@keyframes changedFieldPulse {
+  0%,100% { box-shadow: 0 0 0 1px rgba(220,53,69,.45), 0 0 5px rgba(220,53,69,.20); }
+  50%     { box-shadow: 0 0 0 3px rgba(220,53,69,.25), 0 0 10px rgba(220,53,69,.40); }
+}
+.settings-field-changed {
+  border-color: rgba(220,53,69,.65) !important;
+  animation: changedFieldPulse 2s ease-in-out infinite;
+}
+
+/* ── Unsaved dialog overlay ──────────────────────────────────────────── */
+#unsavedOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.52);
+  z-index: 1060;
+  display: none;
+}
+#unsavedDialog {
+  position: fixed;
+  z-index: 1061;
+  min-width: 330px;
+  max-width: 420px;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1c1f24;
+  border: 1px solid rgba(220,53,69,.55);
+  border-radius: .9rem;
+  box-shadow: 0 12px 40px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.04);
+  display: none;
+  user-select: none;
+}
+#unsavedDialogHandle {
+  cursor: move;
+  padding: .875rem 1.1rem .65rem;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#unsavedDialogBody {
+  padding: .85rem 1.1rem 1rem;
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -3071,50 +3142,223 @@
   }
 }());
 
-// ── Settings dirty-state tracker ──────────────────────────────────────────
+// ── Settings dirty-state tracker + unsaved-changes dialog ─────────────────
 (function () {
   var form    = document.getElementById('settingsForm');
   var saveBtn = document.getElementById('sidebarSaveBtn');
-  if (!form || !saveBtn) return;
+  var overlay = document.getElementById('unsavedOverlay');
+  var dialog  = document.getElementById('unsavedDialog');
+  var handle  = document.getElementById('unsavedDialogHandle');
+  if (!form || !saveBtn || !overlay || !dialog || !handle) return;
 
-  // Snapshot: returns a stable string of every tracked field value
-  function snapshot() {
-    var out = [];
+  var _isDirty    = false;   // master dirty flag
+  var _baseline   = {};      // captured after DOMContentLoaded
+  var _pendingHref = null;
+
+  // ── Field helpers ─────────────────────────────────────────────────────────
+  function fieldKey(el) {
+    // Include outerHTML index to guarantee uniqueness for anonymous fields
+    return (el.name || '') + '|' + (el.id || '') + '|' + el.type + '|' + el.tabIndex;
+  }
+  function fieldValue(el) {
+    if (el.type === 'checkbox' || el.type === 'radio') return String(el.checked);
+    return el.value;
+  }
+  function buildSnapshot() {
+    var map = {};
     form.querySelectorAll('input, select, textarea').forEach(function (el) {
       if (el.type === 'submit' || el.type === 'button' || el.type === 'file') return;
-      var key = (el.name || '') + '|' + (el.id || '') + '|' + el.type;
-      if (el.type === 'checkbox' || el.type === 'radio') {
-        out.push(key + '=' + el.checked);
-      } else {
-        out.push(key + '=' + el.value);
-      }
+      map[fieldKey(el)] = fieldValue(el);
     });
-    return out.join('\n');
+    return map;
+  }
+  function getFieldLabel(el) {
+    if (el.id) {
+      var lbl = document.querySelector('label[for="' + el.id + '"]');
+      if (lbl && lbl.textContent.trim()) return lbl.textContent.trim();
+    }
+    var parent = el.closest('.mb-3, .mb-2, .mb-1, .form-group, td, .col');
+    if (parent) {
+      var lbl2 = parent.querySelector('label');
+      if (lbl2 && lbl2.textContent.trim()) return lbl2.textContent.trim();
+    }
+    return el.placeholder || el.name || el.id || '(field)';
   }
 
-  var _baseline = snapshot();
-
+  // ── Dirty check — compare current snapshot to baseline ───────────────────
   function checkDirty() {
-    if (snapshot() !== _baseline) {
+    var current    = buildSnapshot();
+    var changedEls = [];
+    form.querySelectorAll('input, select, textarea').forEach(function (el) {
+      if (el.type === 'submit' || el.type === 'button' || el.type === 'file') return;
+      var k   = fieldKey(el);
+      var orig = _baseline[k];
+      // A field is "changed" if it existed at baseline AND its value differs
+      if (orig !== undefined && fieldValue(el) !== orig) {
+        el.classList.add('settings-field-changed');
+        changedEls.push(el);
+      } else {
+        el.classList.remove('settings-field-changed');
+      }
+    });
+    _isDirty = changedEls.length > 0;
+    if (_isDirty) {
       saveBtn.classList.add('dirty');
     } else {
       saveBtn.classList.remove('dirty');
     }
+    return changedEls;
   }
 
-  // Capture all field changes via delegation
-  form.addEventListener('input',  checkDirty);
-  form.addEventListener('change', checkDirty);
-
-  // Watch for dynamically added fields (scan times, email accounts, etc.)
-  new MutationObserver(function () {
+  // ── Attach change listeners (called once on load and after DOM mutations) ──
+  function attachListeners() {
     form.addEventListener('input',  checkDirty);
     form.addEventListener('change', checkDirty);
-  }).observe(form, { childList: true, subtree: true });
+  }
+  attachListeners();
 
-  // Clear dirty on submit
-  form.addEventListener('submit', function () {
+  // Re-attach if new fields are injected dynamically (email accounts, etc.)
+  var _observer = new MutationObserver(attachListeners);
+  _observer.observe(form, { childList: true, subtree: true });
+
+  // ── Baseline: capture AFTER DOMContentLoaded so dynamic init runs first ───
+  document.addEventListener('DOMContentLoaded', function () {
+    _baseline = buildSnapshot();
+  });
+  // Fallback: if DOMContentLoaded already fired (unlikely but safe)
+  if (document.readyState !== 'loading') {
+    _baseline = buildSnapshot();
+  }
+
+  // ── Dialog show / hide ────────────────────────────────────────────────────
+  function showDialog(href) {
+    _pendingHref = href;
+    var changedEls = checkDirty();
+    var list  = document.getElementById('unsavedFieldList');
+    var count = document.getElementById('unsavedChangeCount');
+    if (list) {
+      list.innerHTML = '';
+      changedEls.forEach(function (el) {
+        var li = document.createElement('li');
+        li.textContent = getFieldLabel(el);
+        list.appendChild(li);
+      });
+    }
+    if (count) count.textContent = changedEls.length;
+    // Centre dialog (reset any drag position)
+    dialog.style.left      = '50%';
+    dialog.style.top       = '30%';
+    dialog.style.transform = 'translateX(-50%)';
+    overlay.style.display  = 'block';
+    dialog.style.display   = 'block';
+    dialog.focus();
+  }
+
+  function hideDialog() {
+    overlay.style.display = 'none';
+    dialog.style.display  = 'none';
+    _pendingHref = null;
+  }
+
+  function clearDirtyState() {
+    form.querySelectorAll('.settings-field-changed').forEach(function (el) {
+      el.classList.remove('settings-field-changed');
+    });
     saveBtn.classList.remove('dirty');
+    _isDirty  = false;
+    _baseline = buildSnapshot();
+  }
+
+  // ── Drag ──────────────────────────────────────────────────────────────────
+  var _drag = { on: false, sx: 0, sy: 0, ox: 0, oy: 0 };
+
+  handle.addEventListener('mousedown', function (e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    var r = dialog.getBoundingClientRect();
+    _drag.on = true;
+    _drag.sx = e.clientX; _drag.sy = e.clientY;
+    _drag.ox = r.left;    _drag.oy = r.top;
+    dialog.style.transform = 'none';
+    dialog.style.left = r.left + 'px';
+    dialog.style.top  = r.top  + 'px';
+  });
+  document.addEventListener('mousemove', function (e) {
+    if (!_drag.on) return;
+    var nx = Math.max(0, Math.min(window.innerWidth  - dialog.offsetWidth,  _drag.ox + e.clientX - _drag.sx));
+    var ny = Math.max(0, Math.min(window.innerHeight - dialog.offsetHeight, _drag.oy + e.clientY - _drag.sy));
+    dialog.style.left = nx + 'px';
+    dialog.style.top  = ny + 'px';
+  });
+  document.addEventListener('mouseup', function () { _drag.on = false; });
+
+  // ── Discard & Leave ───────────────────────────────────────────────────────
+  var discardBtn = document.getElementById('unsavedDiscardBtn');
+  if (discardBtn) {
+    discardBtn.addEventListener('click', function () {
+      var dest = _pendingHref;
+      clearDirtyState();
+      hideDialog();
+      if (dest) window.location.href = dest;
+    });
+  }
+
+  // ── Save & Leave ──────────────────────────────────────────────────────────
+  var saveAndLeaveBtn = document.getElementById('unsavedSaveBtn');
+  if (saveAndLeaveBtn) {
+    saveAndLeaveBtn.addEventListener('click', function () {
+      var dest = _pendingHref;
+      var fd   = new FormData(form);
+      fetch(form.action || window.location.href, { method: 'POST', body: fd })
+        .then(function () {
+          clearDirtyState();
+          hideDialog();
+          if (dest) window.location.href = dest;
+        })
+        .catch(function () {
+          // Even on error, let the user leave
+          hideDialog();
+          if (dest) window.location.href = dest;
+        });
+    });
+  }
+
+  // ── Navigation intercept (capture phase, highest priority) ────────────────
+  document.addEventListener('click', function (e) {
+    // If dialog is already open, let its own buttons handle everything
+    if (dialog.style.display === 'block') return;
+
+    var link = e.target.closest('a[href]');
+    if (!link) return;
+
+    var rawHref = link.getAttribute('href') || '';
+    // Skip anchors, javascript: links, and target="_blank" links
+    if (!rawHref || rawHref === '#' || rawHref.indexOf('javascript') === 0) return;
+    if (link.target === '_blank') return;
+
+    // Only intercept if we know there are unsaved changes
+    if (!_isDirty) {
+      // Re-verify: _isDirty may not be set if user hasn't triggered input event
+      checkDirty();
+      if (!_isDirty) return;
+    }
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    showDialog(link.href);
+  }, true);
+
+  // ── beforeunload guard (browser navigation / reload / close) ─────────────
+  window.addEventListener('beforeunload', function (e) {
+    if (_isDirty) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+
+  // ── Clear dirty when form is submitted normally ───────────────────────────
+  form.addEventListener('submit', function () {
+    clearDirtyState();
   });
 }());
 </script>
