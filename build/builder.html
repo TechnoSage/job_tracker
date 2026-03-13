@@ -969,12 +969,29 @@ html[data-bs-theme="light"] #log {
      ══════════════════════════════════════════════════════════════════════════ -->
 <div class="row mt-3">
   <div class="col-12">
+    <!-- Build type + description row -->
+    <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
+      <div>
+        <label class="form-label form-label-sm mb-1 text-muted small">Build Type</label>
+        <select id="buildType" class="form-select form-select-sm" style="width:auto;min-width:130px;">
+          <option value="Main">Main</option>
+          <option value="Incremental">Incremental</option>
+          <option value="HOTFIX">HOTFIX</option>
+        </select>
+      </div>
+      <div class="flex-grow-1">
+        <label class="form-label form-label-sm mb-1 text-muted small">Build Notes / Description</label>
+        <input type="text" id="buildDescription" class="form-control form-control-sm"
+               placeholder="e.g. Fixed crash on startup, added dark mode…">
+      </div>
+    </div>
+    <!-- Action buttons row -->
     <div class="d-flex flex-wrap gap-2 align-items-center">
       <button class="btn btn-secondary btn-sm" onclick="saveSettings()">
         <i class="bi bi-floppy me-1"></i>Save Settings
       </button>
       <div class="vr mx-1"></div>
-      <button id="btnClean" class="btn btn-outline-warning btn-sm" onclick="doBuild('clean')">
+      <button id="btnClean" class="btn btn-outline-warning btn-sm" onclick="openCleanModal()">
         <i class="bi bi-trash3 me-1"></i>Clean Outputs
       </button>
       <button id="btnBundle" class="btn btn-outline-info btn-sm" onclick="doBuild('bundle-only')">
@@ -987,6 +1004,48 @@ html[data-bs-theme="light"] #log {
         <span class="visually-hidden">Working...</span>
       </div>
       <span id="buildMsg" class="text-muted small ms-1"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     Build History
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="row mt-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-1 text-secondary"></i>Build History
+          <span class="text-secondary fw-normal ms-2" style="font-size:.68rem;">select a past build to restore its settings and rebuild</span>
+        </h6>
+        <button class="btn btn-xs btn-outline-secondary py-0 px-2" onclick="loadBuildHistory()" title="Refresh history">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+      <div class="card-body pt-2 pb-2">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-9">
+            <select id="buildHistorySelect" class="form-select form-select-sm"
+                    onchange="onHistorySelectChange()" style="font-family:monospace;font-size:.78rem;">
+              <option value="">— no history yet —</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-flex gap-2">
+            <button id="btnRebuild" class="btn btn-sm btn-outline-warning flex-grow-1"
+                    onclick="doRebuild()" disabled title="Restore settings from selected build then rebuild">
+              <i class="bi bi-arrow-repeat me-1"></i>Rebuild
+            </button>
+          </div>
+        </div>
+        <!-- Selected build detail strip -->
+        <div id="historyDetail" class="mt-2 small text-secondary d-none">
+          <span id="histDetailVersion" class="badge bg-secondary me-1"></span>
+          <span id="histDetailType"    class="badge me-1"></span>
+          <span id="histDetailMode"    class="badge bg-dark border border-secondary me-1"></span>
+          <span id="histDetailCommit"  class="text-muted me-2"></span>
+          <span id="histDetailDesc"></span>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1189,6 +1248,50 @@ html[data-bs-theme="light"] #log {
 
 </div><!-- /container-fluid -->
 
+<!-- ── Clean Options Modal ──────────────────────────────────────────────────── -->
+<div class="modal fade" id="cleanModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content border border-secondary" style="background:#1c1f24">
+      <div class="modal-header border-secondary py-2">
+        <h6 class="modal-title mb-0"><i class="bi bi-trash3 me-1 text-warning"></i>Clean Outputs</h6>
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pb-2">
+        <p class="text-muted small mb-2">Choose what to remove:</p>
+        <div class="d-flex flex-column gap-2">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="cleanMode" id="cleanAll" value="all" checked>
+            <label class="form-check-label small" for="cleanAll">
+              <strong>Everything</strong>
+              <span class="d-block text-muted" style="font-size:.72rem;">Compile temp dirs <em>and</em> output folder</span>
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="cleanMode" id="cleanTemp" value="temp">
+            <label class="form-check-label small" for="cleanTemp">
+              <strong>Compile Temp Only</strong>
+              <span class="d-block text-muted" style="font-size:.72rem;">build_output/, obf_src/ inside project</span>
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="cleanMode" id="cleanOutput" value="output">
+            <label class="form-check-label small" for="cleanOutput">
+              <strong>Output Folder Only</strong>
+              <span class="d-block text-muted" style="font-size:.72rem;">Exe, installer, logs — keeps compile temp</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-secondary py-2">
+        <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-sm btn-warning" onclick="confirmClean()">
+          <i class="bi bi-trash3 me-1"></i>Clean
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Repo Picker Modal ────────────────────────────────────────────────────── -->
 <div class="modal fade" id="repoPickerModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable">
@@ -1382,6 +1485,7 @@ document.addEventListener('DOMContentLoaded', function () {
   checkDocsStatus();
   checkDaemonStatus();
   loadLicenseTemplates();
+  loadBuildHistory();
 
   document.querySelectorAll('input[name="prot"]').forEach(function (r) {
     r.addEventListener('change', function () {
@@ -2237,7 +2341,14 @@ function _startBuild(mode) {
   if (mode !== 'clean') { pgFlagSet('pgStart', '#00aa55', true); _pgCardGlow(true); }
 
   var endpoint = (mode === 'clean') ? '/api/build/clean' : '/api/build/start';
-  var body     = (mode === 'clean') ? {} : {mode: mode, settings: collectSettings()};
+  var buildTypeEl = document.getElementById('buildType');
+  var buildDescEl = document.getElementById('buildDescription');
+  var body = (mode === 'clean') ? {} : {
+    mode:        mode,
+    settings:    collectSettings(),
+    build_type:  buildTypeEl  ? buildTypeEl.value  : 'Main',
+    description: buildDescEl  ? buildDescEl.value.trim() : '',
+  };
 
   fetch(endpoint, {
     method: 'POST',
@@ -2259,7 +2370,10 @@ function _startBuild(mode) {
         status === 'done'
           ? (mode === 'clean' ? 'Clean complete.' : 'Build complete.')
           : 'Build finished with errors.';
-      if (mode !== 'clean') pgFinish(status);
+      if (mode !== 'clean') {
+        pgFinish(status);
+        if (status === 'done') loadBuildHistory();  // refresh history dropdown
+      }
     });
   })
   .catch(function (e) {
@@ -2500,6 +2614,143 @@ async function checkGhAuth() {
     badge.className   = 'badge bg-secondary';
     badge.textContent = 'GitHub: unknown';
   }
+}
+
+/* ── Clean Modal ───────────────────────────────────────────────────────────── */
+
+function openCleanModal() {
+  new bootstrap.Modal(document.getElementById('cleanModal')).show();
+}
+
+function confirmClean() {
+  var selected = document.querySelector('input[name="cleanMode"]:checked');
+  var mode = selected ? selected.value : 'all';
+  bootstrap.Modal.getInstance(document.getElementById('cleanModal')).hide();
+  _startClean(mode);
+}
+
+function _startClean(cleanMode) {
+  setBuildBtns(true);
+  autoScroll = true;
+  logOffset  = 0;
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('buildMsg').textContent = '';
+  updateBadge('running');
+
+  fetch('/api/build/clean', {
+    method:  'POST',
+    headers: {'Content-Type': 'application/json'},
+    body:    JSON.stringify({clean_mode: cleanMode}),
+  })
+  .then(function (r) { return r.json(); })
+  .then(function (d) {
+    if (!d.ok) {
+      setBuildBtns(false);
+      updateBadge('error');
+      document.getElementById('buildMsg').textContent = d.error || 'Clean failed.';
+      return;
+    }
+    pollLog(function (status) {
+      setBuildBtns(false);
+      updateBadge(status);
+      document.getElementById('buildMsg').textContent =
+        status === 'done' ? 'Clean complete.' : 'Clean finished with errors.';
+    });
+  })
+  .catch(function (e) {
+    setBuildBtns(false);
+    updateBadge('error');
+    document.getElementById('buildMsg').textContent = 'Request error: ' + e;
+  });
+}
+
+/* ── Build History ─────────────────────────────────────────────────────────── */
+
+var _buildHistory = [];
+
+function loadBuildHistory() {
+  fetch('/api/build/history')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      _buildHistory = d.history || [];
+      _renderHistoryDropdown();
+    })
+    .catch(function () { /* non-fatal */ });
+}
+
+function _renderHistoryDropdown() {
+  var sel = document.getElementById('buildHistorySelect');
+  if (!sel) return;
+  if (!_buildHistory.length) {
+    sel.innerHTML = '<option value="">— no history yet —</option>';
+    document.getElementById('btnRebuild').disabled = true;
+    return;
+  }
+  sel.innerHTML = '<option value="">— select a past build —</option>' +
+    _buildHistory.map(function (e, i) {
+      var typeBadge = {'HOTFIX': '🔥', 'Incremental': '📦', 'Main': '🏁'}[e.build_type] || '';
+      var modeLabel = {'full': 'Full', 'bundle-only': 'Bundle', 'installer-only': 'Installer'}[e.mode] || e.mode;
+      var ok = e.success ? '✓' : '✗';
+      var date = e.date ? e.date.slice(0, 10) : '';
+      var desc = e.description ? ' — ' + e.description.slice(0, 40) : '';
+      return '<option value="' + i + '">' +
+        ok + ' v' + e.version + '  ' + typeBadge + ' ' + e.build_type +
+        ' · ' + modeLabel + ' · ' + date + desc +
+        '</option>';
+    }).join('');
+  document.getElementById('btnRebuild').disabled = true;
+  document.getElementById('historyDetail').classList.add('d-none');
+}
+
+function onHistorySelectChange() {
+  var sel = document.getElementById('buildHistorySelect');
+  var idx = sel.value;
+  var btn = document.getElementById('btnRebuild');
+  if (idx === '') { btn.disabled = true; document.getElementById('historyDetail').classList.add('d-none'); return; }
+  btn.disabled = false;
+  var e = _buildHistory[parseInt(idx, 10)];
+  if (!e) return;
+
+  // Populate detail strip
+  var typeColors = {HOTFIX: 'bg-danger', Incremental: 'bg-info', Main: 'bg-success'};
+  var modeLabel  = {'full': 'Full Build', 'bundle-only': 'Bundle Only', 'installer-only': 'Installer Only'}[e.mode] || e.mode;
+  document.getElementById('histDetailVersion').textContent = 'v' + e.version;
+  var typeEl = document.getElementById('histDetailType');
+  typeEl.textContent  = e.build_type || '';
+  typeEl.className    = 'badge me-1 ' + (typeColors[e.build_type] || 'bg-secondary');
+  document.getElementById('histDetailMode').textContent   = modeLabel;
+  document.getElementById('histDetailCommit').textContent = e.git_commit ? '#' + e.git_commit : '';
+  document.getElementById('histDetailDesc').textContent   = e.description || '';
+  document.getElementById('historyDetail').classList.remove('d-none');
+}
+
+async function doRebuild() {
+  var sel = document.getElementById('buildHistorySelect');
+  var idx = sel.value;
+  if (idx === '') return;
+
+  var entry = _buildHistory[parseInt(idx, 10)];
+  if (!entry) return;
+
+  // Restore settings snapshot from history on the server
+  var r = await fetch('/api/build/history/restore', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({index: parseInt(idx, 10)}),
+  });
+  var d = await r.json();
+  if (!d.ok) { alert('Could not restore history entry: ' + d.error); return; }
+
+  // Update UI to reflect restored settings
+  loadSettings();  // reload all form fields from the restored snapshot
+
+  // Set build type and description from history entry
+  var buildTypeEl = document.getElementById('buildType');
+  var buildDescEl = document.getElementById('buildDescription');
+  if (buildTypeEl) buildTypeEl.value = d.build_type || 'Main';
+  if (buildDescEl) buildDescEl.value = 'Rebuild of v' + d.version + (d.description ? ' — ' + d.description : '');
+
+  // Start the build after a short delay to let loadSettings settle
+  setTimeout(function () { doBuild(d.mode || 'full'); }, 400);
 }
 
 async function doGhLogin() {
