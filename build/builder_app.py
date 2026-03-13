@@ -1110,6 +1110,34 @@ def _do_push_branch(branch: str) -> None:
     _set_status("done")
 
 
+def _force_rmtree(path: Path) -> bool:
+    """Delete a directory tree on Windows, stripping read-only flags on failure.
+    Falls back to 'cmd /c rd /s /q' if Python still can't remove it.
+    Returns True if the path is gone afterwards."""
+    import stat
+
+    def _on_error(func, fpath, _exc):
+        try:
+            os.chmod(fpath, stat.S_IWRITE)
+            func(fpath)
+        except Exception:
+            pass
+
+    shutil.rmtree(path, onerror=_on_error)
+    if not path.exists():
+        return True
+
+    # Last resort: shell-level delete (handles locked COM objects, junction points, etc.)
+    try:
+        result = subprocess.run(
+            ["cmd", "/c", "rd", "/s", "/q", str(path)],
+            capture_output=True, timeout=30,
+        )
+        return not path.exists()
+    except Exception:
+        return not path.exists()
+
+
 def _run_clean(clean_mode: str = "all") -> None:
     """Remove build output directories without running a subprocess.
 
@@ -1128,22 +1156,30 @@ def _run_clean(clean_mode: str = "all") -> None:
     _append(f"Cleaning: {mode_label}")
     _append("-" * 56)
 
+    def _rm(p: Path) -> None:
+        """Remove p (file or dir) and log the result."""
+        if not p.exists():
+            _append(f"  Already gone: {p}")
+            return
+        ok = _force_rmtree(p) if p.is_dir() else _try_unlink(p)
+        if ok:
+            _append(f"  Removed:      {p}")
+        else:
+            _append(f"  [WARN] Could not remove: {p}  (in use or permissions?)")
+
+    def _try_unlink(p: Path) -> bool:
+        try:
+            p.unlink()
+            return True
+        except Exception:
+            return False
+
     if clean_mode in ("temp", "all"):
         # PyInstaller/Nuitka work directories inside the project tree
         for name in ("build_output", "obf_src"):
-            p = PROJECT_ROOT / name
-            if p.exists():
-                shutil.rmtree(p, ignore_errors=True)
-                _append(f"  Removed:      {p}")
-            else:
-                _append(f"  Already gone: {p}")
+            _rm(PROJECT_ROOT / name)
         # Bundle Only is a compile artifact in the output dir — always remove it
-        bundle_only = _resolve_output_dir(settings) / "Bundle Only"
-        if bundle_only.exists():
-            shutil.rmtree(bundle_only, ignore_errors=True)
-            _append(f"  Removed:      {bundle_only}")
-        else:
-            _append(f"  Already gone: {bundle_only}")
+        _rm(_resolve_output_dir(settings) / "Bundle Only")
 
     if clean_mode in ("output", "all"):
         # Configured output root (may be on another drive, e.g. D:\Compile Playground\…)
@@ -1154,13 +1190,7 @@ def _run_clean(clean_mode: str = "all") -> None:
             for item in out_root.iterdir():
                 if item.resolve() == log_dir.resolve():
                     continue   # skip Log/ subfolder
-                if item.is_dir():
-                    shutil.rmtree(item, ignore_errors=True)
-                else:
-                    try:
-                        item.unlink()
-                    except Exception:
-                        pass
+                _rm(item)
             _append(f"  Cleaned:      {out_root}  (Log/ preserved)")
         else:
             _append(f"  Already gone: {out_root}")
