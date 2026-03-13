@@ -2012,9 +2012,12 @@ def create_builder_app() -> Flask:
             return ctx
         _ssl_ctx = _mk_ssl_ctx()
 
-        # Determine scheme: use https if the target app has certs bundled
+        # Determine scheme: mirror what run.py does — HTTPS only if the bundle
+        # itself contains certs/localhost.pem next to the exe.
+        # Do NOT use _LOCAL_CERT (source-tree certs) — those are irrelevant to
+        # the compiled exe which has its own working directory.
         _bundle_has_certs = (bundle / "certs" / "localhost.pem").exists()
-        _scheme = "https" if (_LOCAL_CERT.exists() or _bundle_has_certs) else "http"
+        _scheme = "https" if _bundle_has_certs else "http"
         _poll_url = f"{_scheme}://127.0.0.1:{port}"
 
         V("START",  "=== Bundle Run Test Pipeline ===")
@@ -2226,7 +2229,11 @@ def create_builder_app() -> Flask:
                 ctx.verify_mode = _ssl.CERT_NONE
             return ctx
         _ssl_ctx = _mk_ssl_ctx()
-        _scheme   = "https" if _LOCAL_CERT.exists() else "http"
+        # Mirror what run.py does: HTTPS only when the bundle contains certs.
+        # The bundle used to create the installer is in Bundle Only/<exe_name>/.
+        _inst_bundle = output_dir / "Bundle Only" / exe_name
+        _inst_has_certs = (_inst_bundle / "certs" / "localhost.pem").exists()
+        _scheme   = "https" if _inst_has_certs else "http"
         _poll_url = f"{_scheme}://127.0.0.1:{port}"
 
         V("START",  "=== Full-Build Install Test Pipeline ===")
