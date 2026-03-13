@@ -2,7 +2,16 @@
    Job Tracker — Frontend JavaScript
    ============================================================ */
 
-// ---- Sidebar toggle ----
+// ---- Sidebar toggle (state persisted across page loads via localStorage) ----
+(function () {
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar && window.innerWidth > 768) {
+    if (localStorage.getItem('sidebar-collapsed') === '1') {
+      sidebar.classList.add('collapsed');
+    }
+  }
+}());
+
 document.addEventListener('DOMContentLoaded', () => {
   const sidebar = document.getElementById('sidebar');
   const toggleBtn = document.getElementById('sidebarToggle');
@@ -13,6 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
         sidebar.classList.toggle('mobile-open');
       } else {
         sidebar.classList.toggle('collapsed');
+        localStorage.setItem('sidebar-collapsed',
+          sidebar.classList.contains('collapsed') ? '1' : '0');
       }
     });
   }
