@@ -1047,6 +1047,7 @@ html { scroll-behavior: smooth; }
 
   <h4>Active tab card features</h4>
   <ul>
+    <li><strong>Compact sizing</strong> — Each card sizes to its own content. Cards in the same row are <em>not</em> forced to equal height, so a simple source with no extra options takes up only the space it needs.</li>
     <li><strong>Sort order</strong> — Cards are automatically ordered by jobs found in the last scan (most productive first). Cards with zero results sort alphabetically at the bottom.</li>
     <li><strong>Green glow</strong> — Cards that found jobs in the most recent scan pulse with a soft green border outline.</li>
     <li><strong>Jobs badge</strong> — A green badge in the card header shows the job count found last scan. Hidden when count is zero.</li>
@@ -1443,9 +1444,16 @@ html { scroll-behavior: smooth; }
     <li><strong>Upload .ico</strong> — Upload a custom <code>.ico</code> file from your computer. The file is saved to the <code>icons/</code> folder inside the Job Tracker directory.</li>
     <li><strong>Browse</strong> — Select an existing <code>.ico</code> file already on your computer using a file browser dialog.</li>
     <li><strong>Icon size</strong> — For <code>.ico</code> files that contain multiple resolutions (e.g. 16×16, 32×32, 256×256), select which resolution to use for the tray. <strong>256×256</strong> is recommended for high-DPI displays.</li>
-    <li><strong>Reset</strong> — Removes the custom icon and reverts to the built-in blue circle with the "JT" monogram.</li>
+    <li><strong>Reset</strong> — Removes the custom icon and reverts to the default TechnoSage logo bundled with the application.</li>
     <li>After saving a new icon, the running daemon applies it <strong>within about 3 seconds</strong> without needing to restart — the tray icon in the taskbar updates automatically.</li>
     <li><strong>Process name</strong> — The name shown in Windows Task Manager for the daemon process (default: <code>JobTracker</code>). Change this if you want a more recognisable name in the task list.</li>
+  </ul>
+
+  <h4>Auto-shutdown when the browser closes</h4>
+  <p>The compiled <code>JobTracker.exe</code> automatically shuts itself down when you close the browser tab or window. Every open page sends a silent <em>heartbeat</em> to the server every 30 seconds. If no heartbeat is received for 90 seconds (all tabs closed), the server exits cleanly — so it never lingers invisibly in Task Manager.</p>
+  <ul>
+    <li>Opening the browser again simply launches a new instance from the Start Menu or desktop shortcut.</li>
+    <li>The scheduler daemon (<code>JobTrackerDaemon.exe</code>) is a <em>separate</em> process and continues running independently so scheduled scans still happen even when the browser is closed.</li>
   </ul>
 
   <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>

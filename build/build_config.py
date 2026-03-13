@@ -26,7 +26,7 @@ _DEFAULTS: dict = {
     "APP_NAME":        "Job Tracker",
     "APP_VERSION":     "1.0.0",
     "APP_DESCRIPTION": "Personal job search tracker",
-    "APP_PUBLISHER":   "Your Name or Company",
+    "APP_PUBLISHER":   "TechnoSage",
     "APP_URL":         "https://github.com/yourname/job_tracker",
     "APP_SUPPORT_URL": "https://github.com/yourname/job_tracker/issues",
 
@@ -39,7 +39,7 @@ _DEFAULTS: dict = {
     "OUTPUT_DIR":      r"D:\Compile Playground\JobTracker",
 
     # Windows installer behaviour
-    "DEFAULT_INSTALL_DIR": r"{autopf}\JobTracker",
+    "DEFAULT_INSTALL_DIR": r"{autopf}\TechnoSage\Job Tracker",
     "REQUIRE_ADMIN":   True,
     "DESKTOP_ICON":    True,
     "START_MENU_ICON": True,

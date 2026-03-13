@@ -64,21 +64,34 @@ init_server_log()
 # ---------------------------------------------------------------------------
 
 def _read_app_version() -> str:
-    """Read version from main branch VERSION file; fall back to local file; default 1.0.0."""
+    """Read version from VERSION file; skip git when frozen (compiled exe).
+
+    When running as a compiled exe there is no git repo, so skip the git call
+    entirely — it would flash a console window on Windows and always fail.
+    """
     root = os.path.dirname(os.path.abspath(__file__))
-    try:
-        result = subprocess.run(
-            ["git", "show", "main:VERSION"],
-            capture_output=True, text=True, cwd=root, timeout=5
-        )
-        if result.returncode == 0:
-            return result.stdout.strip() or "1.0.0"
-    except Exception:
-        pass
     version_file = os.path.join(root, "VERSION")
     if os.path.isfile(version_file):
         try:
             return open(version_file).read().strip() or "1.0.0"
+        except Exception:
+            pass
+    # Only attempt git in development (not frozen)
+    if not getattr(sys, "frozen", False):
+        try:
+            _si = None
+            if sys.platform == "win32":
+                import subprocess as _sp
+                _si = _sp.STARTUPINFO()
+                _si.dwFlags |= _sp.STARTF_USESHOWWINDOW
+                _si.wShowWindow = 0  # SW_HIDE
+            result = subprocess.run(
+                ["git", "show", "main:VERSION"],
+                capture_output=True, text=True, cwd=root, timeout=5,
+                startupinfo=_si,
+            )
+            if result.returncode == 0:
+                return result.stdout.strip() or "1.0.0"
         except Exception:
             pass
     return "1.0.0"
@@ -3158,3 +3171,15 @@ def _register_routes(app):
         review.review_status = "confirmed"
         db.session.commit()
         return jsonify({"ok": True})
+
+    # ── Browser heartbeat (auto-shutdown when frozen exe / browser closes) ── #
+
+    import time as _hb_time
+    _LAST_HEARTBEAT: list[float] = [_hb_time.monotonic()]
+
+    @app.route("/api/heartbeat", methods=["POST"])
+    def api_heartbeat():
+        _LAST_HEARTBEAT[0] = _hb_time.monotonic()
+        return "", 204
+
+    app._last_heartbeat = _LAST_HEARTBEAT
