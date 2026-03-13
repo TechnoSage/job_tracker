@@ -870,6 +870,35 @@ def run_nuitka() -> Path:
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
+def pre_build_clean() -> None:
+    """Remove previous compile outputs before a fresh build.
+
+    Deletes only artefacts that would cause conflicts (intermediate Nuitka/
+    PyInstaller work dirs, the previous Bundle Only/<ExeName>/ folder, and the
+    obfuscated source tree).  The Log/ directory and any existing installer
+    .exe files are left untouched.
+    """
+    _banner("Pre-build clean — removing previous compile outputs")
+    # Intermediate build dirs inside the project root
+    for name in ("build_output", "obf_src"):
+        p = PROJECT_ROOT / name
+        if p.exists():
+            print(f"  Removing old build dir : {p}")
+            shutil.rmtree(p, ignore_errors=True)
+        else:
+            print(f"  Already gone           : {p}")
+    # Previous Bundle Only/<ExeName>/ directory in the output drive
+    bundle_target = _dist_path() / C.APP_EXE_NAME
+    if bundle_target.exists():
+        print(f"  Removing old bundle    : {bundle_target}")
+        shutil.rmtree(bundle_target, ignore_errors=True)
+        if bundle_target.exists():
+            print(f"  [WARN] Could not fully remove {bundle_target} — files may be locked")
+    else:
+        print(f"  Already gone           : {bundle_target}")
+    print("\n  Pre-build clean complete — ready for fresh compile.")
+
+
 def clean_build() -> None:
     for name in ("build_output", "obf_src"):
         p = PROJECT_ROOT / name
@@ -1001,6 +1030,9 @@ def main() -> None:
     if not args.installer_only:
         # Step 0b: write build_meta.json so the bundled app picks up runtime settings
         write_build_meta()
+
+        # Step 0c: always wipe previous compile outputs for a clean slate
+        pre_build_clean()
 
         # Step 1 (optional): PyArmor obfuscation
         src_root = run_pyarmor() if (C.USE_PYARMOR and not C.USE_NUITKA) else PROJECT_ROOT
