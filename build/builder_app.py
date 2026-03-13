@@ -1110,32 +1110,32 @@ def _do_push_branch(branch: str) -> None:
     _set_status("done")
 
 
-def _force_rmtree(path: Path) -> bool:
-    """Delete a directory tree on Windows, stripping read-only flags on failure.
-    Falls back to 'cmd /c rd /s /q' if Python still can't remove it.
-    Returns True if the path is gone afterwards."""
-    import stat
+def _force_rmtree(path: Path, log_fn=None) -> bool:
+    """Delete a directory tree using PowerShell Remove-Item -Recurse -Force.
 
-    def _on_error(func, fpath, _exc):
-        try:
-            os.chmod(fpath, stat.S_IWRITE)
-            func(fpath)
-        except Exception:
-            pass
-
-    shutil.rmtree(path, onerror=_on_error)
+    Passes the path via an environment variable to sidestep all quoting issues.
+    Returns True if the path is gone afterwards, False if it still exists.
+    """
     if not path.exists():
         return True
 
-    # Last resort: shell-level delete (handles locked COM objects, junction points, etc.)
+    env = {**os.environ, "_BD_RMPATH": str(path)}
+    ps_cmd = (
+        "Remove-Item -LiteralPath $env:_BD_RMPATH "
+        "-Recurse -Force -ErrorAction SilentlyContinue"
+    )
     try:
         result = subprocess.run(
-            ["cmd", "/c", "rd", "/s", "/q", str(path)],
-            capture_output=True, timeout=30,
+            ["powershell", "-NonInteractive", "-Command", ps_cmd],
+            env=env, capture_output=True, text=True, timeout=60,
         )
-        return not path.exists()
-    except Exception:
-        return not path.exists()
+        if result.stderr.strip() and log_fn:
+            log_fn(f"  [DBG] Remove-Item stderr: {result.stderr.strip()[:300]}")
+    except Exception as e:
+        if log_fn:
+            log_fn(f"  [WARN] PowerShell delete error: {e}")
+
+    return not path.exists()
 
 
 def _run_clean(clean_mode: str = "all") -> None:
@@ -1161,7 +1161,7 @@ def _run_clean(clean_mode: str = "all") -> None:
         if not p.exists():
             _append(f"  Already gone: {p}")
             return
-        ok = _force_rmtree(p) if p.is_dir() else _try_unlink(p)
+        ok = _force_rmtree(p, log_fn=_append) if p.is_dir() else _try_unlink(p)
         if ok:
             _append(f"  Removed:      {p}")
         else:
