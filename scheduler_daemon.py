@@ -479,7 +479,7 @@ def _make_icon_image():
     Uses the custom icon configured on the Settings page, or falls back to
     the built-in blue circle with white 'JT' text.
     """
-    from PIL import Image, ImageDraw, ImageFont  # type: ignore
+    from PIL import Image  # type: ignore
 
     # Try to load the user-configured icon --------------------------------
     icon_path, icon_size = _read_icon_settings()
@@ -494,7 +494,18 @@ def _make_icon_image():
             logger.debug("Failed to load custom icon '%s': %s", icon_path, exc)
             # fall through to default
 
-    # Built-in default: blue circle with 'JT' --------------------------------
+    # Default: TechnoSage logo from the bundled icons/ directory --------------
+    for _logo_name in ("Logo_Transparent_Color.ico", "Logo Transparent Color.ico"):
+        _logo_path = os.path.join(PROJECT_DIR, "icons", _logo_name)
+        if os.path.isfile(_logo_path):
+            try:
+                src = Image.open(_logo_path)
+                return src.convert("RGBA").resize((64, 64), Image.LANCZOS)
+            except Exception as exc:
+                logger.debug("Failed to load default logo '%s': %s", _logo_path, exc)
+
+    # Last resort: blue circle with 'JT' text --------------------------------
+    from PIL import ImageDraw, ImageFont  # type: ignore
     size = 64
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)

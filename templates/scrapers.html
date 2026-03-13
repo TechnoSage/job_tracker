@@ -223,9 +223,9 @@
 <div class="row g-3" id="sourceCardsGrid">
   {% for src in active_sources %}
   <div class="col-md-6 col-xl-4 source-col" id="col-{{ src.name }}" data-jobs="{{ src.last_jobs_found or 0 }}">
-    <div class="source-card card h-100{% if key_info.get(src.name) and not key_info[src.name].all_set %} key-required{% elif src.last_jobs_found and src.last_jobs_found > 0 %} jobs-found-glow{% endif %}"
+    <div class="source-card card{% if key_info.get(src.name) and not key_info[src.name].all_set %} key-required{% elif src.last_jobs_found and src.last_jobs_found > 0 %} jobs-found-glow{% endif %}"
          id="card-{{ src.name }}" data-name="{{ src.name }}">
-      <div class="card-body p-3 d-flex flex-column">
+      <div class="card-body p-3">
 
         <!-- ── Row 1: Toggle + Badges ─────────────────────────────── -->
         <div class="d-flex align-items-start justify-content-between mb-2">
@@ -471,9 +471,9 @@
   <div class="row g-3 mb-4">
     {% for src in disabled_sources %}
     <div class="col-md-6 col-xl-4 source-col" id="col-{{ src.name }}">
-      <div class="source-card card h-100" id="card-{{ src.name }}" data-name="{{ src.name }}"
+      <div class="source-card card" id="card-{{ src.name }}" data-name="{{ src.name }}"
            style="opacity:0.6; filter:saturate(0.5);">
-        <div class="card-body p-3 d-flex flex-column">
+        <div class="card-body p-3">
 
           <!-- Row 1: Toggle + Badges -->
           <div class="d-flex align-items-start justify-content-between mb-2">
@@ -544,7 +544,7 @@
   <div class="row g-3">
     {% for src in unavailable_sources %}
     <div class="col-md-6 col-xl-4">
-      <div class="unavailable-card h-100 p-3">
+      <div class="unavailable-card p-3">
 
         <!-- Row 1: Icon + Title + Status badge -->
         <div class="d-flex align-items-start justify-content-between mb-2">

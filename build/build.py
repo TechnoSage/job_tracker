@@ -390,6 +390,10 @@ def run_pyinstaller(src_root: Path) -> Path:
         "--add-data", f"{src_root / 'templates'}{sep}templates",
         "--add-data", f"{src_root / 'static'}{sep}static",
     ]
+    # Bundle icons/ directory (contains tray icon and app icons)
+    _icons_dir = PROJECT_ROOT / "icons"
+    if _icons_dir.is_dir():
+        data_args += ["--add-data", f"{_icons_dir}{sep}icons"]
     # Bundle build_meta.json (written by write_build_meta() before this step)
     _meta = PROJECT_ROOT / "build_meta.json"
     if _meta.is_file():
@@ -850,6 +854,8 @@ def run_nuitka() -> Path:
           f"--output-filename={C.APP_EXE_NAME}.exe",
           f"--include-data-dir={PROJECT_ROOT/'templates'}=templates",
           f"--include-data-dir={PROJECT_ROOT/'static'}=static",
+          *([ f"--include-data-dir={PROJECT_ROOT/'icons'}=icons" ]
+             if (PROJECT_ROOT / "icons").is_dir() else []),
           *icon_args, *_detect_nuitka_compiler(), *pkgs,
           str(PROJECT_ROOT / "run.py")])
     bundle = nuitka_out / "run.dist"
@@ -863,7 +869,7 @@ def run_nuitka() -> Path:
     _dist_path().mkdir(parents=True, exist_ok=True)
     if target.exists():
         shutil.rmtree(target, ignore_errors=True)
-    shutil.copytree(bundle, target)
+    shutil.copytree(bundle, target, dirs_exist_ok=True)
     print(f"\n[OK] Bundle copied to: {target}")
     return target
 

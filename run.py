@@ -4,6 +4,8 @@ run.py — Entry point for Job Tracker
   • Creates the Flask app
   • Initialises APScheduler (8 AM + 8 PM scans, follow-up reminders)
   • Auto-opens the browser, then starts the server
+  • When frozen (compiled exe): watchdog thread exits the process if no
+    browser heartbeat is received within 90 seconds (browser was closed)
 
 Usage:
     python run.py          (console hidden automatically on Windows)
@@ -16,6 +18,7 @@ import os
 import re as _re
 import sys
 import threading
+import time
 
 
 def _data_dir() -> str:
@@ -90,16 +93,46 @@ def _ssl_context():
 
 
 def _open_browser():
-    """Open the browser after a short delay to let the server start."""
-    import time, webbrowser
+    """Open the browser once after a short delay to let the server start."""
     time.sleep(1.2)
+    import webbrowser
     scheme = "https" if _ssl_context() else "http"
     webbrowser.open(f"{scheme}://127.0.0.1:5000")
+
+
+# ── Heartbeat watchdog (frozen / compiled exe only) ───────────────────────────
+# The browser page sends POST /api/heartbeat every 30 s.  If we don't receive
+# one for 90 s the browser tab has been closed, so we shut the process down
+# cleanly.  This keeps the exe from living invisibly in Task Manager forever.
+_HEARTBEAT_TIMEOUT = 90   # seconds with no heartbeat before shutdown
+_HEARTBEAT_POLL    = 10   # how often the watchdog checks (seconds)
+
+
+def _heartbeat_watchdog():
+    """Daemon thread: exit the process when the browser disappears."""
+    _log = logging.getLogger("heartbeat_watchdog")
+    # Give the browser a generous window to load and send its first heartbeat.
+    time.sleep(_HEARTBEAT_TIMEOUT)
+    while True:
+        hb_list = getattr(flask_app, "_last_heartbeat", None)
+        if hb_list is not None:
+            elapsed = time.monotonic() - hb_list[0]
+            if elapsed > _HEARTBEAT_TIMEOUT:
+                _log.info(
+                    "No browser heartbeat for %.0f s — shutting down.", elapsed
+                )
+                os._exit(0)
+        time.sleep(_HEARTBEAT_POLL)
 
 
 if __name__ == "__main__":
     ssl = _ssl_context()
     threading.Thread(target=_open_browser, daemon=True).start()
+
+    # Start watchdog only for compiled (frozen) exe — dev server restarts
+    # frequently and doesn't need auto-shutdown.
+    if getattr(sys, "frozen", False):
+        threading.Thread(target=_heartbeat_watchdog, daemon=True).start()
 
     flask_app.run(
         host="127.0.0.1",

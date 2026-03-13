@@ -823,5 +823,15 @@
   });
 }());
 </script>
+<script>
+/* Heartbeat — keeps the server alive; lets it shut down when the tab closes */
+(function () {
+  function beat() {
+    fetch('/api/heartbeat', { method: 'POST', keepalive: true }).catch(function(){});
+  }
+  beat();                            // send immediately on page load
+  setInterval(beat, 30000);         // then every 30 s
+}());
+</script>
 </body>
 </html>
