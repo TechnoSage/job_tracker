@@ -18,6 +18,9 @@
   </style>
   <!-- Apply saved theme before render to avoid flash -->
   <script>(function(){var t=localStorage.getItem('app-theme')||'dark';document.documentElement.setAttribute('data-bs-theme',t);})();</script>
+  <!-- Kill sidebar transition during page load so the collapsed state
+       snaps in instantly with zero animation. Removed after first paint. -->
+  <style id="sb-no-trans">#sidebar,#sidebar *{transition:none!important;}</style>
 </head>
 <body {% block body_attrs %}{% endblock %}>
 
