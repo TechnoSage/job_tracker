@@ -460,7 +460,7 @@ def _read_icon_settings() -> tuple[str, str]:
         con = _sqlite3.connect(db_path, timeout=5)
         cur = con.cursor()
         cur.execute(
-            "SELECT key, value FROM setting WHERE key IN ('daemon_icon_path', 'daemon_icon_size')"
+            "SELECT key, value FROM settings WHERE key IN ('daemon_icon_path', 'daemon_icon_size')"
         )
         for key, value in cur.fetchall():
             if key == "daemon_icon_path":
