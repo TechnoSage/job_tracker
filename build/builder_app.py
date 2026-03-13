@@ -1110,30 +1110,109 @@ def _do_push_branch(branch: str) -> None:
     _set_status("done")
 
 
-def _run_clean() -> None:
-    """Remove build output directories without running a subprocess."""
+def _run_clean(clean_mode: str = "all") -> None:
+    """Remove build output directories without running a subprocess.
+
+    clean_mode:
+      "temp"   — compile temp dirs only (build_output, obf_src inside project)
+      "output" — configured output folder only (exe, installer, logs, etc.)
+      "all"    — both (default)
+    """
     settings = _load_settings()
+    mode_label = {
+        "temp":   "Compile Temp Only",
+        "output": "Output Folder Only",
+        "all":    "All Build Outputs",
+    }.get(clean_mode, clean_mode)
     _append("-" * 56)
-    _append("Cleaning build outputs")
+    _append(f"Cleaning: {mode_label}")
     _append("-" * 56)
-    # Always clean the PyInstaller/Nuitka work directory inside the project
-    for name in ("build_output", "obf_src"):
-        p = PROJECT_ROOT / name
-        if p.exists():
-            shutil.rmtree(p, ignore_errors=True)
-            _append(f"  Removed:      {p}")
+
+    if clean_mode in ("temp", "all"):
+        # PyInstaller/Nuitka work directories inside the project tree
+        for name in ("build_output", "obf_src"):
+            p = PROJECT_ROOT / name
+            if p.exists():
+                shutil.rmtree(p, ignore_errors=True)
+                _append(f"  Removed:      {p}")
+            else:
+                _append(f"  Already gone: {p}")
+
+    if clean_mode in ("output", "all"):
+        # Configured output root (may be on another drive, e.g. D:\Compile Playground\…)
+        out_root = _resolve_output_dir(settings)
+        if out_root.exists():
+            shutil.rmtree(out_root, ignore_errors=True)
+            _append(f"  Removed:      {out_root}")
         else:
-            _append(f"  Already gone: {p}")
-    # Clean the configured output root (may be an absolute path on another drive)
-    out_root = _resolve_output_dir(settings)
-    if out_root.exists():
-        shutil.rmtree(out_root, ignore_errors=True)
-        _append(f"  Removed:      {out_root}")
-    else:
-        _append(f"  Already gone: {out_root}")
+            _append(f"  Already gone: {out_root}")
+
     _append("")
     _append("Clean complete.")
     _set_status("done")
+
+
+# ── Build history helpers ──────────────────────────────────────────────────────
+
+def _build_history_path(settings: dict | None = None) -> "Path":
+    """build_history.json lives in the parent of the output dir so a clean of
+    the output folder does not erase the history."""
+    if settings is None:
+        settings = _load_settings()
+    out = _resolve_output_dir(settings)
+    parent = out.parent if out.parent != out else out
+    return parent / "build_history.json"
+
+
+def _current_git_commit(cwd: str) -> str:
+    """Return the short HEAD commit hash, or empty string on failure."""
+    try:
+        r = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, cwd=cwd, timeout=5,
+        )
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except Exception:
+        return ""
+
+
+def _append_build_history(
+    version: str,
+    build_type: str,
+    mode: str,
+    description: str,
+    git_commit: str,
+    success: bool,
+    settings: dict,
+) -> None:
+    """Prepend a completed build record to build_history.json (newest first)."""
+    import datetime as _bh_dt
+
+    hist_path = _build_history_path(settings)
+    try:
+        entries = json.loads(hist_path.read_text("utf-8")) if hist_path.exists() else []
+    except Exception:
+        entries = []
+
+    entries.insert(0, {
+        "version":     version,
+        "build_type":  build_type,   # "Main" | "Incremental" | "HOTFIX"
+        "mode":        mode,          # "full" | "bundle-only" | "installer-only"
+        "description": description,
+        "date":        _bh_dt.datetime.now().isoformat(timespec="seconds"),
+        "git_commit":  git_commit,
+        "success":     success,
+        "settings_snapshot": {
+            k: v for k, v in settings.items()
+            if k not in ("SOUND_SUCCESS", "SOUND_FAIL")
+        },
+    })
+    entries = entries[:50]   # keep last 50 builds
+    try:
+        hist_path.parent.mkdir(parents=True, exist_ok=True)
+        hist_path.write_text(json.dumps(entries, indent=2), "utf-8")
+    except Exception:
+        pass
 
 
 # ── Flask application factory ─────────────────────────────────────────────────
@@ -1805,9 +1884,11 @@ def create_builder_app() -> Flask:
             _build_log    = []
             _build_status = "running"
 
-        data     = request.get_json(silent=True) or {}
-        mode     = data.get("mode", "full")
-        settings = data.get("settings")
+        data        = request.get_json(silent=True) or {}
+        mode        = data.get("mode", "full")
+        build_type  = data.get("build_type", "Main").strip()   # "Main"|"Incremental"|"HOTFIX"
+        description = data.get("description", "").strip()
+        settings    = data.get("settings")
         if settings:
             _save_settings(settings)
 
@@ -1914,6 +1995,19 @@ def create_builder_app() -> Flask:
                 _append(f"[OK] Build log saved: {_log_file}")
                 _append("=" * 56)
 
+            # ── Record this build in build_history.json ──────────────────────
+            with _build_lock:
+                _build_succeeded = (_build_status == "done")
+            _append_build_history(
+                version=new_ver,
+                build_type=build_type,
+                mode=mode,
+                description=description,
+                git_commit=_current_git_commit(_git_cwd()) if use_git else "",
+                success=_build_succeeded,
+                settings=loaded,
+            )
+
         t = threading.Thread(target=_run_full_build, daemon=True)
         t.start()
         return jsonify({"ok": True})
@@ -1927,7 +2021,10 @@ def create_builder_app() -> Flask:
             _build_log    = []
             _build_status = "running"
 
-        t = threading.Thread(target=_run_clean, daemon=True)
+        data       = request.get_json(silent=True) or {}
+        clean_mode = data.get("clean_mode", "all")  # "temp" | "output" | "all"
+
+        t = threading.Thread(target=lambda: _run_clean(clean_mode), daemon=True)
         t.start()
         return jsonify({"ok": True})
 
@@ -2259,8 +2356,9 @@ def create_builder_app() -> Flask:
         V("LOCATE", f"Size     : {installer.stat().st_size:,} bytes")
         V("LOCATE", f"Modified : {datetime.datetime.fromtimestamp(installer.stat().st_mtime):%Y-%m-%d %H:%M:%S}")
 
-        test_dir = Path(tempfile.gettempdir()) / f"_bd_test_{exe_name}"
-        test_dir.mkdir(exist_ok=True)
+        _local_appdata = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
+        test_dir = _local_appdata / "_bd_test" / exe_name
+        test_dir.mkdir(parents=True, exist_ok=True)
         V("PREP",   f"Test install dir : {test_dir}")
 
         # Kill any process on the port
@@ -2425,6 +2523,51 @@ def create_builder_app() -> Flask:
             return jsonify({"ok": True})
         except Exception as e:
             return jsonify({"ok": False, "error": str(e)})
+
+    # ── Build history ─────────────────────────────────────────────────────────
+
+    @app.route("/api/build/history")
+    def api_build_history():
+        """Return the list of recorded builds (newest first)."""
+        settings = _load_settings()
+        path = _build_history_path(settings)
+        if not path.exists():
+            return jsonify({"ok": True, "history": []})
+        try:
+            entries = json.loads(path.read_text("utf-8"))
+            return jsonify({"ok": True, "history": entries})
+        except Exception as e:
+            return jsonify({"ok": False, "history": [], "error": str(e)})
+
+    @app.route("/api/build/history/restore", methods=["POST"])
+    def api_build_history_restore():
+        """Restore settings from a historical build so the user can rebuild it.
+        Returns the mode, version, type and description from that build entry."""
+        data  = request.get_json(silent=True) or {}
+        index = int(data.get("index", 0))
+
+        settings = _load_settings()
+        path     = _build_history_path(settings)
+        try:
+            entries = json.loads(path.read_text("utf-8"))
+            entry   = entries[index]
+        except Exception as e:
+            return jsonify({"ok": False, "error": f"History entry not found: {e}"})
+
+        snapshot = entry.get("settings_snapshot", {})
+        if snapshot:
+            settings.update(snapshot)
+            settings["APP_VERSION"]       = entry.get("version", settings.get("APP_VERSION"))
+            settings["VERSION_INCREMENT"] = "keep"   # lock version — do not auto-bump
+            _save_settings(settings)
+
+        return jsonify({
+            "ok":          True,
+            "mode":        entry.get("mode", "full"),
+            "version":     entry.get("version", ""),
+            "build_type":  entry.get("build_type", "Main"),
+            "description": entry.get("description", ""),
+        })
 
     # ── Settings PATCH (single-key update) ───────────────────────────────────
 
