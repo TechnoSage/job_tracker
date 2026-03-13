@@ -127,6 +127,7 @@ html { scroll-behavior: smooth; }
   <a class="nav-link" href="#overview">Overview</a>
   <a class="nav-link" href="#navigation">Navigation</a>
   <a class="nav-link sub" href="#save-settings-button">Save Settings Button</a>
+  <a class="nav-link sub" href="#unsaved-changes-dialog">Unsaved Changes Dialog</a>
 
   <div class="toc-section">Pages</div>
   <a class="nav-link fw-semibold" href="#dashboard">Dashboard</a>
@@ -177,6 +178,7 @@ html { scroll-behavior: smooth; }
   <a class="nav-link sub" href="#settings-schedule">Scheduled Scans</a>
   <a class="nav-link sub" href="#settings-colors">Posted Date Colors</a>
   <a class="nav-link sub" href="#settings-unemp">Unemployment</a>
+  <a class="nav-link sub" href="#settings-daemon">Daemon &amp; Tray Icon</a>
   <a class="nav-link sub" href="#settings-db">Database Tools</a>
 
   <a class="nav-link fw-semibold" href="#server-logs">Server Logs</a>
@@ -324,6 +326,44 @@ html { scroll-behavior: smooth; }
       </button>
     </div>
   </div>
+
+  <h3 id="unsaved-changes-dialog">Unsaved Changes Dialog</h3>
+  <p>If you change anything on the Settings page and then click a navigation link without saving, a <strong>blocking dialog</strong> appears asking what to do. You cannot navigate elsewhere until you respond — this prevents accidentally losing changes.</p>
+
+  <div class="mockup" style="max-width:420px">
+    <div class="mockup-label">Unsaved Changes dialog</div>
+    <div style="background:#1c1f24; border:1px solid rgba(220,53,69,.55); border-radius:.9rem; overflow:hidden; font-size:.82rem; max-width:340px">
+      <div style="padding:.875rem 1.1rem .65rem; border-bottom:1px solid rgba(255,255,255,.07); display:flex; justify-content:space-between; align-items:center; cursor:move">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+          <span class="fw-semibold" style="color:#f8d7da">Unsaved Changes</span>
+        </div>
+        <span class="badge bg-danger">2</span>
+      </div>
+      <div style="padding:.85rem 1.1rem 1rem">
+        <p class="small text-secondary mb-2">You have unsaved changes. Save them before leaving, or discard and continue.</p>
+        <ul class="small text-warning mb-0 ps-3">
+          <li>Minimum Match Score</li>
+          <li>Email Monitoring toggle</li>
+        </ul>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+          <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg me-1"></i>Discard &amp; Leave</button>
+          <button class="btn btn-sm btn-danger"><i class="bi bi-save2 me-1"></i>Save &amp; Leave</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Save &amp; Leave</strong> — Saves all current Settings in the background (same as clicking Save Settings), then navigates to the page you clicked. No data is lost.</li>
+    <li><strong>Discard &amp; Leave</strong> — Abandons all unsaved changes and navigates away. Changed fields return to their saved values.</li>
+    <li>The dialog lists exactly which fields were modified so you know what would be lost.</li>
+    <li>The badge in the title bar shows the count of changed fields.</li>
+    <li>You can <strong>drag the dialog</strong> by its header bar to move it out of the way — it will not close until you click one of the two buttons.</li>
+    <li>Changed fields are highlighted with a <span style="color:rgba(220,53,69,.9)">soft red outline</span> on the Settings page itself, matching the dialog's field list.</li>
+    <li>The dialog also fires if you attempt to close or reload the browser tab with unsaved changes (the browser shows its own warning in that case).</li>
+    <li>Help and Support links (which open in a new tab) are never intercepted — only in-app navigation triggers the dialog.</li>
+  </ul>
 
   <h3>Topbar</h3>
   <p>The topbar at the top of every page shows live status information and quick-action buttons.</p>
@@ -1365,6 +1405,54 @@ html { scroll-behavior: smooth; }
   <p>See the dedicated <a href="#unemployment-settings">Unemployment Settings Reference</a> table in the Unemployment Tracker section above.</p>
 </section>
 
+<section id="settings-daemon">
+  <h3>Daemon &amp; Tray Icon</h3>
+  <p>These settings control the background scheduler process and the icon it displays in the Windows taskbar notification area (system tray, bottom-right corner near the clock).</p>
+
+  <div class="mockup" style="max-width:440px">
+    <div class="mockup-label">Daemon &amp; Tray Icon settings card</div>
+    <div class="mockup-card" style="font-size:.82rem">
+      <div class="fw-semibold mb-2">Scheduler Daemon</div>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span>Status</span><span class="badge bg-success">Running (PID 4821)</span>
+      </div>
+      <div class="d-flex gap-2 mb-3">
+        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-stop-fill me-1"></i>Stop</button>
+        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-play-fill me-1"></i>Start</button>
+      </div>
+      <div class="fw-semibold mb-2">Tray Icon</div>
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <div style="width:36px;height:36px;border-radius:.4rem;background:#0d1117;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center">
+          <i class="bi bi-image text-secondary"></i>
+        </div>
+        <div>
+          <div class="text-white-50 small">Logo_Transparent_Color.ico</div>
+          <div class="text-muted" style="font-size:.72rem">256×256 selected</div>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-upload me-1"></i>Upload .ico</button>
+        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-folder2-open me-1"></i>Browse</button>
+        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Show tray icon</strong> toggle — Enable or disable the Windows system tray icon entirely. When disabled the daemon still runs, but no icon appears in the taskbar.</li>
+    <li><strong>Upload .ico</strong> — Upload a custom <code>.ico</code> file from your computer. The file is saved to the <code>icons/</code> folder inside the Job Tracker directory.</li>
+    <li><strong>Browse</strong> — Select an existing <code>.ico</code> file already on your computer using a file browser dialog.</li>
+    <li><strong>Icon size</strong> — For <code>.ico</code> files that contain multiple resolutions (e.g. 16×16, 32×32, 256×256), select which resolution to use for the tray. <strong>256×256</strong> is recommended for high-DPI displays.</li>
+    <li><strong>Reset</strong> — Removes the custom icon and reverts to the built-in blue circle with the "JT" monogram.</li>
+    <li>After saving a new icon, the running daemon applies it <strong>within about 3 seconds</strong> without needing to restart — the tray icon in the taskbar updates automatically.</li>
+    <li><strong>Process name</strong> — The name shown in Windows Task Manager for the daemon process (default: <code>JobTracker</code>). Change this if you want a more recognisable name in the task list.</li>
+  </ul>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    Use a square transparent-background <code>.ico</code> file at 256×256 for the sharpest result on modern high-DPI screens. Tools like <strong>GIMP</strong>, <strong>IcoFX</strong>, or online converters can turn any image into a multi-resolution <code>.ico</code>.
+  </div>
+</section>
+
 <section id="settings-db">
   <h3>Database Tools</h3>
   <ul>
@@ -1570,6 +1658,28 @@ html { scroll-behavior: smooth; }
     <li><strong>Stop Daemon</strong> — Terminates the scheduler. Scans will not run until you start it again.</li>
     <li>The daemon writes a <code>scheduler_daemon.pid</code> file so the app can detect if it is still running after a system restart.</li>
   </ul>
+
+  <h3>Tray icon (system tray)</h3>
+  <p>When the daemon is running with <strong>Show tray icon</strong> enabled in Settings, a small icon appears in the Windows taskbar notification area (bottom-right, near the clock). Right-click it for a context menu:</p>
+
+  <div class="mockup" style="max-width:220px">
+    <div class="mockup-label">Tray right-click menu</div>
+    <div style="background:#2b2d30; border:1px solid rgba(255,255,255,.12); border-radius:.4rem; padding:.3rem 0; font-size:.8rem; width:200px">
+      <div class="px-3 py-1 text-white-50" style="font-size:.72rem">Job Tracker Daemon</div>
+      <hr style="border-color:rgba(255,255,255,.1);margin:.2rem 0">
+      <div class="px-3 py-1 text-white" style="cursor:pointer">Scan Now</div>
+      <div class="px-3 py-1 text-white" style="cursor:pointer">Open Job Tracker</div>
+      <hr style="border-color:rgba(255,255,255,.1);margin:.2rem 0">
+      <div class="px-3 py-1 text-white" style="cursor:pointer">Exit</div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Scan Now</strong> — Triggers an immediate job scan, the same as clicking "Run Scan Now" in the sidebar.</li>
+    <li><strong>Open Job Tracker</strong> — Opens the web UI in your default browser.</li>
+    <li><strong>Exit</strong> — Stops the daemon. Scheduled scans will not run again until you restart it from Settings.</li>
+  </ul>
+  <p>To use a custom icon, go to <a href="#settings-daemon">Settings → Daemon &amp; Tray Icon</a> and upload or browse to a <code>.ico</code> file. The tray icon updates live within a few seconds of saving.</p>
 
   <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
     Start the daemon once after setting up Job Tracker and leave it running. It will handle scans and email monitoring automatically in the background.
