@@ -3,15 +3,8 @@
    ============================================================ */
 
 // ---- Sidebar toggle (state persisted across page loads via localStorage) ----
-(function () {
-  const sidebar = document.getElementById('sidebar');
-  if (sidebar && window.innerWidth > 768) {
-    if (localStorage.getItem('sidebar-collapsed') === '1') {
-      sidebar.classList.add('collapsed');
-    }
-  }
-}());
-
+// The collapsed class is restored before first paint by an inline script
+// inside the <nav> in base.html — this handler only saves the new state on click.
 document.addEventListener('DOMContentLoaded', () => {
   const sidebar = document.getElementById('sidebar');
   const toggleBtn = document.getElementById('sidebarToggle');
