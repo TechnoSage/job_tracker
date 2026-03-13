@@ -35,13 +35,6 @@ html, body { height: 100%; overflow: hidden; }
   display: none !important;
 }
 
-/* Collapsed brand — icon only, centred */
-#sidebar.collapsed .sidebar-brand {
-  justify-content: center;
-  padding: 0.25rem 0;
-}
-#sidebar.collapsed .sidebar-brand > div { display: none; }
-
 /* ── Collapsed nav-link: 3D card-style button ───────────────────────── */
 #sidebar.collapsed .nav-link {
   position: relative;
@@ -221,6 +214,41 @@ html, body { height: 100%; overflow: hidden; }
   z-index: 100;
 }
 
+/* ── Topbar brand (briefcase icon + title + version) ────────────────────── */
+.topbar-brand { outline: none; }
+.topbar-brand:hover .topbar-brand-icon {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, .65),
+    0 3px 8px  rgba(0, 0, 0, .40),
+    inset 0 1px 0 rgba(255, 255, 255, .08),
+    inset 0 -2px 5px rgba(0, 0, 0, .30);
+  background: #23272e;
+}
+
+.topbar-brand-icon {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #1c1f24;
+  border: 1px solid rgba(255, 255, 255, .07);
+  box-shadow:
+    0 5px 14px rgba(0, 0, 0, .60),
+    0 2px 5px  rgba(0, 0, 0, .40),
+    inset 0 1px 0 rgba(255, 255, 255, .055),
+    inset 0 -2px 5px rgba(0, 0, 0, .30);
+  font-size: 1.15rem;
+  color: #39ff14;
+  text-shadow:
+    0 0 6px rgba(57, 255, 20, .70),
+    0 0 14px rgba(57, 255, 20, .30);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
 /* ---- Sidebar nav (expanded) ---- */
 #sidebar .nav-link {
   border-radius: 8px;
@@ -232,10 +260,6 @@ html, body { height: 100%; overflow: hidden; }
 #sidebar .nav-link.active {
   background: #0d6efd;
   color: #fff !important;
-}
-
-.sidebar-brand {
-  padding: 0.25rem 0;
 }
 
 /* ---- Metric cards ---- */
