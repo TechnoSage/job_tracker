@@ -2,9 +2,19 @@
    Job Tracker — Frontend JavaScript
    ============================================================ */
 
+// ---- Sidebar: re-enable transitions after first paint ----
+// The <style id="sb-no-trans"> in <head> suppresses all sidebar transitions
+// during page load so the collapsed state snaps in with no animation.
+// Two rAF calls guarantee at least one full paint cycle has completed before
+// we remove it, so the toggle button still animates smoothly on user clicks.
+requestAnimationFrame(function () {
+  requestAnimationFrame(function () {
+    var s = document.getElementById('sb-no-trans');
+    if (s) s.parentNode.removeChild(s);
+  });
+});
+
 // ---- Sidebar toggle (state persisted across page loads via localStorage) ----
-// The collapsed class is restored before first paint by an inline script
-// inside the <nav> in base.html — this handler only saves the new state on click.
 document.addEventListener('DOMContentLoaded', () => {
   const sidebar = document.getElementById('sidebar');
   const toggleBtn = document.getElementById('sidebarToggle');
