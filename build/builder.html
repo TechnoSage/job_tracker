@@ -1898,6 +1898,9 @@ async function loadSelectedProject() {
     if (d.ok) {
       applySettings(d.settings);
       _projectMsg('Loaded: ' + name, 'text-info');
+      // Refresh per-project data panels now that GIT_REPO_DIR may have changed
+      loadChangelog();
+      loadBuildHistory();
     } else {
       _projectMsg('Load failed: ' + (d.error || ''), 'text-danger');
     }
