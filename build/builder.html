@@ -73,6 +73,36 @@ body.sound-dd-open .card:hover { transform: none; }
 /* ── Dep-check alert ─────────────────────────────────────────────────────── */
 #depPrompt { font-size: 0.8rem; }
 
+/* ── Build Actions card — 3D raised, neon-green pulsing outline ──────────── */
+@keyframes neonGreenPulse {
+  0%, 100% {
+    box-shadow:
+      0 8px 22px rgba(0,0,0,.65),
+      0 3px 8px rgba(0,0,0,.45),
+      inset 0 1px 0 rgba(255,255,255,.055),
+      inset 0 -2px 5px rgba(0,0,0,.35),
+      0 0 0 1.5px rgba(57,255,100,.45),
+      0 0 10px rgba(57,255,100,.12);
+    border-color: rgba(57,255,100,.35);
+  }
+  50% {
+    box-shadow:
+      0 8px 22px rgba(0,0,0,.65),
+      0 3px 8px rgba(0,0,0,.45),
+      inset 0 1px 0 rgba(255,255,255,.055),
+      inset 0 -2px 5px rgba(0,0,0,.35),
+      0 0 0 2px rgba(57,255,100,.75),
+      0 0 18px rgba(57,255,100,.28);
+    border-color: rgba(57,255,100,.70);
+  }
+}
+.build-actions-card {
+  background-color: #1c1f24;
+  border: 1px solid rgba(57,255,100,.35);
+  border-radius: 1.1rem;
+  animation: neonGreenPulse 3s ease-in-out infinite;
+}
+
 /* ── GitHub validation pulse ─────────────────────────────────────────────── */
 @keyframes validPulse {
   0%, 100% { box-shadow: 0 0 0 2px rgba(25,200,100,.35); border-color: rgba(25,200,100,.6); }
@@ -967,36 +997,6 @@ html[data-bs-theme="light"] #log {
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════════════════
-     Build Actions
-     ══════════════════════════════════════════════════════════════════════════ -->
-<div class="row mt-3">
-  <div class="col-12">
-    <!-- Action buttons row -->
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-      <button class="btn btn-secondary btn-sm" onclick="saveSettings()">
-        <i class="bi bi-floppy me-1"></i>Save Settings
-      </button>
-      <div class="vr mx-1"></div>
-      <button id="btnClean" class="btn btn-outline-warning btn-sm" onclick="openCleanModal()">
-        <i class="bi bi-trash3 me-1"></i>Clean Outputs
-      </button>
-      <button id="btnCleanLogs" class="btn btn-outline-secondary btn-sm" onclick="doCleanLogs()" title="Delete all build log files from the Log/ folder">
-        <i class="bi bi-journal-x me-1"></i>Clean Logs
-      </button>
-      <button id="btnBundle" class="btn btn-outline-info btn-sm" onclick="doBuild('bundle-only')">
-        <i class="bi bi-box-seam me-1"></i>Bundle Only
-      </button>
-      <button id="btnFull" class="btn btn-success btn-sm" onclick="doBuild('full')">
-        <i class="bi bi-rocket-takeoff me-1"></i>Full Build
-      </button>
-      <div id="spinner" class="spinner-border spinner-border-sm text-info ms-1" role="status" style="display:none">
-        <span class="visually-hidden">Working...</span>
-      </div>
-      <span id="buildMsg" class="text-muted small ms-1"></span>
-    </div>
-  </div>
-</div>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
      Build History
@@ -1224,6 +1224,41 @@ html[data-bs-theme="light"] #log {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     Build Actions
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="row mt-3">
+  <div class="col-12">
+    <div class="card build-actions-card">
+      <div class="card-body py-3 px-4">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <button class="btn btn-secondary btn-sm" onclick="saveSettings()">
+            <i class="bi bi-floppy me-1"></i>Save Settings
+          </button>
+          <div class="vr mx-1"></div>
+          <button id="btnClean" class="btn btn-outline-warning btn-sm" onclick="openCleanModal()">
+            <i class="bi bi-trash3 me-1"></i>Clean Outputs
+          </button>
+          <button id="btnCleanLogs" class="btn btn-outline-secondary btn-sm" onclick="doCleanLogs()" title="Delete all build log files from the Log/ folder">
+            <i class="bi bi-journal-x me-1"></i>Clean Logs
+          </button>
+          <div class="vr mx-1"></div>
+          <button id="btnBundle" class="btn btn-outline-info btn-sm" onclick="doBuild('bundle-only')">
+            <i class="bi bi-box-seam me-1"></i>Bundle Only
+          </button>
+          <button id="btnFull" class="btn btn-success btn-sm px-3" onclick="doBuild('full')">
+            <i class="bi bi-rocket-takeoff me-1"></i>Full Build
+          </button>
+          <div id="spinner" class="spinner-border spinner-border-sm text-info ms-1" role="status" style="display:none">
+            <span class="visually-hidden">Working...</span>
+          </div>
+          <span id="buildMsg" class="text-muted small ms-1"></span>
         </div>
       </div>
     </div>
