@@ -405,17 +405,208 @@ html[data-bs-theme="light"] #log {
   100% { left: 42px; opacity: 0; }
 }
 .pg-arr-wrap.pg-flowing .pg-particle { animation: pgFlow 0.80s linear infinite; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+#bd-wrapper { min-height: 100vh; }
+
+#bd-sidebar {
+  width: 220px;
+  min-width: 220px;
+  background-color: #1c1f24;
+  border-right: 1px solid rgba(255,255,255,.065);
+  box-shadow:
+    4px 0 18px rgba(0,0,0,.55),
+    2px 0 6px  rgba(0,0,0,.35),
+    inset -1px 0 0 rgba(255,255,255,.04);
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0.6rem;
+  transition: width 0.22s ease, min-width 0.22s ease;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 100;
+}
+
+#bd-sidebar.collapsed {
+  width: 60px;
+  min-width: 60px;
+}
+
+#bd-sidebar .bd-nav-label {
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+#bd-sidebar.collapsed .bd-nav-label {
+  display: none;
+}
+
+/* Expanded nav-link */
+#bd-sidebar .nav-link {
+  border-radius: 8px;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  position: relative;
+}
+
+#bd-sidebar .nav-link:hover:not(.active) {
+  background: rgba(255,255,255,.07);
+}
+
+#bd-sidebar .nav-link.active {
+  background: #0d6efd;
+  color: #fff !important;
+}
+
+/* Collapsed: icon-only 3D buttons */
+#bd-sidebar.collapsed .nav-link {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #22262c;
+  border: 1px solid rgba(255,255,255,.09);
+  box-shadow:
+    0 4px 10px rgba(0,0,0,.50),
+    0 2px 4px  rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.07),
+    inset 0 -2px 4px rgba(0,0,0,.30);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-bottom: 4px;
+  overflow: visible;
+}
+
+#bd-sidebar.collapsed .nav-link i {
+  font-size: 1.15rem;
+  color: #39ff14;
+  text-shadow: 0 0 8px rgba(57,255,20,.5);
+  margin: 0 !important;
+}
+
+#bd-sidebar.collapsed .nav-link.active {
+  background: #0d6efd;
+  border-color: rgba(13,110,253,.6);
+  box-shadow:
+    0 4px 12px rgba(13,110,253,.45),
+    inset 0 1px 0 rgba(255,255,255,.15),
+    inset 0 -2px 5px rgba(0,0,0,.20);
+}
+
+#bd-sidebar.collapsed .nav-link.active i {
+  color: #fff !important;
+  text-shadow: none;
+}
+
+#bd-sidebar.collapsed .nav-link:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 16px rgba(0,0,0,.60),
+    0 2px 6px rgba(0,0,0,.40),
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 -2px 5px rgba(0,0,0,.30);
+}
+
+/* Collapsed tooltip bubble to the right */
+#bd-sidebar.collapsed .nav-link[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #2a2d32;
+  color: #e2e8f0;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 4px 14px rgba(0,0,0,.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 9999;
+}
+
+#bd-sidebar.collapsed .nav-link[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: #2a2d32;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 9999;
+}
+
+#bd-sidebar.collapsed .nav-link[data-tooltip]:hover::after,
+#bd-sidebar.collapsed .nav-link[data-tooltip]:hover::before {
+  opacity: 1;
+}
+
+#bd-page-content { min-width: 0; }
 </style>
 </head>
 <body>
+<div class="d-flex" id="bd-wrapper">
+
+<!-- ── Left Sidebar ───────────────────────────────────────────────────────── -->
+<nav id="bd-sidebar">
+  <script>if(localStorage.getItem('bd-sidebar-collapsed')==='1'){document.currentScript.parentElement.classList.add('collapsed');}</script>
+  <ul class="nav nav-pills flex-column mb-3">
+    <li class="nav-item mb-1">
+      <a href="#" class="nav-link active" data-bd-tab="page-build-config"
+         onclick="bdShowTab('page-build-config',this);return false"
+         data-tooltip="Build Configuration">
+        <i class="bi bi-gear"></i><span class="bd-nav-label ms-2">Build Configuration</span>
+      </a>
+    </li>
+    <li class="nav-item mb-1">
+      <a href="#" class="nav-link text-white" data-bd-tab="page-git"
+         onclick="bdShowTab('page-git',this);return false"
+         data-tooltip="Git">
+        <i class="bi bi-git"></i><span class="bd-nav-label ms-2">Git</span>
+      </a>
+    </li>
+    <li class="nav-item mb-1">
+      <a href="#" class="nav-link text-white" data-bd-tab="page-installer"
+         onclick="bdShowTab('page-installer',this);return false"
+         data-tooltip="Installer Options">
+        <i class="bi bi-box-seam"></i><span class="bd-nav-label ms-2">Installer Options</span>
+      </a>
+    </li>
+    <li class="nav-item mb-1">
+      <a href="#" class="nav-link text-white" data-bd-tab="page-backup"
+         onclick="bdShowTab('page-backup',this);return false"
+         data-tooltip="Local Backup">
+        <i class="bi bi-archive"></i><span class="bd-nav-label ms-2">Local Backup</span>
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<!-- ── Main content area ──────────────────────────────────────────────────── -->
+<div id="bd-page-content" class="flex-grow-1 overflow-auto">
 
 <!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
 <nav class="navbar border-bottom border-secondary sticky-top" style="background:#212529">
-  <div class="container-fluid">
+  <div class="container-fluid gap-2">
+    <button class="btn btn-sm btn-outline-secondary" id="bdSidebarToggle" title="Toggle navigation">
+      <i class="bi bi-layout-sidebar"></i>
+    </button>
     <span class="navbar-brand fw-semibold mb-0">
       <i class="bi bi-tools me-2 text-info"></i>Build Dashboard
     </span>
-    <span id="badge" class="badge bg-secondary" style="font-size:.8rem">Idle</span>
+    <span id="badge" class="badge bg-secondary ms-auto" style="font-size:.8rem">Idle</span>
   </div>
 </nav>
 
@@ -464,13 +655,15 @@ html[data-bs-theme="light"] #log {
 </div>
 
 <div class="container-fluid p-3">
-<div class="row g-3">
 
 <!-- ══════════════════════════════════════════════════════════════════════════
-     LEFT: Build Configuration
+     PAGE: Build Configuration
      ══════════════════════════════════════════════════════════════════════════ -->
-<div class="col-xl-7 col-lg-6">
-<div class="card h-100">
+<div id="page-build-config" class="bd-page">
+<div id="page-build-config-rows" class="bd-inner-page">
+<div class="row g-3">
+<div class="col-12">
+<div class="card">
   <div class="card-header bg-transparent border-0 pb-0">
     <h6 class="fw-bold mb-0"><i class="bi bi-gear me-1 text-secondary"></i>Build Configuration</h6>
   </div>
@@ -576,141 +769,6 @@ html[data-bs-theme="light"] #log {
       </div>
     </div>
 
-    <!-- ── Installer Options ─────────────────────────────────────────────── -->
-    <div class="inner-card">
-      <div class="inner-card-hdr"><i class="bi bi-box-seam"></i>Installer Options</div>
-      <div class="row g-2">
-        <div class="col-12">
-          <label class="form-label mb-1 text-muted small" for="DEFAULT_INSTALL_DIR">
-            Default Install Directory <span class="text-secondary">({autopf} = Program Files)</span>
-          </label>
-          <input id="DEFAULT_INSTALL_DIR" class="form-control form-control-sm">
-        </div>
-        <div class="col-6">
-          <label class="form-label mb-1 text-muted small" for="ICON_FILE">Icon File <span class="text-secondary">(.ico, optional)</span></label>
-          <div class="input-group input-group-sm">
-            <input id="ICON_FILE" class="form-control form-control-sm" placeholder="icons/app.ico">
-            <button class="btn btn-outline-secondary" type="button" onclick="browseIconFile()" title="Browse for icon…">
-              <i class="bi bi-image"></i>
-            </button>
-          </div>
-        </div>
-        <!-- README File — open/generate with editor picker -->
-        <div class="col-12">
-          <label class="form-label mb-1 text-muted small">README File</label>
-          <div class="d-flex flex-wrap gap-2 align-items-center">
-            <div class="input-group input-group-sm" style="width:auto;flex:1 1 160px;max-width:300px;">
-              <input id="README_FILE" class="form-control form-control-sm font-monospace"
-                     placeholder="README.txt" oninput="updateOpenReadmeBtn()">
-              <button class="btn btn-outline-secondary" id="btnOpenReadme"
-                      onclick="openReadmeFile(null, null)"
-                      title="Open in default editor — prompts to generate if missing">
-                <i class="bi bi-file-earmark-text"></i>
-              </button>
-              <div class="dropdown">
-                <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-2"
-                        id="btnReadmeEditorDrop" data-bs-toggle="dropdown"
-                        onclick="loadReadmeEditorList()" title="Choose editor…"
-                        style="border-left:0;">
-                  <span class="visually-hidden">Choose editor</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" id="readmeEditorMenu">
-                  <li><span class="dropdown-item-text text-secondary small">Click to load editors…</span></li>
-                </ul>
-              </div>
-            </div>
-            <span id="readmeExistsIndicator" class="small"></span>
-          </div>
-          <!-- Generate prompt (hidden until needed) -->
-          <div id="readmeGeneratePrompt" class="mt-1 d-none">
-            <div class="d-flex align-items-center gap-2 p-2 rounded"
-                 style="background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.3);font-size:.8rem;">
-              <i class="bi bi-exclamation-triangle text-warning"></i>
-              <span class="text-warning">README file not found.</span>
-              <button class="btn btn-xs btn-warning py-0 px-2" id="btnGenReadme"
-                      onclick="generateAndOpenReadme(null, null)">
-                <i class="bi bi-magic me-1"></i>Generate default
-              </button>
-              <button class="btn btn-xs btn-outline-secondary py-0 px-2"
-                      onclick="createEmptyReadme(null, null)">Create empty</button>
-              <button class="btn btn-xs btn-link text-secondary py-0 px-1"
-                      onclick="document.getElementById('readmeGeneratePrompt').classList.add('d-none')">
-                <i class="bi bi-x"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-        <!-- License File — template picker + open button -->
-        <div class="col-12">
-          <label class="form-label mb-1 text-muted small">License File</label>
-          <div class="d-flex flex-wrap gap-2 align-items-center">
-            <!-- Template selector -->
-            <div class="input-group input-group-sm" style="width:auto;flex:1 1 260px;max-width:420px;">
-              <select id="licenseTemplate" class="form-select form-select-sm" style="min-width:0;">
-                <option value="">— select template —</option>
-              </select>
-              <button class="btn btn-outline-info" onclick="applyLicenseTemplate()"
-                      title="Write selected template to LICENSE.txt in the project root">
-                <i class="bi bi-pencil-square me-1"></i>Apply
-              </button>
-              <button class="btn btn-outline-secondary" onclick="refreshLicenseTemplates()"
-                      title="Refresh open-source license texts from spdx.org">
-                <i class="bi bi-cloud-download"></i>
-              </button>
-            </div>
-            <!-- Filename + open with editor picker -->
-            <div class="input-group input-group-sm" style="width:auto;flex:1 1 160px;max-width:300px;">
-              <input id="LICENSE_FILE" class="form-control form-control-sm font-monospace" placeholder="LICENSE.txt">
-              <button class="btn btn-outline-secondary" id="btnOpenLicense" onclick="openLicenseFile(null, null)"
-                      title="Open in default editor (creates file if missing)">
-                <i class="bi bi-file-text"></i>
-              </button>
-              <div class="dropdown">
-                <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-2"
-                        id="btnLicenseEditorDrop" data-bs-toggle="dropdown"
-                        onclick="loadEditorList()" title="Choose editor…"
-                        style="border-left:0;">
-                  <span class="visually-hidden">Choose editor</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" id="licenseEditorMenu">
-                  <li><span class="dropdown-item-text text-secondary small">Click to load editors…</span></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Support Email -->
-        <div class="col-12">
-          <label class="form-label mb-1 text-muted small" for="SUPPORT_EMAIL">
-            Support Email <span class="text-secondary">(injected into compiled app before build)</span>
-          </label>
-          <input id="SUPPORT_EMAIL" class="form-control form-control-sm" type="email"
-                 placeholder="support@yourcompany.com"
-                 oninput="saveSetting('SUPPORT_EMAIL', this.value)">
-        </div>
-        <div class="col-6 mt-1">
-          <div class="form-check">
-            <input id="REQUIRE_ADMIN" class="form-check-input" type="checkbox">
-            <label class="form-check-label small" for="REQUIRE_ADMIN">Require Admin rights</label>
-          </div>
-          <div class="form-check">
-            <input id="DESKTOP_ICON" class="form-check-input" type="checkbox">
-            <label class="form-check-label small" for="DESKTOP_ICON">Desktop shortcut</label>
-          </div>
-        </div>
-        <div class="col-6 mt-1">
-          <div class="form-check">
-            <input id="START_MENU_ICON" class="form-check-input" type="checkbox">
-            <label class="form-check-label small" for="START_MENU_ICON">Start Menu entry</label>
-          </div>
-          <div class="form-check">
-            <input id="ADD_TO_STARTUP" class="form-check-input" type="checkbox">
-            <label class="form-check-label small" for="ADD_TO_STARTUP">Auto-start with Windows</label>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- ── Code Protection ───────────────────────────────────────────────── -->
     <div class="inner-card">
       <div class="inner-card-hdr"><i class="bi bi-shield-lock"></i>Code Protection</div>
@@ -752,12 +810,16 @@ html[data-bs-theme="light"] #log {
   </div><!-- /card-body -->
 </div>
 </div><!-- /col -->
+</div><!-- /row g-3 (Build Config) -->
+</div><!-- /page-build-config-rows (card) -->
 
 <!-- ══════════════════════════════════════════════════════════════════════════
-     RIGHT: Git Panel
+     PAGE: Git  (inner section inside page-build-config; hidden by default)
      ══════════════════════════════════════════════════════════════════════════ -->
-<div class="col-xl-5 col-lg-6">
-<div class="card h-100">
+<div id="page-git" class="bd-inner-page d-none">
+<div class="row g-3">
+<div class="col-12">
+<div class="card">
   <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
     <h6 class="fw-bold mb-0"><i class="bi bi-git me-1 text-secondary"></i>Git — Target Project</h6>
     <div class="d-flex align-items-center gap-2">
@@ -876,12 +938,13 @@ html[data-bs-theme="light"] #log {
   </div>
 </div>
 </div><!-- /col -->
-
-</div><!-- /row -->
+</div><!-- /row g-3 (Git) -->
+</div><!-- /page-git -->
 
 <!-- ══════════════════════════════════════════════════════════════════════════
-     Local Backup & Daemon
+     PAGE: Local Backup  (inner section inside page-build-config; hidden by default)
      ══════════════════════════════════════════════════════════════════════════ -->
+<div id="page-backup" class="bd-inner-page d-none">
 <div class="row mt-3">
   <div class="col-12">
     <div class="card">
@@ -996,11 +1059,12 @@ html[data-bs-theme="light"] #log {
     </div>
   </div>
 </div>
-
+</div><!-- /page-backup -->
 
 <!-- ══════════════════════════════════════════════════════════════════════════
-     Build History
+     Build History (page-build-config continued)
      ══════════════════════════════════════════════════════════════════════════ -->
+<div class="bd-inner-page" id="page-build-config-rows-extra">
 <div class="row mt-3">
   <div class="col-12">
     <div class="card">
@@ -1329,9 +1393,159 @@ html[data-bs-theme="light"] #log {
   </div>
 </div>
 
+</div><!-- /page-build-config-rows-extra -->
+
+</div><!-- /page-build-config -->
+
 <!-- ══════════════════════════════════════════════════════════════════════════
-     Test Pipeline
+     PAGE: Installer Options
      ══════════════════════════════════════════════════════════════════════════ -->
+<div id="page-installer" class="bd-page d-none">
+
+<!-- ── Installer Options card ─────────────────────────────────────────────── -->
+<div class="row g-3">
+<div class="col-12">
+<div class="card">
+  <div class="card-header bg-transparent border-0 pb-0">
+    <h6 class="fw-bold mb-0"><i class="bi bi-box-seam me-1 text-secondary"></i>Installer Options</h6>
+  </div>
+  <div class="card-body">
+    <div class="row g-2">
+      <div class="col-12">
+        <label class="form-label mb-1 text-muted small" for="DEFAULT_INSTALL_DIR">
+          Default Install Directory <span class="text-secondary">({autopf} = Program Files)</span>
+        </label>
+        <input id="DEFAULT_INSTALL_DIR" class="form-control form-control-sm">
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-1 text-muted small" for="ICON_FILE">Icon File <span class="text-secondary">(.ico, optional)</span></label>
+        <div class="input-group input-group-sm">
+          <input id="ICON_FILE" class="form-control form-control-sm" placeholder="icons/app.ico">
+          <button class="btn btn-outline-secondary" type="button" onclick="browseIconFile()" title="Browse for icon…">
+            <i class="bi bi-image"></i>
+          </button>
+        </div>
+      </div>
+      <!-- README File — open/generate with editor picker -->
+      <div class="col-12">
+        <label class="form-label mb-1 text-muted small">README File</label>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <div class="input-group input-group-sm" style="width:auto;flex:1 1 160px;max-width:300px;">
+            <input id="README_FILE" class="form-control form-control-sm font-monospace"
+                   placeholder="README.txt" oninput="updateOpenReadmeBtn()">
+            <button class="btn btn-outline-secondary" id="btnOpenReadme"
+                    onclick="openReadmeFile(null, null)"
+                    title="Open in default editor — prompts to generate if missing">
+              <i class="bi bi-file-earmark-text"></i>
+            </button>
+            <div class="dropdown">
+              <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-2"
+                      id="btnReadmeEditorDrop" data-bs-toggle="dropdown"
+                      onclick="loadReadmeEditorList()" title="Choose editor…"
+                      style="border-left:0;">
+                <span class="visually-hidden">Choose editor</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" id="readmeEditorMenu">
+                <li><span class="dropdown-item-text text-secondary small">Click to load editors…</span></li>
+              </ul>
+            </div>
+          </div>
+          <span id="readmeExistsIndicator" class="small"></span>
+        </div>
+        <!-- Generate prompt (hidden until needed) -->
+        <div id="readmeGeneratePrompt" class="mt-1 d-none">
+          <div class="d-flex align-items-center gap-2 p-2 rounded"
+               style="background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.3);font-size:.8rem;">
+            <i class="bi bi-exclamation-triangle text-warning"></i>
+            <span class="text-warning">README file not found.</span>
+            <button class="btn btn-xs btn-warning py-0 px-2" id="btnGenReadme"
+                    onclick="generateAndOpenReadme(null, null)">
+              <i class="bi bi-magic me-1"></i>Generate default
+            </button>
+            <button class="btn btn-xs btn-outline-secondary py-0 px-2"
+                    onclick="createEmptyReadme(null, null)">Create empty</button>
+            <button class="btn btn-xs btn-link text-secondary py-0 px-1"
+                    onclick="document.getElementById('readmeGeneratePrompt').classList.add('d-none')">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- License File — template picker + open button -->
+      <div class="col-12">
+        <label class="form-label mb-1 text-muted small">License File</label>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <!-- Template selector -->
+          <div class="input-group input-group-sm" style="width:auto;flex:1 1 260px;max-width:420px;">
+            <select id="licenseTemplate" class="form-select form-select-sm" style="min-width:0;">
+              <option value="">— select template —</option>
+            </select>
+            <button class="btn btn-outline-info" onclick="applyLicenseTemplate()"
+                    title="Write selected template to LICENSE.txt in the project root">
+              <i class="bi bi-pencil-square me-1"></i>Apply
+            </button>
+            <button class="btn btn-outline-secondary" onclick="refreshLicenseTemplates()"
+                    title="Refresh open-source license texts from spdx.org">
+              <i class="bi bi-cloud-download"></i>
+            </button>
+          </div>
+          <!-- Filename + open with editor picker -->
+          <div class="input-group input-group-sm" style="width:auto;flex:1 1 160px;max-width:300px;">
+            <input id="LICENSE_FILE" class="form-control form-control-sm font-monospace" placeholder="LICENSE.txt">
+            <button class="btn btn-outline-secondary" id="btnOpenLicense" onclick="openLicenseFile(null, null)"
+                    title="Open in default editor (creates file if missing)">
+              <i class="bi bi-file-text"></i>
+            </button>
+            <div class="dropdown">
+              <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split px-2"
+                      id="btnLicenseEditorDrop" data-bs-toggle="dropdown"
+                      onclick="loadEditorList()" title="Choose editor…"
+                      style="border-left:0;">
+                <span class="visually-hidden">Choose editor</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" id="licenseEditorMenu">
+                <li><span class="dropdown-item-text text-secondary small">Click to load editors…</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Support Email -->
+      <div class="col-12">
+        <label class="form-label mb-1 text-muted small" for="SUPPORT_EMAIL">
+          Support Email <span class="text-secondary">(injected into compiled app before build)</span>
+        </label>
+        <input id="SUPPORT_EMAIL" class="form-control form-control-sm" type="email"
+               placeholder="support@yourcompany.com"
+               oninput="saveSetting('SUPPORT_EMAIL', this.value)">
+      </div>
+      <div class="col-6 mt-1">
+        <div class="form-check">
+          <input id="REQUIRE_ADMIN" class="form-check-input" type="checkbox">
+          <label class="form-check-label small" for="REQUIRE_ADMIN">Require Admin rights</label>
+        </div>
+        <div class="form-check">
+          <input id="DESKTOP_ICON" class="form-check-input" type="checkbox">
+          <label class="form-check-label small" for="DESKTOP_ICON">Desktop shortcut</label>
+        </div>
+      </div>
+      <div class="col-6 mt-1">
+        <div class="form-check">
+          <input id="START_MENU_ICON" class="form-check-input" type="checkbox">
+          <label class="form-check-label small" for="START_MENU_ICON">Start Menu entry</label>
+        </div>
+        <div class="form-check">
+          <input id="ADD_TO_STARTUP" class="form-check-input" type="checkbox">
+          <label class="form-check-label small" for="ADD_TO_STARTUP">Auto-start with Windows</label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /col -->
+</div><!-- /row g-3 (Installer Options) -->
+
+<!-- ── Test Pipeline ──────────────────────────────────────────────────────── -->
 <div class="row mt-3 mb-3">
   <div class="col-12">
     <div class="card" id="tpCard">
@@ -1390,7 +1604,11 @@ html[data-bs-theme="light"] #log {
   </div>
 </div>
 
+</div><!-- /page-installer -->
+
 </div><!-- /container-fluid -->
+</div><!-- /bd-page-content -->
+</div><!-- /bd-wrapper -->
 
 <!-- ── Build Dashboard What's New Modal ────────────────────────────────────── -->
 <div class="modal fade" id="bdChangelogModal" tabindex="-1" aria-hidden="true">
@@ -4894,6 +5112,79 @@ async function browseSoundFile(type) {
     showToast('Could not open file picker: ' + e, 'danger');
   }
 }
+</script>
+<script>
+/* ── Sidebar tab switching ─────────────────────────────────────────────── */
+/* page-git and page-backup are inner sections inside page-build-config.
+   page-build-config-rows contains the Build Config card + Build History rows.
+   All three are bd-inner-page elements inside page-build-config.
+   Selecting page-build-config shows its rows section.
+   Selecting page-git or page-backup shows page-build-config + that inner section.
+   Selecting page-installer shows page-installer only.                       */
+var BD_INNER_PAGES = ['page-git', 'page-backup'];
+
+function bdShowTab(pageId, linkEl) {
+  var isInner = BD_INNER_PAGES.indexOf(pageId) !== -1;
+
+  // Hide all top-level pages
+  document.querySelectorAll('.bd-page').forEach(function(p) {
+    p.classList.add('d-none');
+  });
+  // Always hide all inner sections first
+  document.querySelectorAll('.bd-inner-page').forEach(function(p) {
+    p.classList.add('d-none');
+  });
+
+  if (isInner) {
+    // Show the page-build-config wrapper (which contains the inner pages)
+    var buildCfg = document.getElementById('page-build-config');
+    if (buildCfg) buildCfg.classList.remove('d-none');
+    // Show the specific inner page (git or backup)
+    var inner = document.getElementById(pageId);
+    if (inner) inner.classList.remove('d-none');
+  } else if (pageId === 'page-build-config') {
+    // Show page-build-config and both of its own rows sections
+    var buildCfg2 = document.getElementById('page-build-config');
+    if (buildCfg2) buildCfg2.classList.remove('d-none');
+    var rows = document.getElementById('page-build-config-rows');
+    if (rows) rows.classList.remove('d-none');
+    var rowsExtra = document.getElementById('page-build-config-rows-extra');
+    if (rowsExtra) rowsExtra.classList.remove('d-none');
+  } else {
+    // Show the top-level page directly (e.g. page-installer)
+    var page = document.getElementById(pageId);
+    if (page) page.classList.remove('d-none');
+  }
+
+  // Update nav links
+  document.querySelectorAll('#bd-sidebar .nav-link').forEach(function(a) {
+    a.classList.remove('active');
+    a.classList.add('text-white');
+  });
+  if (linkEl) {
+    linkEl.classList.add('active');
+    linkEl.classList.remove('text-white');
+  }
+  // Persist
+  localStorage.setItem('bd-active-tab', pageId);
+}
+
+/* ── Sidebar collapse toggle ──────────────────────────────────────────── */
+(function() {
+  var sidebar = document.getElementById('bd-sidebar');
+  var btn = document.getElementById('bdSidebarToggle');
+  if (!btn || !sidebar) return;
+  btn.addEventListener('click', function() {
+    var collapsed = sidebar.classList.toggle('collapsed');
+    localStorage.setItem('bd-sidebar-collapsed', collapsed ? '1' : '0');
+  });
+  // Restore active tab
+  var savedTab = localStorage.getItem('bd-active-tab');
+  if (savedTab) {
+    var link = document.querySelector('#bd-sidebar .nav-link[data-bd-tab="' + savedTab + '"]');
+    if (link) bdShowTab(savedTab, link);
+  }
+})();
 </script>
 </body>
 </html>
