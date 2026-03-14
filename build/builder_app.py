@@ -3428,4 +3428,24 @@ def create_builder_app() -> Flask:
             "sections":     sections,
         })
 
+    # ── Tab-close watchdog ────────────────────────────────────────────────────
+    # The browser pings /api/heartbeat every 5 s while any tab is open.
+    # If no ping arrives for 30 s (all tabs closed / navigated away), exit cleanly.
+    import time as _time
+    _last_beat: list[float] = [_time.monotonic()]
+    _BEAT_TIMEOUT = 30.0  # seconds of silence before shutdown
+
+    @app.route("/api/heartbeat", methods=["POST", "GET"])
+    def api_heartbeat():
+        _last_beat[0] = _time.monotonic()
+        return "", 204
+
+    def _watchdog() -> None:
+        while True:
+            _time.sleep(10)
+            if _time.monotonic() - _last_beat[0] > _BEAT_TIMEOUT:
+                os._exit(0)
+
+    threading.Thread(target=_watchdog, daemon=True, name="bd-watchdog").start()
+
     return app
