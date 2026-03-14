@@ -1,0 +1,24 @@
+# Change Log
+
+## DRAFT — Upcoming Changes
+
+- (no upcoming changes — add them here)
+
+## v1.0.0 — 2026-03-05
+
+- Initial release
+- Job Tracker dashboard with metric cards and scan status
+- Job listings with skill-based match scoring
+- Applications tracker with status workflow
+- Analytics with charts and source breakdown
+- Job source scraper management
+- Email notification system with SMTP support
+- Unemployment claim week tracker
+- Scheduler daemon for automated scans
+- Build Dashboard (port 5001) for git, build, and deploy
+- Customer Support page with bug reporting and feature requests
+- Dark / light mode with per-page persistence
+- Help & Documentation page
+- GitHub integration in Build Dashboard (auth, repo picker, PR management)
+- Local backup with robocopy and schedule support
+- Version control system with auto-increment on Full Build
