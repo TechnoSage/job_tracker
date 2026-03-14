@@ -465,6 +465,7 @@ _DEFAULTS: dict = {
     "SUPPORT_EMAIL":       "",
     "SOUND_SUCCESS":       "",
     "SOUND_FAIL":          "",
+    "CHANGELOG_TRIGGER":   "minor",   # "major"|"minor"|"patch"|"never"
 }
 
 
@@ -1263,6 +1264,114 @@ def _append_build_history(
         pass
 
 
+# ── Changelog helpers ─────────────────────────────────────────────────────────
+
+def _changelog_path(settings: dict | None = None) -> Path:
+    if settings is None:
+        settings = _load_settings()
+    repo = Path(settings.get("GIT_REPO_DIR", "").strip() or str(PROJECT_ROOT))
+    return repo / "CHANGELOG.json"
+
+
+def _changelog_md_path(settings: dict | None = None) -> Path:
+    return _changelog_path(settings).with_suffix(".md")
+
+
+def _load_changelog(settings: dict | None = None) -> dict:
+    """Load CHANGELOG.json, migrating the old bare-list format if needed."""
+    default: dict = {"trigger": "minor", "draft": [], "entries": []}
+    path = _changelog_path(settings)
+    if not path.exists():
+        return default
+    try:
+        raw = json.loads(path.read_text("utf-8"))
+        if isinstance(raw, list):          # migrate old format
+            return {**default, "entries": raw}
+        if isinstance(raw, dict):
+            return {**default, **raw}
+    except Exception:
+        pass
+    return default
+
+
+def _save_changelog(data: dict, settings: dict | None = None) -> None:
+    path = _changelog_path(settings)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), "utf-8")
+
+
+def _generate_changelog_md(data: dict) -> str:
+    """Serialise CHANGELOG.json dict → human-editable Markdown."""
+    lines: list[str] = ["# Change Log", ""]
+    lines += ["## DRAFT — Upcoming Changes", ""]
+    draft = data.get("draft", [])
+    lines += ([f"- {c}" for c in draft] if draft else ["- (no upcoming changes — add them here)"])
+    lines += [""]
+    for entry in data.get("entries", []):
+        ver  = entry.get("version", "?")
+        date = entry.get("date", "")
+        lines += [f"## v{ver} — {date}", ""]
+        changes = entry.get("changes", [])
+        lines += ([f"- {c}" for c in changes] if changes else ["- (no changes listed)"])
+        lines += [""]
+    return "\n".join(lines)
+
+
+def _parse_changelog_md(text: str) -> dict:
+    """Parse a human-edited CHANGELOG.md back into the JSON dict format."""
+    import re as _re
+    result: dict = {"draft": [], "entries": []}
+    section = None   # "draft" | dict (entry)
+
+    for raw in text.splitlines():
+        line = raw.rstrip()
+        if _re.match(r"^## DRAFT", line, _re.IGNORECASE):
+            section = "draft"
+        elif m := _re.match(r"^## v([\d][^\s—–-]*)\s*[—–-]+\s*(\S+)", line):
+            entry = {"version": m.group(1), "date": m.group(2), "changes": []}
+            result["entries"].append(entry)
+            section = entry
+        elif line.startswith("- ") and section is not None:
+            text_part = line[2:].strip()
+            if text_part and text_part != "(no upcoming changes — add them here)" \
+                    and text_part != "(no changes listed)":
+                if section == "draft":
+                    result["draft"].append(text_part)
+                else:
+                    section["changes"].append(text_part)
+    return result
+
+
+def _version_crossed_trigger(old_ver: str, new_ver: str, trigger: str) -> bool:
+    """Return True if the version bump crosses the configured trigger boundary."""
+    if trigger == "never" or old_ver == new_ver:
+        return False
+    try:
+        def _seg(v: str) -> tuple[int, ...]:
+            return tuple(int(x) for x in v.split(".")[:3])
+        o, n = _seg(old_ver), _seg(n := new_ver)  # noqa: F841
+        o, n = _seg(old_ver), _seg(new_ver)
+        if trigger == "major":
+            return n[0] > o[0]
+        if trigger == "minor":
+            return n[0] > o[0] or (n[0] == o[0] and len(n) > 1 and len(o) > 1 and n[1] > o[1])
+        if trigger == "patch":
+            return n != o
+    except Exception:
+        pass
+    return False
+
+
+def _find_notepadpp() -> str | None:
+    for candidate in (
+        r"C:\Program Files\Notepad++\notepad++.exe",
+        r"C:\Program Files (x86)\Notepad++\notepad++.exe",
+    ):
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
 # ── Flask application factory ─────────────────────────────────────────────────
 
 def create_builder_app() -> Flask:
@@ -2000,20 +2109,41 @@ def create_builder_app() -> Flask:
                 settings_now = _load_settings()
                 settings_now["APP_VERSION"] = new_ver
                 _save_settings(settings_now)
-                # ── Append entry to CHANGELOG.json if version changed ──
-                cl_file = Path(cwd) / "CHANGELOG.json"
+                # ── Changelog: check trigger and promote draft → version entry ──
                 try:
-                    cl_entries = json.loads(cl_file.read_text(encoding="utf-8")) if cl_file.exists() else []
-                    existing_versions = {e.get("version") for e in cl_entries}
-                    if new_ver not in existing_versions:
-                        import datetime as _dt
-                        cl_entries.append({
+                    import datetime as _dt
+                    _cl_settings = _load_settings()
+                    cl_data     = _load_changelog(_cl_settings)
+                    cl_trigger  = _cl_settings.get("CHANGELOG_TRIGGER", "minor")
+                    old_ver_cl  = current_ver if ver_increment != "keep" else new_ver
+                    triggered   = _version_crossed_trigger(old_ver_cl, new_ver, cl_trigger)
+
+                    # Ensure a version entry exists for new_ver
+                    existing = {e.get("version") for e in cl_data.get("entries", [])}
+                    if new_ver not in existing:
+                        new_entry: dict = {
                             "version": new_ver,
-                            "date": _dt.date.today().isoformat(),
-                            "changes": []
-                        })
-                        cl_file.write_text(json.dumps(cl_entries, indent=2), encoding="utf-8")
-                        _append(f"CHANGELOG.json: added entry for v{new_ver}")
+                            "date":    _dt.date.today().isoformat(),
+                            "changes": [],
+                        }
+                        if triggered and cl_data.get("draft"):
+                            new_entry["changes"] = list(cl_data["draft"])
+                            cl_data["draft"]     = []
+                            _append(f"CHANGELOG: trigger={cl_trigger} fired — "
+                                    f"{len(new_entry['changes'])} draft item(s) "
+                                    f"promoted to v{new_ver}")
+                        else:
+                            if cl_data.get("draft"):
+                                _append(f"CHANGELOG: {len(cl_data['draft'])} draft item(s) "
+                                        f"pending (trigger={cl_trigger} not met for "
+                                        f"{old_ver_cl}→{new_ver})")
+                            else:
+                                _append(f"CHANGELOG: no draft items — "
+                                        f"entry for v{new_ver} created (empty)")
+                        cl_data.setdefault("entries", []).insert(0, new_entry)
+                        _save_changelog(cl_data, _cl_settings)
+                    else:
+                        _append(f"CHANGELOG: entry for v{new_ver} already exists")
                 except Exception as cl_exc:
                     _append(f"[WARN] Could not update CHANGELOG.json: {cl_exc}")
             except Exception as exc:
@@ -2642,6 +2772,78 @@ def create_builder_app() -> Flask:
             "build_type":  entry.get("build_type", "Main"),
             "description": entry.get("description", ""),
         })
+
+    # ── Changelog ─────────────────────────────────────────────────────────────
+
+    @app.route("/api/changelog")
+    def api_changelog_get():
+        settings = _load_settings()
+        data = _load_changelog(settings)
+        # Merge the trigger from settings (single source of truth)
+        data["trigger"] = settings.get("CHANGELOG_TRIGGER", "minor")
+        return jsonify({"ok": True, "changelog": data})
+
+    @app.route("/api/changelog/draft", methods=["PATCH"])
+    def api_changelog_draft():
+        """Save the draft change list (list of strings or newline-separated text)."""
+        body  = request.get_json(silent=True) or {}
+        raw   = body.get("draft", [])
+        if isinstance(raw, str):
+            items = [l.lstrip("- ").strip() for l in raw.splitlines() if l.strip()]
+        else:
+            items = [str(s).strip() for s in raw if str(s).strip()]
+        settings = _load_settings()
+        data = _load_changelog(settings)
+        data["draft"] = items
+        _save_changelog(data, settings)
+        return jsonify({"ok": True, "draft": items})
+
+    @app.route("/api/changelog/trigger", methods=["PATCH"])
+    def api_changelog_trigger():
+        body    = request.get_json(silent=True) or {}
+        trigger = body.get("trigger", "minor")
+        if trigger not in ("major", "minor", "patch", "never"):
+            return jsonify({"ok": False, "error": "Invalid trigger value"})
+        settings = _load_settings()
+        settings["CHANGELOG_TRIGGER"] = trigger
+        _save_settings(settings)
+        return jsonify({"ok": True, "trigger": trigger})
+
+    @app.route("/api/changelog/open-editor", methods=["POST"])
+    def api_changelog_open_editor():
+        """Export CHANGELOG.json → CHANGELOG.md then open in Notepad++ (or Notepad)."""
+        settings = _load_settings()
+        data     = _load_changelog(settings)
+        md_path  = _changelog_md_path(settings)
+        try:
+            md_path.write_text(_generate_changelog_md(data), "utf-8")
+        except Exception as e:
+            return jsonify({"ok": False, "error": f"Could not write CHANGELOG.md: {e}"})
+
+        editor = _find_notepadpp() or "notepad.exe"
+        try:
+            subprocess.Popen([editor, str(md_path)])
+            return jsonify({"ok": True, "editor": editor, "file": str(md_path)})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)})
+
+    @app.route("/api/changelog/reload-md", methods=["POST"])
+    def api_changelog_reload_md():
+        """Parse CHANGELOG.md back into CHANGELOG.json (called after user saves in Notepad++)."""
+        settings = _load_settings()
+        md_path  = _changelog_md_path(settings)
+        if not md_path.exists():
+            return jsonify({"ok": False, "error": "CHANGELOG.md not found — open editor first"})
+        try:
+            parsed = _parse_changelog_md(md_path.read_text("utf-8"))
+        except Exception as e:
+            return jsonify({"ok": False, "error": f"Parse error: {e}"})
+
+        data = _load_changelog(settings)
+        data["draft"]   = parsed.get("draft", [])
+        data["entries"] = parsed.get("entries", [])
+        _save_changelog(data, settings)
+        return jsonify({"ok": True, "changelog": data})
 
     # ── Settings PATCH (single-key update) ───────────────────────────────────
 
