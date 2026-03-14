@@ -835,11 +835,15 @@ def run_nuitka() -> Path:
     nuitka_out.mkdir(parents=True, exist_ok=True)
     icon_args = ([f"--windows-icon-from-ico={Path(C.ICON_FILE)}"]
                  if C.ICON_FILE and Path(C.ICON_FILE).is_file() else [])
-    core_pkgs = ["flask","jinja2","werkzeug","sqlalchemy","apscheduler",
-                 "bs4","feedparser","icalendar","pytz","requests","dotenv"]
-    opt_pkgs  = ["docx","PIL","google","googleapiclient","msal","pypdf","openpyxl"]
-    pkgs = [f"--include-package={p}" for p in core_pkgs]
-    pkgs += [f"--include-package={p}" for p in opt_pkgs if _ilu.find_spec(p)]
+    # All packages are gated by find_spec so builds against projects that
+    # don't install the full job_tracker dependency set (e.g. build_dashboard)
+    # don't fail with "module not found" from Nuitka.
+    all_pkgs = [
+        "flask","jinja2","werkzeug","sqlalchemy","apscheduler",
+        "bs4","feedparser","icalendar","pytz","requests","dotenv",
+        "docx","PIL","google","googleapiclient","msal","pypdf","openpyxl",
+    ]
+    pkgs = [f"--include-package={p}" for p in all_pkgs if _ilu.find_spec(p)]
     # Note: do NOT manually include vcruntime140.dll / msvcp140.dll —
     # Nuitka with MSVC bundles the VC++ runtime automatically and will
     # raise a FATAL conflict error if we add them again.

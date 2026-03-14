@@ -744,7 +744,7 @@ def _do_virus_scan(scan_dir: str) -> bool:
             return False
         else:
             # Any other non-zero exit (e.g. scan engine error, timeout) — warn, don't block
-            _append(f"[WARN] Defender scan returned exit code {result.returncode}.")
+            _append(f"[WARN] Defender scan finished with unexpected status ({result.returncode}).")
             _append("[WARN] Could not confirm source is clean — verify manually before release.")
             return True
 
