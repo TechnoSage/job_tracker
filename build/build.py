@@ -367,14 +367,14 @@ def run_pyinstaller(src_root: Path) -> Path:
     entry = src_root / "run.py"
     sep   = ";" if sys.platform == "win32" else ":"
 
-    # ── Icon ─────────────────────────────────────────────────────────────────
+    # ── App icon (embedded in the compiled exe) ───────────────────────────────
     icon_args: list[str] = []
-    if C.ICON_FILE:
-        ico = Path(C.ICON_FILE) if Path(C.ICON_FILE).is_absolute() else PROJECT_ROOT / C.ICON_FILE
+    if C.APP_ICON_FILE:
+        ico = Path(C.APP_ICON_FILE) if Path(C.APP_ICON_FILE).is_absolute() else PROJECT_ROOT / C.APP_ICON_FILE
         if ico.is_file():
             icon_args = ["--icon", str(ico)]
         else:
-            print(f"[WARN] Icon file not found: {ico}")
+            print(f"[WARN] App icon file not found: {ico}")
 
     # ── Hidden imports ────────────────────────────────────────────────────────
     # Modules loaded dynamically at runtime that PyInstaller can't auto-detect.
@@ -894,8 +894,8 @@ def run_nuitka() -> Path:
     import importlib.util as _ilu
     nuitka_out = PROJECT_ROOT / "build_output" / "nuitka"
     nuitka_out.mkdir(parents=True, exist_ok=True)
-    icon_args = ([f"--windows-icon-from-ico={Path(C.ICON_FILE)}"]
-                 if C.ICON_FILE and Path(C.ICON_FILE).is_file() else [])
+    icon_args = ([f"--windows-icon-from-ico={Path(C.APP_ICON_FILE)}"]
+                 if C.APP_ICON_FILE and Path(C.APP_ICON_FILE).is_file() else [])
     # All packages are gated by find_spec so builds against projects that
     # don't install the full job_tracker dependency set (e.g. build_dashboard)
     # don't fail with "module not found" from Nuitka.

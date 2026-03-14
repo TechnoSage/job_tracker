@@ -1546,10 +1546,23 @@ html[data-bs-theme="light"] #log {
         <input id="DEFAULT_INSTALL_DIR" class="form-control form-control-sm">
       </div>
       <div class="col-6">
-        <label class="form-label mb-1 text-muted small" for="ICON_FILE">Icon File <span class="text-secondary">(.ico, optional)</span></label>
+        <label class="form-label mb-1 text-muted small" for="ICON_FILE">
+          Installer Icon <span class="text-secondary">(.ico) — icon shown on the setup .exe</span>
+        </label>
         <div class="input-group input-group-sm">
-          <input id="ICON_FILE" class="form-control form-control-sm" placeholder="icons/app.ico">
-          <button class="btn btn-outline-secondary" type="button" onclick="browseIconFile()" title="Browse for icon…">
+          <input id="ICON_FILE" class="form-control form-control-sm" placeholder="icons/installer.ico">
+          <button class="btn btn-outline-secondary" type="button" onclick="browseIconFile()" title="Browse for installer icon…">
+            <i class="bi bi-image"></i>
+          </button>
+        </div>
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-1 text-muted small" for="APP_ICON_FILE">
+          App Icon <span class="text-secondary">(.ico) — icon embedded in the compiled .exe; leave blank to use the app's own icon</span>
+        </label>
+        <div class="input-group input-group-sm">
+          <input id="APP_ICON_FILE" class="form-control form-control-sm" placeholder="icons/app.ico">
+          <button class="btn btn-outline-secondary" type="button" onclick="browseAppIconFile()" title="Browse for app icon…">
             <i class="bi bi-image"></i>
           </button>
         </div>
@@ -2066,7 +2079,7 @@ function applySettings(s) {
   var textFields = [
     'APP_NAME', 'APP_DESCRIPTION', 'APP_PUBLISHER',
     'APP_URL', 'APP_SUPPORT_URL', 'APP_EXE_NAME', 'OUTPUT_DIR',
-    'DEFAULT_INSTALL_DIR', 'ICON_FILE', 'LICENSE_FILE',
+    'DEFAULT_INSTALL_DIR', 'ICON_FILE', 'APP_ICON_FILE', 'LICENSE_FILE',
     'SIGN_PFX', 'SIGN_PFX_PASSWORD', 'SIGN_TIMESTAMP_URL'
   ];
   textFields.forEach(function (k) {
@@ -2191,6 +2204,7 @@ function collectSettings() {
     OUTPUT_DIR:          document.getElementById('OUTPUT_DIR').value,
     DEFAULT_INSTALL_DIR: document.getElementById('DEFAULT_INSTALL_DIR').value,
     ICON_FILE:           document.getElementById('ICON_FILE').value,
+    APP_ICON_FILE:       document.getElementById('APP_ICON_FILE').value,
     README_FILE:         (document.getElementById('README_FILE') || {value: ''}).value.trim(),
     LICENSE_FILE:        document.getElementById('LICENSE_FILE').value,
     REQUIRE_ADMIN:       document.getElementById('REQUIRE_ADMIN').checked,
@@ -3616,6 +3630,25 @@ async function browseIconFile() {
     if (d.ok && d.path) {
       document.getElementById('ICON_FILE').value = d.path;
       saveSetting('ICON_FILE', d.path);
+    } else if (!d.ok && d.error) {
+      showToast('File picker error: ' + d.error, 'danger');
+    }
+  } catch (e) {
+    showToast('Could not open file picker.', 'danger');
+  }
+}
+
+async function browseAppIconFile() {
+  var current = document.getElementById('APP_ICON_FILE').value;
+  try {
+    var r = await fetch('/api/gh/browse-file', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ filter_desc: 'Icon Files', filter_ext: '*.ico', initial: current || '' })
+    });
+    var d = await r.json();
+    if (d.ok && d.path) {
+      document.getElementById('APP_ICON_FILE').value = d.path;
+      saveSetting('APP_ICON_FILE', d.path);
     } else if (!d.ok && d.error) {
       showToast('File picker error: ' + d.error, 'danger');
     }

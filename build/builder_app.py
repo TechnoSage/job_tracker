@@ -444,6 +444,7 @@ _DEFAULTS: dict = {
     "START_MENU_ICON":     True,
     "ADD_TO_STARTUP":      False,
     "ICON_FILE":           "",
+    "APP_ICON_FILE":       "",
     "LICENSE_FILE":        "",
     "USE_PYARMOR":         False,
     "USE_NUITKA":          False,
