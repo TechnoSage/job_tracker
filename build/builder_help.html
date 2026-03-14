@@ -162,6 +162,12 @@ html { scroll-behavior: smooth; }
   <div class="toc-section">Maintenance</div>
   <a class="nav-link" href="#local-backup">Local Backup</a>
   <a class="nav-link" href="#build-daemon">Build Dash Daemon</a>
+
+  <div class="toc-section">History &amp; Changelog</div>
+  <a class="nav-link" href="#build-history">Build History</a>
+  <a class="nav-link" href="#clean-outputs">Clean Outputs</a>
+  <a class="nav-link" href="#changelog">Change Log</a>
+  <a class="nav-link" href="#self-compile">Self-Compile</a>
 </nav>
 
 <!-- ── Main content ────────────────────────────────────────────────────────── -->
@@ -1477,6 +1483,214 @@ html { scroll-behavior: smooth; }
     Add the compiled daemon <code>.exe</code> to Windows Task Scheduler or the Startup folder
     if you want backups to resume automatically after a system reboot, without needing to open
     the Build Dashboard first.
+  </div>
+
+  <div style="height:3rem"></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="build-history">
+  <h2><i class="bi bi-clock-history me-2 text-warning"></i>Build History</h2>
+  <p>
+    Every completed build is automatically recorded in <code>build_history.json</code> (stored in
+    the parent folder of your Output Directory, so it survives a Clean Outputs operation). The
+    <strong>Build History</strong> card displays the last 50 builds in a dropdown.
+  </p>
+
+  <h4>Dropdown format</h4>
+  <p>Each entry shows: <code>✓/✗ &nbsp; v{version} &nbsp; {Type} · {Mode} · {date} — {description}</code></p>
+  <ul>
+    <li><code>✓</code> = build succeeded &nbsp;|&nbsp; <code>✗</code> = build failed</li>
+    <li><strong>Type</strong> — Main, Incremental, or HOTFIX (see Build Type below)</li>
+    <li><strong>Mode</strong> — Full, Bundle, or Installer</li>
+  </ul>
+
+  <h4>Selecting a build</h4>
+  <p>
+    Click any entry in the dropdown. A detail strip appears below showing the version badge, type
+    badge, mode, git commit hash, and description. The <strong>Rebuild</strong> button activates.
+  </p>
+
+  <h4>Rebuilding a past version</h4>
+  <p>
+    Click <strong>Rebuild</strong>. The server restores the full settings snapshot from that history
+    entry (including version number, locked to <em>keep</em> so it does not auto-increment), then
+    starts the build in the original mode. A "Rebuild of v…" note is pre-filled in the Build Notes
+    field. The version in <code>build_settings.json</code> is updated so the restored build matches
+    the historical record exactly.
+  </p>
+
+  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
+    Build history is per-output-folder. If you change the Output Directory between projects the
+    history file for each project lives alongside its own output directory.
+  </div>
+
+  <h4>Build Type &amp; Build Notes</h4>
+  <p>
+    Above the build buttons there are two new fields:
+  </p>
+  <ul>
+    <li>
+      <strong>Build Type</strong> — tag the build as <em>Main</em>, <em>Incremental</em>, or
+      <em>HOTFIX</em>. This tag appears in the history dropdown and in build log headers.
+    </li>
+    <li>
+      <strong>Build Notes / Description</strong> — a short free-text description attached to the
+      build record. Use it to note what changed, why the build was triggered, or any caveats.
+    </li>
+  </ul>
+
+  <div style="height:3rem"></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="clean-outputs">
+  <h2><i class="bi bi-trash3 me-2 text-warning"></i>Clean Outputs</h2>
+  <p>
+    The <strong>Clean Outputs</strong> button opens a modal that lets you choose exactly what to
+    remove. <strong>Build logs are never deleted</strong> by Clean Outputs — use the separate
+    <strong>Clean Logs</strong> button for that.
+  </p>
+
+  <h4>Clean modes</h4>
+  <table class="table table-sm table-dark table-bordered" style="font-size:.85rem;">
+    <thead><tr><th>Mode</th><th>What is removed</th><th>What is kept</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Everything</strong></td>
+        <td>Compile temp dirs (<code>build_output/</code>, <code>obf_src/</code>) + output folder contents + Bundle Only</td>
+        <td>Log/ subfolder</td>
+      </tr>
+      <tr>
+        <td><strong>Compile Temp Only</strong></td>
+        <td><code>build_output/</code>, <code>obf_src/</code> inside the project, and the <code>Bundle Only/</code> folder in the output directory</td>
+        <td>Installer .exe, output folder files, logs</td>
+      </tr>
+      <tr>
+        <td><strong>Output Folder Only</strong></td>
+        <td>All files in the output directory except <code>Log/</code> (installer, Bundle Only, etc.)</td>
+        <td>Compile temp dirs, logs</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Clean Logs</h4>
+  <p>
+    The <strong>Clean Logs</strong> button (next to Clean Outputs) deletes every file inside the
+    <code>Log/</code> subfolder of the output directory. A toast notification confirms how many
+    files were removed.
+  </p>
+
+  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
+    All directory removal uses PowerShell <code>Remove-Item&nbsp;-Recurse&nbsp;-Force</code> (path
+    passed via environment variable) to reliably handle read-only files, locked handles, and
+    Windows attributes that <code>shutil.rmtree</code> cannot always remove.
+  </div>
+
+  <div style="height:3rem"></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="changelog">
+  <h2><i class="bi bi-journal-text me-2 text-info"></i>Change Log</h2>
+  <p>
+    The <strong>Change Log</strong> card (below Build History) manages a per-project
+    <code>CHANGELOG.json</code> stored in the project's <code>GIT_REPO_DIR</code>. Each project
+    compiled by the Build Dashboard has its own independent changelog.
+  </p>
+
+  <h4>Trigger</h4>
+  <p>
+    Select which version-number segment must change for a new changelog entry to be created and
+    for draft items to be promoted:
+  </p>
+  <ul>
+    <li><strong>Major changes (x.0.0)</strong> — only fires when the major digit increments (e.g. 1.x.x → 2.0.0)</li>
+    <li><strong>Minor changes (x.x.0)</strong> — fires when major or minor increments (e.g. 1.5.x → 1.6.0) <em>(default)</em></li>
+    <li><strong>Every build (x.x.x)</strong> — fires on any version bump, including patch</li>
+    <li><strong>Never</strong> — version entries are created empty; you populate them manually</li>
+  </ul>
+
+  <h4>Draft — Upcoming Changes</h4>
+  <p>
+    Type your upcoming changes into the <strong>Draft</strong> textarea, one per line (with or
+    without a leading <code>-</code>). The draft auto-saves when you click away. At the next build
+    where the trigger fires, all draft items are moved into the new version's entry and the draft
+    is cleared. If the trigger does not fire, the draft items are preserved for the next release.
+  </p>
+
+  <h4>What's New preview</h4>
+  <p>
+    The right-hand pane renders the changelog <strong>exactly as users will see it</strong> in the
+    compiled application's "What's New" dialog — Bootstrap 5 dark theme, version badge, formatted
+    date, and bulleted list. Draft items appear at the top with an "UPCOMING" badge so you can
+    preview the next release before it ships.
+  </p>
+
+  <h4>Edit in Notepad++</h4>
+  <p>
+    Click <strong>Edit in Notepad++</strong> to export <code>CHANGELOG.json</code> →
+    <code>CHANGELOG.md</code> (human-readable Markdown) and open it in Notepad++ (falls back to
+    Windows Notepad if Notepad++ is not installed). Edit the file, save it, then click
+    <strong>Reload</strong> to parse the Markdown back into <code>CHANGELOG.json</code>.
+  </p>
+  <p>The editable Markdown format:</p>
+  <pre style="font-size:.78rem;background:#111;padding:.75rem;border-radius:.4rem;">## DRAFT — Upcoming Changes
+- My first upcoming change
+- Another upcoming change
+
+## v1.6.0 — 2026-03-15
+- Fixed crash on startup
+- Added dark mode
+
+## v1.5.0 — 2026-03-01
+- Initial feature set</pre>
+
+  <h4>Build Dashboard What's New</h4>
+  <p>
+    The <strong>What's New</strong> button in the top toolbar shows the Build Dashboard's own
+    changelog (stored in <code>build/bd_changelog.json</code>), separate from any project changelog.
+    This is the version history of the Build Dashboard application itself.
+  </p>
+
+  <div style="height:3rem"></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="self-compile">
+  <h2><i class="bi bi-recycle me-2 text-success"></i>Compiling the Build Dashboard Itself</h2>
+  <p>
+    Yes — the Build Dashboard can compile itself or any other Python application using
+    <strong>Project Profiles</strong>. To set up a self-compile profile:
+  </p>
+  <ol>
+    <li>Open the Build Dashboard at <code>http://127.0.0.1:5001</code>.</li>
+    <li>Click <strong>New App</strong> to clear the App Identity fields.</li>
+    <li>Fill in the App Info fields for the Build Dashboard:
+      <ul>
+        <li><strong>App Name:</strong> <code>Build Dashboard</code></li>
+        <li><strong>App EXE Name:</strong> <code>BuildDash</code></li>
+        <li><strong>Working Tree Path (GIT_REPO_DIR):</strong> path to the <code>build_dashboard</code> repo directory</li>
+        <li><strong>Output Dir:</strong> where you want the compiled installer to land</li>
+        <li><strong>Entry point:</strong> the <code>run.py</code> inside the build_dashboard directory</li>
+      </ul>
+    </li>
+    <li>Click <strong>Save Project</strong> to save this as the "Build Dashboard" profile.</li>
+    <li>You can now switch profiles using the dropdown — compile Job Tracker or Build Dashboard
+        (or any other app) by selecting the appropriate profile and clicking Full Build.</li>
+  </ol>
+
+  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
+    Each project profile stores its own <code>GIT_REPO_DIR</code>, <code>OUTPUT_DIR</code>,
+    version settings, and git branches independently. Switching profiles is non-destructive — the
+    previous profile is saved automatically when you load a new one.
+  </div>
+
+  <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
+    The Build Dashboard requires <strong>Flask</strong>, <strong>Nuitka</strong> (or PyInstaller),
+    and <strong>Inno Setup</strong> to be installed before compiling. These are the same
+    dependencies used for any other project. Run <em>Dep Check</em> in the Build Dashboard to
+    verify all prerequisites are present before the first compile.
   </div>
 
   <div style="height:3rem"></div>

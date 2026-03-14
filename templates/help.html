@@ -194,6 +194,7 @@ html { scroll-behavior: smooth; }
   <a class="nav-link" href="#daemon">Scheduler Daemon</a>
   <a class="nav-link" href="#hints">Hints System</a>
   <a class="nav-link" href="#tips">Tips &amp; Tricks</a>
+  <a class="nav-link" href="#changelog">What's New / Change Log</a>
 </nav>
 
 <!-- ── Main content ────────────────────────────────────────────────────────── -->
@@ -1886,6 +1887,107 @@ html { scroll-behavior: smooth; }
   <div class="tip-box mt-3"><i class="bi bi-lightbulb me-2"></i>
     <strong>Daily workflow:</strong> Open the Dashboard each morning, review new matches in the Recent Matches table, check Follow-ups Due, confirm any email reviews, then spend 20–30 minutes applying to your top matches.
   </div>
+
+  <div style="height:3rem"></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="changelog">
+  <h2><i class="bi bi-journal-text me-2 text-info"></i>What's New / Change Log</h2>
+  <p>
+    Job Tracker includes a built-in <strong>What's New</strong> dialog that displays the application
+    changelog to users. The changelog data is read from <code>CHANGELOG.json</code> (stored in the
+    project root) and is bundled into the compiled installer so users always see accurate release notes.
+  </p>
+
+  <h4>Viewing the changelog</h4>
+  <p>
+    The Build Dashboard manages the project's <code>CHANGELOG.json</code> automatically. Each time
+    a build is compiled with a version number that crosses the configured <strong>trigger boundary</strong>
+    (Major / Minor / Patch), all <em>draft</em> change notes are promoted into that version's entry
+    and the draft is cleared for the next release.
+  </p>
+
+  <h4>Change Log card — draft area</h4>
+  <p>
+    In the Build Dashboard, open the <strong>Change Log</strong> card (below Build History). The
+    left pane contains a <strong>Draft</strong> textarea — type your upcoming changes here, one per
+    line. The draft auto-saves. These pending items will be attached to the next version entry when
+    the trigger fires.
+  </p>
+
+  <h4>What's New preview</h4>
+  <p>
+    The right-hand pane of the Change Log card renders the changelog <strong>exactly</strong> as
+    users will see it in the application — Bootstrap 5 dark theme, version badge, formatted date,
+    and bulleted list. Draft items appear at the top with an "UPCOMING" label so you can preview
+    the next release before it ships.
+  </p>
+
+  <!-- Mockup: in-app What's New panel -->
+  <div style="margin:1.2rem 0;max-width:520px;">
+    <div style="background:#1c1f24;border:1px solid rgba(255,255,255,.065);border-radius:.9rem;overflow:hidden;font-size:.83rem;">
+      <div style="background:#151719;border-bottom:1px solid rgba(255,255,255,.07);padding:.45rem .85rem;display:flex;align-items:center;gap:.5rem;">
+        <i class="bi bi-journal-bookmark-fill" style="color:#0d6efd;"></i>
+        <span style="font-weight:600;color:#e9ecef;">What's New</span>
+      </div>
+      <div style="padding:.85rem 1rem;">
+        <!-- Draft -->
+        <div class="mb-3 p-2 rounded-2" style="background:rgba(255,193,7,.07);border-left:3px solid #ffc107;">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge text-bg-warning" style="font-size:.68rem;">UPCOMING</span>
+            <small class="text-muted">draft — promoted on next triggered build</small>
+          </div>
+          <ul class="mb-0 ps-3" style="color:#ced4da;">
+            <li class="mb-1">Improved dashboard loading speed</li>
+            <li class="mb-1">Added calendar export for follow-ups</li>
+          </ul>
+        </div>
+        <hr class="border-secondary my-2">
+        <!-- Released entry -->
+        <div class="mb-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge text-bg-primary" style="font-size:.75rem;">v1.1.0</span>
+            <small class="text-muted" style="font-size:.72rem;">March 13, 2026</small>
+          </div>
+          <ul class="mb-0 ps-3" style="color:#dee2e6;">
+            <li class="mb-1">Auto-shutdown when browser tab is closed</li>
+            <li class="mb-1">Sidebar navigation in minimized icon-only mode with speech-bubble tooltips</li>
+            <li class="mb-1">Neon-green nav icons; briefcase brand logo in topbar</li>
+          </ul>
+        </div>
+        <hr class="border-secondary my-2">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge text-bg-primary" style="font-size:.75rem;">v1.0.0</span>
+            <small class="text-muted" style="font-size:.72rem;">February 24, 2026</small>
+          </div>
+          <ul class="mb-0 ps-3" style="color:#dee2e6;">
+            <li class="mb-1">Initial release</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="text-muted mt-1" style="font-size:.72rem;">
+      Preview panel in the Build Dashboard — identical to the in-app display.
+      Draft items shown with gold "UPCOMING" banner; released entries in version order.
+    </p>
+  </div>
+
+  <h4>Editing the changelog in Notepad++</h4>
+  <p>
+    Click <strong>Edit in Notepad++</strong> in the Build Dashboard Change Log card to export
+    <code>CHANGELOG.json</code> as a human-readable <code>CHANGELOG.md</code> file and open it
+    in Notepad++. After editing and saving, click <strong>Reload</strong> to import your changes back.
+  </p>
+
+  <h4>Changelog trigger</h4>
+  <ul>
+    <li><strong>Major (x.0.0)</strong> — entry created only on major version bumps</li>
+    <li><strong>Minor (x.x.0)</strong> — entry created on minor or major bumps <em>(recommended)</em></li>
+    <li><strong>Every build (x.x.x)</strong> — entry created on any version change</li>
+    <li><strong>Never</strong> — entries created empty; you fill them manually</li>
+  </ul>
 
   <div style="height:3rem"></div>
 </section>
