@@ -260,19 +260,33 @@ html { scroll-behavior: smooth; }
 
   <h4>Actions</h4>
   <ul>
-    <li><strong>Save</strong> — Writes the current configuration to <code>build_settings.json</code> under the profile name you type in the prompt. If a profile with that name already exists it is overwritten.</li>
-    <li><strong>Load</strong> — Restores all fields from the selected profile. Any unsaved changes to the current configuration are discarded.</li>
-    <li><strong>Delete</strong> — Permanently removes the selected profile from <code>build_settings.json</code>. A confirmation dialog is shown first.</li>
+    <li><strong>Save</strong> — Saves the current configuration under the App Name as the profile name. If a profile with that name already exists it is overwritten.</li>
+    <li><strong>Load</strong> — Restores all fields from the selected profile, including <code>GIT_REPO_DIR</code>, version settings, and git branches. The Change Log and Build History panels refresh automatically to show data for the loaded project.</li>
+    <li><strong>Delete</strong> — Permanently removes the selected profile. A confirmation dialog is shown first.</li>
   </ul>
 
-  <div class="key-term"><i class="bi bi-info-circle me-2"></i>
-    <strong>build_settings.json</strong> is machine-specific and is excluded from Git (<code>.gitignore</code>).
-    It lives inside the <code>build/</code> folder and is never committed to the repository.
-  </div>
+  <h4>Storage locations</h4>
+  <table class="table table-sm table-bordered small">
+    <thead><tr><th>File</th><th>Path</th><th>Contents</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>build_projects.json</code></td>
+        <td><code>build/build_projects.json</code></td>
+        <td>All saved profiles (name → settings snapshot). Machine-specific, gitignored.</td>
+      </tr>
+      <tr>
+        <td><code>build_settings.json</code></td>
+        <td><code>build/build_settings.json</code></td>
+        <td>The currently active settings (mirrors the loaded profile). Machine-specific, gitignored.</td>
+      </tr>
+    </tbody>
+  </table>
 
   <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
-    Create one profile per project you maintain with the Build Dashboard. Name them descriptively,
-    e.g. <em>job_tracker-v2.1</em> or <em>myapp-staging</em>.
+    Create one profile per project you maintain with the Build Dashboard — e.g.
+    <em>Job Tracker</em>, <em>Build Dashboard</em>, <em>My Other App</em>.
+    Each profile stores its own <code>GIT_REPO_DIR</code>, output directory, version,
+    protection mode, and git branch configuration independently.
   </div>
 </section>
 
@@ -1658,39 +1672,81 @@ html { scroll-behavior: smooth; }
 
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
 <section id="self-compile">
-  <h2><i class="bi bi-recycle me-2 text-success"></i>Compiling the Build Dashboard Itself</h2>
+  <h2><i class="bi bi-recycle me-2 text-success"></i>Compiling Any Project (Including Build Dashboard)</h2>
   <p>
-    Yes — the Build Dashboard can compile itself or any other Python application using
-    <strong>Project Profiles</strong>. To set up a self-compile profile:
+    The Build Dashboard uses a shared, generic build pipeline (<code>build/build.py</code>) that can
+    compile <em>any</em> Python project — not just Job Tracker. Each project is set up as a
+    <strong>Project Profile</strong>. The pipeline automatically detects the target project's
+    root directory, entry point, and data files from the profile settings.
   </p>
+
+  <h4>How it works</h4>
+  <p>
+    When you click <strong>Full Build</strong>, the pipeline receives the active profile's
+    <code>GIT_REPO_DIR</code> as <code>--project-dir</code>. It then looks for:
+  </p>
+  <ul>
+    <li><code>{project_dir}/run.py</code> — entry point passed to PyInstaller</li>
+    <li><code>{project_dir}/requirements.txt</code> — dependencies to install before bundling</li>
+    <li><code>{project_dir}/templates/</code> and <code>{project_dir}/static/</code> — bundled automatically if they exist</li>
+    <li><code>{project_dir}/VERSION</code> — read and updated on each version-bumped build</li>
+    <li><strong>EXTRA_DATA</strong> setting — additional files to bundle (e.g. <code>dashboard.html</code> for projects that serve HTML from the project root)</li>
+  </ul>
+
+  <h4>Pre-configured profiles</h4>
+  <p>Two profiles ship pre-configured in <code>build/build_projects.json</code>:</p>
+  <table class="table table-sm table-bordered small">
+    <thead><tr><th>Profile</th><th>GIT_REPO_DIR</th><th>Exe</th><th>Port</th><th>Protection</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Job Tracker</strong></td>
+        <td><code>…/job_tracker/</code></td>
+        <td><code>JobTracker.exe</code></td>
+        <td>5000</td>
+        <td>Nuitka</td>
+      </tr>
+      <tr>
+        <td><strong>Build Dashboard</strong></td>
+        <td><code>…/build_dashboard/</code></td>
+        <td><code>BuildDash.exe</code></td>
+        <td>5001</td>
+        <td>PyInstaller</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Compiling the Build Dashboard</h4>
   <ol>
     <li>Open the Build Dashboard at <code>http://127.0.0.1:5001</code>.</li>
-    <li>Click <strong>New App</strong> to clear the App Identity fields.</li>
-    <li>Fill in the App Info fields for the Build Dashboard:
+    <li>In the <strong>Project Profile</strong> bar, select <strong>Build Dashboard</strong> from the dropdown and click <strong>Load</strong>.</li>
+    <li>Verify the <strong>Working Tree Path</strong> resolves to your local <code>build_dashboard/</code> directory.</li>
+    <li>Click <strong>Full Build</strong>. The pipeline will:
       <ul>
-        <li><strong>App Name:</strong> <code>Build Dashboard</code></li>
-        <li><strong>App EXE Name:</strong> <code>BuildDash</code></li>
-        <li><strong>Working Tree Path (GIT_REPO_DIR):</strong> path to the <code>build_dashboard</code> repo directory</li>
-        <li><strong>Output Dir:</strong> where you want the compiled installer to land</li>
-        <li><strong>Entry point:</strong> the <code>run.py</code> inside the build_dashboard directory</li>
+        <li>Install <code>requirements.txt</code> (Flask)</li>
+        <li>Bundle <code>run.py</code> + <code>dashboard.html</code> via PyInstaller</li>
+        <li>Produce <code>BuildDash_Setup_{version}.exe</code> in the configured output directory</li>
       </ul>
     </li>
-    <li>Click <strong>Save Project</strong> to save this as the "Build Dashboard" profile.</li>
-    <li>You can now switch profiles using the dropdown — compile Job Tracker or Build Dashboard
-        (or any other app) by selecting the appropriate profile and clicking Full Build.</li>
+  </ol>
+
+  <h4>Adding a new project</h4>
+  <ol>
+    <li>Ensure the target project has a <code>run.py</code> entry point and a <code>requirements.txt</code>.</li>
+    <li>Add a <code>VERSION</code> file with the initial version (e.g. <code>1.0.0</code>).</li>
+    <li>Load the Build Dashboard, click <strong>New App</strong>, fill in App Info and point <code>GIT_REPO_DIR</code> at the project root.</li>
+    <li>If the project serves HTML/assets from the root (no <code>templates/</code> subdir), add entries to <strong>EXTRA_DATA</strong> in the profile (e.g. <code>[["dashboard.html", "."]]</code>).</li>
+    <li>Click <strong>Save Project</strong> — the profile is saved and ready to compile.</li>
   </ol>
 
   <div class="key-term"><i class="bi bi-info-circle me-2"></i>
-    Each project profile stores its own <code>GIT_REPO_DIR</code>, <code>OUTPUT_DIR</code>,
-    version settings, and git branches independently. Switching profiles is non-destructive — the
-    previous profile is saved automatically when you load a new one.
+    <code>build_projects.json</code> is machine-specific and gitignored. It is not committed to any
+    repository. Each developer maintains their own local copy with paths appropriate for their machine.
   </div>
 
   <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
-    The Build Dashboard requires <strong>Flask</strong>, <strong>Nuitka</strong> (or PyInstaller),
-    and <strong>Inno Setup</strong> to be installed before compiling. These are the same
-    dependencies used for any other project. Run <em>Dep Check</em> in the Build Dashboard to
-    verify all prerequisites are present before the first compile.
+    The Build Dashboard requires <strong>Flask</strong>, <strong>PyInstaller</strong> (or Nuitka),
+    and <strong>Inno Setup</strong> to be installed before compiling any project.
+    Run <em>Dep Check</em> in the Build Dashboard to verify all prerequisites.
   </div>
 
   <div style="height:3rem"></div>

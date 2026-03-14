@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.3.0",
+    "date": "2026-03-13",
+    "changes": [
+      "Multi-project build pipeline — any Python project compiles via a Project Profile; build.py receives --project-dir so one shared pipeline handles all apps",
+      "EXTRA_DATA profile setting — bundle arbitrary project files (e.g. dashboard.html) for projects without a templates/ subdirectory",
+      "Conditional templates/static bundling — projects without those directories compile cleanly",
+      "Build Dashboard Project Profile — pre-configured profile ships ready to use; select it and click Full Build to produce BuildDash.exe",
+      "Profile load refreshes Change Log and Build History — switching profiles immediately shows the correct data for the loaded project",
+      "Help docs updated — Project Profiles section corrected (build_projects.json vs build_settings.json), Self-Compile section rewritten"
+    ]
+  },
+  {
     "version": "1.2.0",
     "date": "2026-03-13",
     "changes": [
