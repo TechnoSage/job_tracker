@@ -59,6 +59,13 @@ _DEFAULTS: dict = {
     # False / True   → Nuitka (Python → C → native machine code)
     "USE_PYARMOR": False,
     "USE_NUITKA":  False,
+
+    # Code signing — sign the compiled app exe and the installer with signtool.
+    # SIGN_PFX: path to a PKCS#12 (.pfx) code-signing certificate.
+    # Leave blank to skip signing (build continues unsigned).
+    "SIGN_PFX":           "",
+    "SIGN_PFX_PASSWORD":  "",
+    "SIGN_TIMESTAMP_URL": "http://timestamp.digicert.com",
 }
 
 # ── Load settings ─────────────────────────────────────────────────────────────
@@ -98,6 +105,10 @@ README_FILE         = _cfg["README_FILE"]  or None
 
 USE_PYARMOR         = bool(_cfg["USE_PYARMOR"])
 USE_NUITKA          = bool(_cfg["USE_NUITKA"])
+
+SIGN_PFX            = _cfg.get("SIGN_PFX", "")           or None
+SIGN_PFX_PASSWORD   = _cfg.get("SIGN_PFX_PASSWORD", "")  or ""
+SIGN_TIMESTAMP_URL  = _cfg.get("SIGN_TIMESTAMP_URL", "http://timestamp.digicert.com")
 
 SUPPORT_EMAIL       = _cfg.get("SUPPORT_EMAIL", "")
 

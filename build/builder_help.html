@@ -310,7 +310,7 @@ html { scroll-behavior: smooth; }
   <ul>
     <li><strong>Build Configuration</strong> <span class="badge bg-primary" style="font-size:.65rem;">default</span> — App Info, Code Protection, License, README, Build History, Pipeline Sounds, Build Actions, CI/CD Pipeline, Build Log, Test Pipeline.</li>
     <li><strong>Git</strong> — Working tree path, GitHub remote URL &amp; validation, commit/push, branch merge, Pull Requests.</li>
-    <li><strong>Installer Options</strong> — Install directory, icon, checkboxes for admin/shortcut/README/LICENSE bundling.</li>
+    <li><strong>Installer Options</strong> — Install directory, icon, checkboxes for admin/shortcut/README/LICENSE bundling, and the Code Signing card for configuring a PFX certificate to sign the compiled exe and installer.</li>
     <li><strong>Local Backup</strong> — Robocopy backup source/destination, schedule selector, Build Dash Daemon (tray exe).</li>
     <li><strong>Change Log</strong> — Per-project changelog editor, AI-draft, preview panel.</li>
   </ul>
@@ -437,8 +437,8 @@ html { scroll-behavior: smooth; }
       </ul>
       All three directories are created automatically if they do not already exist. Click the <i class="bi bi-folder2-open"></i> button to open the folder in Windows Explorer.
     </li>
-    <li><strong>Install Dir</strong> — Default installation path suggested to the end user, e.g. <code>{pf}\Job Tracker</code>. Inno Setup macros like <code>{pf}</code> (Program Files) are supported.</li>
-    <li><strong>Require Admin</strong> — Toggle. When enabled, the installer requests UAC elevation. Required if you use <code>{pf}</code> or write to HKLM registry keys.</li>
+    <li><strong>Install Dir</strong> — Default installation path suggested to the end user, e.g. <code>{autopf}\My App</code>. Inno Setup macros are supported: <code>{autopf}</code> resolves to <em>Program Files</em> for admin installs and to <em>%LOCALAPPDATA%\Programs</em> for user-level installs.</li>
+    <li><strong>Require Admin</strong> — When <em>unchecked</em> (the default), the installer runs without requesting UAC elevation — the app installs into the user's profile (<code>%LOCALAPPDATA%\Programs</code>) with no admin prompt. When <em>checked</em>, a UAC dialog appears and the app installs to <em>Program Files</em>. Either way the end user is offered an "Install for all users / just me" choice during setup. Registry entries are always written to the appropriate hive automatically (<code>HKLM</code> for admin, <code>HKCU</code> for user-level).</li>
     <li><strong>Desktop Shortcut</strong> — Adds a shortcut to the user's Desktop after installation.</li>
     <li><strong>Start Menu Shortcut</strong> — Creates a Start Menu entry under <em>Publisher\App Name</em>.</li>
     <li><strong>Startup Shortcut</strong> — Adds a shortcut to the Windows Startup folder so the app launches on login.</li>
@@ -450,6 +450,101 @@ html { scroll-behavior: smooth; }
     <strong>Icon tip:</strong> Convert a PNG to ICO using a free tool like <em>IcoFX</em> or the
     online converter at <a href="https://convertio.co/png-ico/" target="_blank">convertio.co</a>.
     A multi-resolution ICO looks crisp at every Windows DPI setting.
+  </div>
+
+  <h3 id="code-signing"><i class="bi bi-patch-check me-2 text-secondary"></i>Code Signing</h3>
+  <p>
+    The <strong>Code Signing</strong> card (below Installer Options) configures automatic signing
+    of both the compiled application executable and the installer. Signing with a trusted certificate
+    tells Windows who published the software — suppressing SmartScreen warnings and replacing
+    "Unknown Publisher" in UAC prompts with your actual company name.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Code Signing card</div>
+    <div class="mockup-card" style="font-size:.8rem">
+      <div class="fw-bold mb-2" style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:#adb5bd;">
+        <i class="bi bi-patch-check me-1"></i>Code Signing
+      </div>
+      <div class="mb-2">
+        <div class="text-muted mb-1" style="font-size:.7rem;">Certificate File (.pfx / PKCS#12)</div>
+        <div class="d-flex gap-2">
+          <div class="border rounded px-2 py-1 flex-grow-1" style="border-color:rgba(255,255,255,.1)!important;font-family:monospace;font-size:.7rem;">C:\certs\MyCompany.pfx</div>
+          <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-lock"></i></button>
+        </div>
+      </div>
+      <div class="row g-2">
+        <div class="col-6">
+          <div class="text-muted mb-1" style="font-size:.7rem;">Certificate Password</div>
+          <div class="border rounded px-2 py-1" style="border-color:rgba(255,255,255,.1)!important;letter-spacing:.25em;font-size:.7rem;">••••••••</div>
+        </div>
+        <div class="col-6">
+          <div class="text-muted mb-1" style="font-size:.7rem;">Timestamp Server URL</div>
+          <div class="border rounded px-2 py-1" style="border-color:rgba(255,255,255,.1)!important;font-family:monospace;font-size:.65rem;">http://timestamp.digicert.com</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h4>Fields</h4>
+  <ul>
+    <li><strong>Certificate File</strong> — Absolute path to a PKCS#12 (<code>.pfx</code>) code-signing certificate. Click <i class="bi bi-file-earmark-lock"></i> to browse. Leave blank to build unsigned — the build continues without signing.</li>
+    <li><strong>Certificate Password</strong> — Password for the <code>.pfx</code> file, if one is set. Stored locally in <code>build_settings.json</code> (gitignored) — never committed to version control.</li>
+    <li><strong>Timestamp Server URL</strong> — RFC-3161 compliant timestamp authority. The default (<code>http://timestamp.digicert.com</code>) is free and always available. Alternatives include <code>http://timestamp.sectigo.com</code> or <code>http://timestamp.globalsign.com</code>. The timestamp ensures the signature remains valid even after the certificate expires.</li>
+  </ul>
+
+  <h4>What gets signed</h4>
+  <p>During a Full Build, the pipeline signs two files in sequence:</p>
+  <ol>
+    <li><strong>The compiled app executable</strong> — <code>&lt;ExeName&gt;.exe</code> inside the Nuitka/PyInstaller bundle, immediately after compilation.</li>
+    <li><strong>The installer</strong> — <code>&lt;ExeName&gt;_Setup_&lt;Version&gt;.exe</code> in the Output Dir, immediately after Inno Setup finishes packaging.</li>
+  </ol>
+  <p>Both are signed with SHA-256 and timestamped so the signature survives certificate expiry.</p>
+
+  <h4>Certificate types</h4>
+  <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+    <thead>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.12)">
+        <th style="padding:.4rem .6rem;text-align:left;color:#adb5bd;">Type</th>
+        <th style="padding:.4rem .6rem;text-align:left;color:#adb5bd;">UAC prompt</th>
+        <th style="padding:.4rem .6rem;text-align:left;color:#adb5bd;">SmartScreen</th>
+        <th style="padding:.4rem .6rem;text-align:left;color:#adb5bd;">Cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.06)">
+        <td style="padding:.4rem .6rem;"><strong>Unsigned</strong></td>
+        <td style="padding:.4rem .6rem;color:#dc3545;">Unknown Publisher</td>
+        <td style="padding:.4rem .6rem;color:#dc3545;">Block warning</td>
+        <td style="padding:.4rem .6rem;">Free</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.06)">
+        <td style="padding:.4rem .6rem;"><strong>Self-signed</strong></td>
+        <td style="padding:.4rem .6rem;color:#ffc107;">Unknown Publisher</td>
+        <td style="padding:.4rem .6rem;color:#dc3545;">Block warning</td>
+        <td style="padding:.4rem .6rem;">Free (makecert / New-SelfSignedCertificate)</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.06)">
+        <td style="padding:.4rem .6rem;"><strong>CA OV certificate</strong></td>
+        <td style="padding:.4rem .6rem;color:#28a745;">Your company name</td>
+        <td style="padding:.4rem .6rem;color:#ffc107;">Warning (low reputation)</td>
+        <td style="padding:.4rem .6rem;">~$70–$200 / yr</td>
+      </tr>
+      <tr>
+        <td style="padding:.4rem .6rem;"><strong>CA EV certificate</strong></td>
+        <td style="padding:.4rem .6rem;color:#28a745;">Your company name</td>
+        <td style="padding:.4rem .6rem;color:#28a745;">No warning</td>
+        <td style="padding:.4rem .6rem;">~$300–$500 / yr (hardware token required)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="tip-box" style="margin-top:1rem"><i class="bi bi-lightbulb me-2"></i>
+    For internal tools and personal projects a <strong>self-signed certificate</strong> is sufficient —
+    it still embeds the publisher name in the executable's version info (visible in File → Properties)
+    and removes the "Unknown Publisher" label for anyone who has manually trusted the cert.
+    For public distribution an <strong>EV certificate</strong> from DigiCert, Sectigo, or GlobalSign
+    provides instant SmartScreen trust.
   </div>
 
   <h3 id="new-app"><i class="bi bi-file-earmark-plus me-2 text-warning"></i>New App Button &amp; App Name Lookup</h3>

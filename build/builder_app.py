@@ -438,7 +438,7 @@ _DEFAULTS: dict = {
     "APP_EXE_NAME":        "JobTracker",
     "OUTPUT_DIR":          r"D:\Compile Playground\JobTracker",
     "DEFAULT_INSTALL_DIR": r"{autopf}\JobTracker",
-    "REQUIRE_ADMIN":       True,
+    "REQUIRE_ADMIN":       False,
     "DESKTOP_ICON":        True,
     "START_MENU_ICON":     True,
     "ADD_TO_STARTUP":      False,
@@ -465,6 +465,9 @@ _DEFAULTS: dict = {
     "SUPPORT_EMAIL":       "",
     "SOUND_SUCCESS":       "",
     "SOUND_FAIL":          "",
+    "SIGN_PFX":            "",         # path to .pfx code-signing certificate; "" = skip signing
+    "SIGN_PFX_PASSWORD":  "",         # PFX password (stored locally, never committed)
+    "SIGN_TIMESTAMP_URL": "http://timestamp.digicert.com",
     "CHANGELOG_TRIGGER":   "minor",   # "major"|"minor"|"patch"|"never"
     # Extra (source_rel, dest_in_bundle) pairs for projects that need files outside
     # templates/ and static/ — e.g. [["dashboard.html", "."], ["Voices and Sounds", "Voices and Sounds"]]
@@ -2587,27 +2590,50 @@ def create_builder_app() -> Flask:
         except Exception as ex:
             V("WARN",  f"Port-clear non-fatal: {ex}")
 
-        # Run installer silently
-        V("INSTALL", f"Running installer: /VERYSILENT /DIR={test_dir}")
+        # Run installer silently — use PowerShell Start-Process -Verb RunAs so UAC
+        # elevation is granted even when the installer requires admin privileges.
+        V("INSTALL", f"Running installer (elevated): /VERYSILENT /DIR={test_dir}")
+        V("INSTALL", "A UAC prompt will appear — please approve to continue the test.")
         install_start = _now()
         try:
-            ir = subprocess.run(
-                [str(installer), "/VERYSILENT", "/SUPPRESSMSGBOXES",
-                 f"/DIR={test_dir}", "/NORESTART"],
-                capture_output=True, text=True, timeout=120
+            # Write exit code to a temp file because Start-Process -Verb RunAs
+            # spawns an elevated child that subprocess cannot capture directly.
+            import tempfile as _tf
+            ec_file = Path(_tf.mktemp(suffix=".txt"))
+            _ec_ps  = str(ec_file).replace("\\", "\\\\")
+            _ins_ps = str(installer).replace("\\", "\\\\")
+            _dir_ps = str(test_dir).replace("\\", "\\\\")
+            ps_cmd = (
+                f"$p = Start-Process -FilePath '{_ins_ps}' "
+                f"-ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/DIR={_dir_ps}','/NORESTART' "
+                f"-Verb RunAs -Wait -PassThru; "
+                f"$ec = if ($null -eq $p.ExitCode) {{ 0 }} else {{ [int]$p.ExitCode }}; "
+                f"$ec | Out-File -FilePath '{_ec_ps}' -Encoding ascii -NoNewline"
             )
+            ir = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_cmd],
+                capture_output=True, text=True, timeout=180
+            )
+            # Read exit code written by the elevated process
+            exit_code = ir.returncode  # fallback
+            if ec_file.exists():
+                try:
+                    exit_code = int(ec_file.read_text(encoding="ascii").strip())
+                except ValueError:
+                    pass
+                ec_file.unlink(missing_ok=True)
             elapsed = (_now() - install_start).total_seconds()
-            V("INSTALL", f"Installer exited in {elapsed:.1f}s — return code: {ir.returncode}")
+            V("INSTALL", f"Installer exited in {elapsed:.1f}s — return code: {exit_code}")
             if ir.stdout.strip():
                 V("INSTALL", f"stdout: {ir.stdout.strip()[:500]}")
             if ir.stderr.strip():
                 V("INSTALL", f"stderr: {ir.stderr.strip()[:500]}")
-            if ir.returncode not in (0, 1):   # Inno Setup: 0=ok, 1=success with reboot
-                V("WARN",   f"Non-zero exit code: {ir.returncode} (may still have installed)")
+            if exit_code not in (0, 1):   # Inno Setup: 0=ok, 1=success with reboot
+                V("WARN",   f"Non-zero exit code: {exit_code} (may still have installed)")
         except subprocess.TimeoutExpired:
-            V("ERROR", "Installer timed out after 120 s.")
+            V("ERROR", "Installer timed out after 180 s.")
             _flush("FAIL — installer timeout")
-            return jsonify({"ok": False, "step": "install", "error": "Installer timed out after 120 s",
+            return jsonify({"ok": False, "step": "install", "error": "Installer timed out after 180 s",
                             "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
         except Exception as e:
             V("ERROR", f"Installer error: {e}")
