@@ -466,6 +466,9 @@ _DEFAULTS: dict = {
     "SOUND_SUCCESS":       "",
     "SOUND_FAIL":          "",
     "CHANGELOG_TRIGGER":   "minor",   # "major"|"minor"|"patch"|"never"
+    # Extra (source_rel, dest_in_bundle) pairs for projects that need files outside
+    # templates/ and static/ — e.g. [["dashboard.html", "."], ["Voices and Sounds", "Voices and Sounds"]]
+    "EXTRA_DATA":          [],
 }
 
 
@@ -2051,6 +2054,11 @@ def create_builder_app() -> Flask:
 
         build_py = str(BUILD_DIR / "build.py")
         cmd = [sys.executable, build_py]
+        # When a Project Profile points at a different project, pass its root so
+        # build.py compiles that project instead of job_tracker.
+        _repo_dir = loaded.get("GIT_REPO_DIR", "").strip()
+        if _repo_dir and Path(_repo_dir).is_dir() and Path(_repo_dir).resolve() != PROJECT_ROOT.resolve():
+            cmd += ["--project-dir", _repo_dir]
         if mode == "bundle-only":
             cmd.append("--bundle-only")
         elif mode == "installer-only":

@@ -386,10 +386,11 @@ def run_pyinstaller(src_root: Path) -> Path:
         collect_args += ["--collect-all", pkg]
 
     # ── Data files ────────────────────────────────────────────────────────────
-    data_args: list[str] = [
-        "--add-data", f"{src_root / 'templates'}{sep}templates",
-        "--add-data", f"{src_root / 'static'}{sep}static",
-    ]
+    data_args: list[str] = []
+    if (src_root / "templates").is_dir():
+        data_args += ["--add-data", f"{src_root / 'templates'}{sep}templates"]
+    if (src_root / "static").is_dir():
+        data_args += ["--add-data", f"{src_root / 'static'}{sep}static"]
     # Bundle icons/ directory (contains tray icon and app icons)
     _icons_dir = PROJECT_ROOT / "icons"
     if _icons_dir.is_dir():
@@ -1010,7 +1011,15 @@ def main() -> None:
                         help="Bundle with PyInstaller only — skip Inno Setup")
     parser.add_argument("--installer-only", action="store_true",
                         help="Skip bundling; repackage an existing build_output/dist/")
+    parser.add_argument("--project-dir",    default="",
+                        help="Root directory of the project to build "
+                             "(overrides default of build.py's parent directory)")
     args = parser.parse_args()
+
+    # Allow Build Dashboard to compile any project by passing --project-dir
+    if args.project_dir:
+        global PROJECT_ROOT
+        PROJECT_ROOT = Path(args.project_dir).resolve()
 
     protection = (
         "Nuitka (native machine code)"              if C.USE_NUITKA  else
