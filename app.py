@@ -11,7 +11,6 @@ import uuid
 from datetime import datetime, timedelta
 from io import BytesIO
 
-import secrets as _secrets
 from flask import (
     Flask, Response, abort, flash, jsonify, redirect,
     render_template, request, send_file, send_from_directory, session, url_for,
@@ -3181,37 +3180,34 @@ def _register_routes(app):
         return send_from_directory(_ICONS_DIR, "Logo_Transparent_Color.ico",
                                    mimetype="image/x-icon")
 
-    # ── Primary-tab watchdog ──────────────────────────────────────────────────
-    # The launcher opens the browser with ?primary=<token>.  Only that tab is
-    # the "owner".  When it closes (beforeunload) it calls /api/tab-close and
-    # the server shuts down immediately.  The watchdog handles crash/kill cases.
+    # ── All-tabs watchdog ─────────────────────────────────────────────────────
+    # Every browser tab registers its own unique tabId via /api/heartbeat?tab=<id>.
+    # The server shuts down only when all known tabs have disconnected.
     import time as _hb_time
 
-    _JT_PRIMARY_TOKEN: str       = _secrets.token_hex(16)
-    _LAST_HEARTBEAT: list[float] = [_hb_time.monotonic()]
-    _primary_active: list[bool]  = [False]
+    _tabs: dict[str, float] = {}
+    _tabs_lock = threading.Lock()
+    _ever_had_tab: list[bool] = [False]
     _BEAT_TIMEOUT = 30.0
-
-    @app.route("/api/launch-token")
-    def api_launch_token():
-        return jsonify({"token": _JT_PRIMARY_TOKEN})
 
     @app.route("/api/heartbeat", methods=["POST"])
     def api_heartbeat():
-        if request.args.get("primary") == _JT_PRIMARY_TOKEN:
-            _primary_active[0] = True
-            _LAST_HEARTBEAT[0] = _hb_time.monotonic()
+        tab_id = request.args.get("tab", "")
+        if tab_id:
+            with _tabs_lock:
+                _tabs[tab_id] = _hb_time.monotonic()
+                _ever_had_tab[0] = True
         return "", 204
 
     @app.route("/api/tab-close", methods=["POST", "GET"])
     def api_tab_close():
-        if request.args.get("primary") == _JT_PRIMARY_TOKEN:
-            threading.Thread(
-                target=lambda: (_hb_time.sleep(0.4), os._exit(0)),
-                daemon=True,
-            ).start()
+        tab_id = request.args.get("tab", "")
+        if tab_id:
+            with _tabs_lock:
+                _tabs.pop(tab_id, None)
         return "", 204
 
-    app._last_heartbeat  = _LAST_HEARTBEAT
-    app._primary_active  = _primary_active
-    app._beat_timeout    = _BEAT_TIMEOUT
+    app._tabs         = _tabs
+    app._tabs_lock    = _tabs_lock
+    app._ever_had_tab = _ever_had_tab
+    app._beat_timeout = _BEAT_TIMEOUT

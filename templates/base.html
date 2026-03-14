@@ -846,19 +846,15 @@
 }());
 </script>
 <script>
-/* Primary-tab shutdown: server exits when the launcher tab closes */
+/* All-tabs shutdown: server exits when every open tab closes */
 (function () {
-  var params  = new URLSearchParams(window.location.search);
-  var primary = params.get('primary');
-  if (primary) {
-    sessionStorage.setItem('jt-primary', primary);
-    history.replaceState({}, '', window.location.pathname);
-  } else {
-    primary = sessionStorage.getItem('jt-primary');
+  var tabId = sessionStorage.getItem('jt-tab-id');
+  if (!tabId) {
+    tabId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    sessionStorage.setItem('jt-tab-id', tabId);
   }
-
-  var beatUrl  = '/api/heartbeat' + (primary ? '?primary=' + primary : '');
-  var closeUrl = primary ? '/api/tab-close?primary=' + primary : null;
+  var beatUrl  = '/api/heartbeat?tab=' + tabId;
+  var closeUrl = '/api/tab-close?tab=' + tabId;
 
   function beat() {
     fetch(beatUrl, { method: 'POST', keepalive: true }).catch(function(){});
@@ -868,11 +864,9 @@
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) beat();
   });
-  if (closeUrl) {
-    window.addEventListener('beforeunload', function () {
-      navigator.sendBeacon(closeUrl);
-    });
-  }
+  window.addEventListener('beforeunload', function () {
+    navigator.sendBeacon(closeUrl);
+  });
 }());
 </script>
 </body>

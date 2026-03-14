@@ -5376,21 +5376,15 @@ function bdShowTab(pageId, linkEl) {
 })();
 </script>
 <script>
-// ── Primary-tab shutdown: server exits when the launcher tab closes ───────────
+// ── All-tabs shutdown: server exits when every open tab closes ────────────
 (function () {
-  // ?primary=<token> is appended by the PS1 launcher on fresh start only.
-  var params  = new URLSearchParams(window.location.search);
-  var primary = params.get('primary');
-  if (primary) {
-    sessionStorage.setItem('bd-primary', primary);
-    // Strip the token from the URL so it doesn't appear in the address bar.
-    history.replaceState({}, '', window.location.pathname);
-  } else {
-    primary = sessionStorage.getItem('bd-primary');
+  var tabId = sessionStorage.getItem('bd-tab-id');
+  if (!tabId) {
+    tabId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    sessionStorage.setItem('bd-tab-id', tabId);
   }
-
-  var beatUrl  = '/api/heartbeat' + (primary ? '?primary=' + primary : '');
-  var closeUrl = primary ? '/api/tab-close?primary=' + primary : null;
+  var beatUrl  = '/api/heartbeat?tab=' + tabId;
+  var closeUrl = '/api/tab-close?tab='  + tabId;
 
   function beat() {
     try { navigator.sendBeacon(beatUrl); } catch (_) {}
@@ -5400,11 +5394,9 @@ function bdShowTab(pageId, linkEl) {
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) beat();
   });
-  if (closeUrl) {
-    window.addEventListener('beforeunload', function () {
-      navigator.sendBeacon(closeUrl);
-    });
-  }
+  window.addEventListener('beforeunload', function () {
+    navigator.sendBeacon(closeUrl);
+  });
 }());
 </script>
 </body>

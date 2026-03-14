@@ -101,26 +101,32 @@ def _open_browser():
 
 
 def _heartbeat_watchdog():
-    """Daemon thread: exit the process when the primary browser tab closes."""
-    _log = logging.getLogger("heartbeat_watchdog")
-    # Wait until the primary tab has checked in at least once.
-    active = getattr(flask_app, "_primary_active", None)
-    while active is not None and not active[0]:
+    """Daemon thread: exit when all browser tabs have closed."""
+    _log     = logging.getLogger("heartbeat_watchdog")
+    ever     = getattr(flask_app, "_ever_had_tab", None)
+    tabs     = getattr(flask_app, "_tabs",         None)
+    lock     = getattr(flask_app, "_tabs_lock",    None)
+    timeout  = getattr(flask_app, "_beat_timeout", 30.0)
+    if ever is None or tabs is None:
+        return
+    while not ever[0]:
         time.sleep(2)
-    timeout = getattr(flask_app, "_beat_timeout", 30.0)
     while True:
         time.sleep(10)
-        hb_list = getattr(flask_app, "_last_heartbeat", None)
-        if hb_list is not None:
-            elapsed = time.monotonic() - hb_list[0]
-            if elapsed > timeout:
-                _log.info("No heartbeat for %.0f s — shutting down.", elapsed)
-                os._exit(0)
+        now = time.monotonic()
+        with lock:
+            stale = [tid for tid, t in list(tabs.items()) if now - t > timeout]
+            for tid in stale:
+                tabs.pop(tid, None)
+            alive = bool(tabs)
+        if not alive:
+            _log.info("All tabs closed — shutting down.")
+            os._exit(0)
 
 
 if __name__ == "__main__":
     ssl = _ssl_context()
-    threading.Thread(target=_open_browser, daemon=True).start()
+    threading.Thread(target=_open_browser,       daemon=True).start()
     threading.Thread(target=_heartbeat_watchdog, daemon=True).start()
 
     flask_app.run(

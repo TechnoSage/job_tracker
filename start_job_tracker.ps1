@@ -81,22 +81,6 @@ function Test-PortListening($Port) {
     return ($null -ne $hits -and @($hits).Count -gt 0)
 }
 
-function Get-LaunchToken($BaseUrl) {
-    try {
-        if ($BaseUrl.StartsWith("https")) {
-            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
-        }
-        $req    = [System.Net.WebRequest]::Create("$BaseUrl/api/launch-token")
-        $req.Timeout = 3000
-        $resp   = $req.GetResponse()
-        $stream = $resp.GetResponseStream()
-        $reader = [System.IO.StreamReader]::new($stream)
-        $body   = $reader.ReadToEnd()
-        $reader.Dispose(); $resp.Dispose()
-        return ($body | ConvertFrom-Json).token
-    } catch { return $null }
-}
-
 function Test-ServerAlive($Url) {
     # Verify the server actually responds (not just that the port is bound).
     # Accepts any HTTP status — even 4xx/5xx means the server is running.
@@ -261,20 +245,8 @@ try {
         if (Test-PortListening 5000) { break }
     }
 
-    # 6. Wait for Flask to be fully ready, then get the primary-tab token.
-    $token = $null
-    for ($i = 0; $i -lt 10; $i++) {
-        if (Test-ServerAlive $AppUrl) {
-            $token = Get-LaunchToken $AppUrl
-            break
-        }
-        Start-Sleep -Seconds 1
-    }
-
-    # 7. Open the browser with the primary token so the server knows which
-    #    tab is the owner and shuts down when it closes.
-    $launchUrl = if ($token) { "$AppUrl/?primary=$token" } else { $AppUrl }
-    Open-Or-Focus-Browser $launchUrl
+    # 6. Open the browser once Flask is ready.
+    Open-Or-Focus-Browser $AppUrl
     Start-Sleep -Seconds 2   # hold mutex so a concurrent double-click exits early
     exit 0
 

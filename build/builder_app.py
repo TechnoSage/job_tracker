@@ -25,7 +25,6 @@ import tempfile
 import threading
 from pathlib import Path
 
-import secrets as _secrets
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
 # ── Log output sanitisation ────────────────────────────────────────────────────
@@ -3435,46 +3434,45 @@ def create_builder_app() -> Flask:
     def favicon():
         return send_from_directory(BUILD_DIR, "builder_icon.ico", mimetype="image/x-icon")
 
-    # ── Primary-tab watchdog ──────────────────────────────────────────────────
-    # The launcher opens the browser with ?primary=<token>.  Only that tab is
-    # the "owner".  When it closes (beforeunload) it calls /api/tab-close and
-    # the server shuts down immediately.  The watchdog handles crash/kill cases.
+    # ── All-tabs watchdog ─────────────────────────────────────────────────────
+    # Every browser tab registers its own unique tabId via /api/heartbeat?tab=<id>.
+    # The server shuts down only when all known tabs have disconnected.
     import time as _time
 
-    _PRIMARY_TOKEN: str = _secrets.token_hex(16)
-    _last_beat: list[float]       = [_time.monotonic()]
-    _primary_active: list[bool]   = [False]
+    _tabs: dict[str, float] = {}          # tabId -> last beat timestamp
+    _tabs_lock = threading.Lock()
+    _ever_had_tab: list[bool] = [False]
     _BEAT_TIMEOUT = 30.0
-
-    @app.route("/api/launch-token")
-    def api_launch_token():
-        """One-time fetch by the launcher to get the primary-tab token."""
-        return jsonify({"token": _PRIMARY_TOKEN})
 
     @app.route("/api/heartbeat", methods=["POST", "GET"])
     def api_heartbeat():
-        if request.args.get("primary") == _PRIMARY_TOKEN:
-            _primary_active[0] = True
-            _last_beat[0] = _time.monotonic()
+        tab_id = request.args.get("tab", "")
+        if tab_id:
+            with _tabs_lock:
+                _tabs[tab_id] = _time.monotonic()
+                _ever_had_tab[0] = True
         return "", 204
 
     @app.route("/api/tab-close", methods=["POST", "GET"])
     def api_tab_close():
-        """Called by beforeunload on the primary tab — shut down immediately."""
-        if request.args.get("primary") == _PRIMARY_TOKEN:
-            threading.Thread(
-                target=lambda: (_time.sleep(0.4), os._exit(0)),
-                daemon=True,
-            ).start()
+        tab_id = request.args.get("tab", "")
+        if tab_id:
+            with _tabs_lock:
+                _tabs.pop(tab_id, None)
         return "", 204
 
     def _watchdog() -> None:
-        # Wait until the primary tab has registered at least once.
-        while not _primary_active[0]:
+        while not _ever_had_tab[0]:
             _time.sleep(2)
         while True:
             _time.sleep(10)
-            if _time.monotonic() - _last_beat[0] > _BEAT_TIMEOUT:
+            now = _time.monotonic()
+            with _tabs_lock:
+                stale = [tid for tid, t in list(_tabs.items()) if now - t > _BEAT_TIMEOUT]
+                for tid in stale:
+                    _tabs.pop(tid, None)
+                alive = bool(_tabs)
+            if not alive:
                 os._exit(0)
 
     threading.Thread(target=_watchdog, daemon=True, name="bd-watchdog").start()
