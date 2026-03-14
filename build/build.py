@@ -857,8 +857,10 @@ def run_nuitka() -> Path:
           f"--windows-file-version={C.APP_VERSION}.0",
           f"--output-dir={nuitka_out}",
           f"--output-filename={C.APP_EXE_NAME}.exe",
-          f"--include-data-dir={PROJECT_ROOT/'templates'}=templates",
-          f"--include-data-dir={PROJECT_ROOT/'static'}=static",
+          *([ f"--include-data-dir={PROJECT_ROOT/'templates'}=templates" ]
+             if (PROJECT_ROOT / "templates").is_dir() else []),
+          *([ f"--include-data-dir={PROJECT_ROOT/'static'}=static" ]
+             if (PROJECT_ROOT / "static").is_dir() else []),
           *([ f"--include-data-dir={PROJECT_ROOT/'icons'}=icons" ]
              if (PROJECT_ROOT / "icons").is_dir() else []),
           *icon_args, *_detect_nuitka_compiler(), *pkgs,

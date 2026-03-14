@@ -3948,6 +3948,7 @@ var PIPE_STAGES = [
                /removing old (build dir|bundle)/i, /pre-build clean complete/i] },
   { label: 'Bundle',    sub: 'Compile & Pack',
     patterns: [/pyinstaller.*bundling/i, /nuitka.*compiling to native/i,
+               /nuitka-options:/i,
                /nuitka: starting python/i, /running c compilation/i,
                /completed python level/i, /generating source code for c/i] },
   { label: 'Installer', sub: 'Create Installer',
