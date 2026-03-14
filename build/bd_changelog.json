@@ -1,0 +1,47 @@
+[
+  {
+    "version": "1.2.0",
+    "date": "2026-03-13",
+    "changes": [
+      "Build History — record every build (version, type, description, git commit, settings snapshot) and rebuild any past version from a dropdown",
+      "Build Type selector — tag each build as Main, Incremental, or HOTFIX",
+      "Build Notes field — attach a short description to each build for the history log",
+      "Per-project Change Log — draft upcoming changes, configure a version trigger (Major / Minor / Patch / Never), auto-promote draft to a version entry at compile time",
+      "Change Log editor — export to CHANGELOG.md, edit in Notepad++, reload back into JSON",
+      "Granular Clean — separate buttons for Compile Temp, Output Folder, and Logs",
+      "Robust directory removal — PowerShell Remove-Item replaces shutil.rmtree for reliable deletion on Windows",
+      "Test Pipeline fix — installs now use %LOCALAPPDATA% instead of %TEMP% to avoid Application Control policy blocks (WinError 4551)",
+      "Build Dashboard What's New — this dialog, showing the Build Dashboard's own changelog"
+    ]
+  },
+  {
+    "version": "1.1.0",
+    "date": "2026-03-05",
+    "changes": [
+      "GitHub integration — auth badge, folder browser, remote URL validation with green/red pulse, repo picker modal",
+      "Pull Requests card — list open PRs and create new PRs via gh CLI",
+      "Local Backup card — robocopy-based backup with destination browser and schedule dropdown",
+      "Build Dash Daemon — background process with system tray icon, PID-file based start/stop, Build .exe button",
+      "Pipeline Sounds — custom success and failure audio clips played at build and test completion",
+      "Inject Metadata — standalone button to embed version, company, and description into an existing compiled .exe",
+      "Version Management — read version from main branch, live display next to the version spinner"
+    ]
+  },
+  {
+    "version": "1.0.0",
+    "date": "2026-02-24",
+    "changes": [
+      "Initial release of Build Dashboard",
+      "Full Build, Bundle Only, and Installer Only compile modes",
+      "Full-Build Install Test Pipeline — silent install, exe launch, HTTP poll, app log capture, Test Report",
+      "Code protection — Plain (no protection), PyArmor source obfuscation, Nuitka native machine code",
+      "License file selector with 30+ templates across Protective, Open Source, and Commercial categories",
+      "README generator — auto-generates a project README from app settings",
+      "Git integration — commit & push, branch merge, git status display",
+      "Project profiles — save and load named setting sets to switch between multiple apps",
+      "New App button — clears App Identity fields to start a fresh project without losing build settings",
+      "Virus scan step before every compile",
+      "Timestamped build log files saved to Output/Log/ on every build"
+    ]
+  }
+]

@@ -2773,6 +2773,21 @@ def create_builder_app() -> Flask:
             "description": entry.get("description", ""),
         })
 
+    # ── Build Dashboard own changelog ─────────────────────────────────────────
+
+    @app.route("/api/bd-changelog")
+    def api_bd_changelog():
+        """Return the Build Dashboard's own What's New changelog."""
+        path = BUILD_DIR / "bd_changelog.json"
+        if not path.exists():
+            return jsonify({"ok": True, "entries": []})
+        try:
+            raw     = json.loads(path.read_text("utf-8"))
+            entries = raw if isinstance(raw, list) else raw.get("entries", [])
+            return jsonify({"ok": True, "entries": entries})
+        except Exception as e:
+            return jsonify({"ok": False, "entries": [], "error": str(e)})
+
     # ── Changelog ─────────────────────────────────────────────────────────────
 
     @app.route("/api/changelog")
