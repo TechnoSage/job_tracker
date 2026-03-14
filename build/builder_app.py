@@ -2052,6 +2052,9 @@ def create_builder_app() -> Flask:
         if settings:
             _save_settings(settings)
 
+        # Capture git config at request time (before the thread runs)
+        loaded      = _load_settings()
+
         build_py = str(BUILD_DIR / "build.py")
         cmd = [sys.executable, build_py]
         # When a Project Profile points at a different project, pass its root so
@@ -2063,9 +2066,6 @@ def create_builder_app() -> Flask:
             cmd.append("--bundle-only")
         elif mode == "installer-only":
             cmd.append("--installer-only")
-
-        # Capture git config at request time (before the thread runs)
-        loaded      = _load_settings()
         remote_url  = loaded.get("GIT_REMOTE_URL",  "").strip()
         dev_branch  = loaded.get("GIT_DEV_BRANCH",  "development").strip() or "development"
         main_branch = loaded.get("GIT_MAIN_BRANCH", "main").strip() or "main"
