@@ -151,6 +151,65 @@ def _find_iscc() -> Path | None:
     return Path(which) if which else None
 
 
+def _find_signtool() -> Path | None:
+    """Locate signtool.exe from the Windows 10/11 SDK (x64 preferred, newest first)."""
+    import glob as _glob
+    patterns = [
+        r"C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe",
+        r"C:\Program Files\Windows Kits\10\bin\*\x64\signtool.exe",
+        r"C:\Program Files (x86)\Windows Kits\10\App Certification Kit\signtool.exe",
+    ]
+    for pattern in patterns:
+        matches = sorted(_glob.glob(pattern), reverse=True)  # newest SDK version first
+        if matches:
+            return Path(matches[0])
+    which = shutil.which("signtool")
+    return Path(which) if which else None
+
+
+def run_signtool(target: Path, description: str = "") -> None:
+    """Sign a PE executable with SHA-256 and an RFC-3161 timestamp.
+
+    Reads certificate path/password from build_config (SIGN_PFX, SIGN_PFX_PASSWORD,
+    SIGN_TIMESTAMP_URL).  No-ops if SIGN_PFX is not set or the file is missing —
+    the build continues without signing rather than failing.
+    """
+    pfx_path = getattr(C, "SIGN_PFX", None)
+    if not pfx_path:
+        print("  [Sign] SIGN_PFX not configured — skipping code signing.")
+        return
+    pfx = Path(pfx_path)
+    if not pfx.is_file():
+        print(f"  [Sign] PFX not found: {pfx} — skipping.")
+        return
+    signtool = _find_signtool()
+    if not signtool:
+        print("  [Sign] signtool.exe not found — install Windows SDK and retry.")
+        return
+
+    ts_url  = getattr(C, "SIGN_TIMESTAMP_URL", "http://timestamp.digicert.com")
+    pfx_pw  = getattr(C, "SIGN_PFX_PASSWORD", "") or ""
+
+    _banner(f"Code Signing — {target.name}")
+    cmd = [
+        str(signtool), "sign",
+        "/fd", "SHA256",     # file digest algorithm
+        "/tr", ts_url,       # RFC-3161 timestamp authority
+        "/td", "sha256",     # timestamp digest algorithm
+        "/f",  str(pfx),
+    ]
+    if pfx_pw:
+        cmd += ["/p", pfx_pw]
+    if description:
+        cmd += ["/d", description]
+    cmd += ["/v", str(target)]
+    rc = _run(cmd, check=False)
+    if rc == 0:
+        print(f"  [Sign] OK — {target.name}")
+    else:
+        print(f"  [Sign] WARN — signtool exited {rc}; build continues unsigned.")
+
+
 # ── Step 0a: Ensure all Python dependencies are installed ─────────────────────
 
 def ensure_python_deps() -> None:
@@ -508,6 +567,7 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired={PRIVILEGES}
+PrivilegesRequiredOverridesAllowed=dialog
 MinVersion=10.0
 DisableDirPage=no
 DisableProgramGroupPage=yes
@@ -557,8 +617,9 @@ Filename: "taskkill"; Parameters: "/IM {APP_EXE_NAME}.exe /F"; \\
     Flags: runhidden; StatusMsg: "Stopping {APP_NAME}..."
 
 [Registry]
-; Store installation path for future reference / other tools
-Root: HKLM; Subkey: "Software\\{APP_PUBLISHER}\\{APP_NAME}"; \\
+; Store installation path for future reference / other tools.
+; HKA resolves to HKLM for admin installs and HKCU for user-level installs.
+Root: HKA; Subkey: "Software\\{APP_PUBLISHER}\\{APP_NAME}"; \\
     ValueType: string; ValueName: "InstallPath"; ValueData: "{{app}}"; \\
     Flags: createvalueifdoesntexist uninsdeletekey
 
@@ -835,11 +896,15 @@ def run_nuitka() -> Path:
     nuitka_out.mkdir(parents=True, exist_ok=True)
     icon_args = ([f"--windows-icon-from-ico={Path(C.ICON_FILE)}"]
                  if C.ICON_FILE and Path(C.ICON_FILE).is_file() else [])
-    core_pkgs = ["flask","jinja2","werkzeug","sqlalchemy","apscheduler",
-                 "bs4","feedparser","icalendar","pytz","requests","dotenv"]
-    opt_pkgs  = ["docx","PIL","google","googleapiclient","msal","pypdf","openpyxl"]
-    pkgs = [f"--include-package={p}" for p in core_pkgs]
-    pkgs += [f"--include-package={p}" for p in opt_pkgs if _ilu.find_spec(p)]
+    # All packages are gated by find_spec so builds against projects that
+    # don't install the full job_tracker dependency set (e.g. build_dashboard)
+    # don't fail with "module not found" from Nuitka.
+    all_pkgs = [
+        "flask","jinja2","werkzeug","sqlalchemy","apscheduler",
+        "bs4","feedparser","icalendar","pytz","requests","dotenv",
+        "docx","PIL","google","googleapiclient","msal","pypdf","openpyxl",
+    ]
+    pkgs = [f"--include-package={p}" for p in all_pkgs if _ilu.find_spec(p)]
     # Note: do NOT manually include vcruntime140.dll / msvcp140.dll —
     # Nuitka with MSVC bundles the VC++ runtime automatically and will
     # raise a FATAL conflict error if we add them again.
@@ -853,8 +918,10 @@ def run_nuitka() -> Path:
           f"--windows-file-version={C.APP_VERSION}.0",
           f"--output-dir={nuitka_out}",
           f"--output-filename={C.APP_EXE_NAME}.exe",
-          f"--include-data-dir={PROJECT_ROOT/'templates'}=templates",
-          f"--include-data-dir={PROJECT_ROOT/'static'}=static",
+          *([ f"--include-data-dir={PROJECT_ROOT/'templates'}=templates" ]
+             if (PROJECT_ROOT / "templates").is_dir() else []),
+          *([ f"--include-data-dir={PROJECT_ROOT/'static'}=static" ]
+             if (PROJECT_ROOT / "static").is_dir() else []),
           *([ f"--include-data-dir={PROJECT_ROOT/'icons'}=icons" ]
              if (PROJECT_ROOT / "icons").is_dir() else []),
           *icon_args, *_detect_nuitka_compiler(), *pkgs,
@@ -1055,6 +1122,11 @@ def main() -> None:
         # Step 2: bundle
         bundle_dir = run_nuitka() if C.USE_NUITKA else run_pyinstaller(src_root)
 
+        # Step 2b: sign the compiled app exe
+        _app_exe = bundle_dir / f"{C.APP_EXE_NAME}.exe"
+        if _app_exe.is_file():
+            run_signtool(_app_exe, C.APP_NAME)
+
     else:
         bundle_dir = _dist_path() / C.APP_EXE_NAME
         if not bundle_dir.is_dir():
@@ -1067,6 +1139,11 @@ def main() -> None:
         _banner("Inno Setup — generating installer script")
         iss_path = generate_iss(bundle_dir)
         run_inno_setup(iss_path)
+
+        # Step 3b: sign the installer
+        _installer = _output_root() / f"{C.APP_EXE_NAME}_Setup_{C.APP_VERSION}.exe"
+        if _installer.is_file():
+            run_signtool(_installer, f"{C.APP_NAME} Installer")
 
     _post_build_cleanup()
 

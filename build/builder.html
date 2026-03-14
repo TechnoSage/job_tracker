@@ -1539,7 +1539,8 @@ html[data-bs-theme="light"] #log {
     <div class="row g-2">
       <div class="col-12">
         <label class="form-label mb-1 text-muted small" for="DEFAULT_INSTALL_DIR">
-          Default Install Directory <span class="text-secondary">({autopf} = Program Files)</span>
+          Default Install Directory
+          <span class="text-secondary">({autopf} = Program Files when admin; %LOCALAPPDATA%\Programs when user-level)</span>
         </label>
         <input id="DEFAULT_INSTALL_DIR" class="form-control form-control-sm">
       </div>
@@ -1648,7 +1649,10 @@ html[data-bs-theme="light"] #log {
       <div class="col-6 mt-1">
         <div class="form-check">
           <input id="REQUIRE_ADMIN" class="form-check-input" type="checkbox">
-          <label class="form-check-label small" for="REQUIRE_ADMIN">Require Admin rights</label>
+          <label class="form-check-label small" for="REQUIRE_ADMIN">
+            Require Admin rights
+            <span class="text-secondary" style="font-size:.72rem;">(unchecked = user-level, no UAC)</span>
+          </label>
         </div>
         <div class="form-check">
           <input id="DESKTOP_ICON" class="form-check-input" type="checkbox">
@@ -1670,6 +1674,66 @@ html[data-bs-theme="light"] #log {
 </div>
 </div><!-- /col -->
 </div><!-- /row g-3 (Installer Options) -->
+
+<!-- ── Code Signing card ───────────────────────────────────────────────────── -->
+<div class="row g-3 mt-0">
+<div class="col-12">
+<div class="card">
+  <div class="card-header bg-transparent border-0 pb-0">
+    <h6 class="fw-bold mb-0"><i class="bi bi-patch-check me-1 text-secondary"></i>Code Signing</h6>
+  </div>
+  <div class="card-body">
+    <p class="text-secondary small mb-3">
+      Signs both the compiled app exe and the installer with SHA-256 + RFC-3161 timestamp.
+      Use a CA-issued certificate to show your publisher name in UAC dialogs and suppress
+      Windows SmartScreen warnings. Leave <strong>PFX path</strong> blank to build unsigned.
+    </p>
+    <div class="row g-2">
+      <div class="col-12">
+        <label class="form-label mb-1 text-muted small" for="SIGN_PFX">
+          Certificate File <span class="text-secondary">(.pfx / PKCS#12)</span>
+        </label>
+        <div class="input-group input-group-sm">
+          <input id="SIGN_PFX" class="form-control form-control-sm font-monospace"
+                 placeholder="C:\certs\MyCompany.pfx"
+                 oninput="saveSetting('SIGN_PFX', this.value)">
+          <button class="btn btn-outline-secondary" type="button"
+                  onclick="browseSignPfx()" title="Browse for .pfx file…">
+            <i class="bi bi-file-earmark-lock"></i>
+          </button>
+        </div>
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-1 text-muted small" for="SIGN_PFX_PASSWORD">
+          Certificate Password
+        </label>
+        <input id="SIGN_PFX_PASSWORD" class="form-control form-control-sm" type="password"
+               placeholder="(leave blank if none)"
+               oninput="saveSetting('SIGN_PFX_PASSWORD', this.value)">
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-1 text-muted small" for="SIGN_TIMESTAMP_URL">
+          Timestamp Server URL
+        </label>
+        <input id="SIGN_TIMESTAMP_URL" class="form-control form-control-sm font-monospace"
+               placeholder="http://timestamp.digicert.com"
+               oninput="saveSetting('SIGN_TIMESTAMP_URL', this.value)">
+      </div>
+      <div class="col-12 mt-1">
+        <div class="alert alert-secondary py-2 px-3 mb-0 small">
+          <i class="bi bi-info-circle me-1"></i>
+          <strong>No certificate?</strong>
+          A <em>self-signed</em> cert removes the "Unknown Publisher" UAC dialog but still triggers
+          SmartScreen on first run. A CA-issued <em>Extended Validation (EV)</em> certificate
+          shows your verified publisher name in both UAC and SmartScreen with no warnings.
+          Common providers: DigiCert, Sectigo, GlobalSign.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /col -->
+</div><!-- /row g-3 (Code Signing) -->
 
 </div><!-- /page-installer -->
 
@@ -2001,7 +2065,8 @@ function applySettings(s) {
   var textFields = [
     'APP_NAME', 'APP_DESCRIPTION', 'APP_PUBLISHER',
     'APP_URL', 'APP_SUPPORT_URL', 'APP_EXE_NAME', 'OUTPUT_DIR',
-    'DEFAULT_INSTALL_DIR', 'ICON_FILE', 'LICENSE_FILE'
+    'DEFAULT_INSTALL_DIR', 'ICON_FILE', 'LICENSE_FILE',
+    'SIGN_PFX', 'SIGN_PFX_PASSWORD', 'SIGN_TIMESTAMP_URL'
   ];
   textFields.forEach(function (k) {
     var el = document.getElementById(k);
@@ -2150,7 +2215,10 @@ function collectSettings() {
     SUPPORT_EMAIL:       (document.getElementById('SUPPORT_EMAIL')     || {value: ''}).value.trim(),
     APP_PORT:            (document.getElementById('APP_PORT')          || {value: '5000'}).value.trim(),
     SOUND_SUCCESS:       (document.getElementById('SOUND_SUCCESS')     || {value: ''}).value.trim(),
-    SOUND_FAIL:          (document.getElementById('SOUND_FAIL')        || {value: ''}).value.trim()
+    SOUND_FAIL:          (document.getElementById('SOUND_FAIL')        || {value: ''}).value.trim(),
+    SIGN_PFX:            (document.getElementById('SIGN_PFX')          || {value: ''}).value.trim(),
+    SIGN_PFX_PASSWORD:   (document.getElementById('SIGN_PFX_PASSWORD') || {value: ''}).value.trim(),
+    SIGN_TIMESTAMP_URL:  (document.getElementById('SIGN_TIMESTAMP_URL')|| {value: 'http://timestamp.digicert.com'}).value.trim() || 'http://timestamp.digicert.com'
   };
 }
 
@@ -3555,6 +3623,25 @@ async function browseIconFile() {
   }
 }
 
+async function browseSignPfx() {
+  var current = document.getElementById('SIGN_PFX').value;
+  try {
+    var r = await fetch('/api/gh/browse-file', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ filter_desc: 'Certificate Files', filter_ext: '*.pfx;*.p12', initial: current || '' })
+    });
+    var d = await r.json();
+    if (d.ok && d.path) {
+      document.getElementById('SIGN_PFX').value = d.path;
+      saveSetting('SIGN_PFX', d.path);
+    } else if (!d.ok && d.error) {
+      showToast('File picker error: ' + d.error, 'danger');
+    }
+  } catch (e) {
+    showToast('Could not open file picker.', 'danger');
+  }
+}
+
 /* ── Output Folder browse + auto-default ──────────────────────────────────── */
 var _OUTPUT_BASE = 'D:\\Compile Playground';
 
@@ -3948,6 +4035,7 @@ var PIPE_STAGES = [
                /removing old (build dir|bundle)/i, /pre-build clean complete/i] },
   { label: 'Bundle',    sub: 'Compile & Pack',
     patterns: [/pyinstaller.*bundling/i, /nuitka.*compiling to native/i,
+               /nuitka-options:/i,
                /nuitka: starting python/i, /running c compilation/i,
                /completed python level/i, /generating source code for c/i] },
   { label: 'Installer', sub: 'Create Installer',

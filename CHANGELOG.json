@@ -3,6 +3,22 @@
   "draft": [],
   "entries": [
     {
+      "version": "1.1.0",
+      "date": "2026-03-14",
+      "changes": [
+        "Build Dashboard: code signing support — signs compiled app exe and installer with SHA-256 + RFC-3161 timestamp via signtool.exe",
+        "Build Dashboard: user-level install by default (no UAC prompt); PrivilegesRequiredOverridesAllowed=dialog lets end users still choose all-users install",
+        "Build Dashboard: registry entries now use HKA (auto-selects HKLM or HKCU) so uninstall works correctly for both admin and user-level installs",
+        "Build Dashboard: test install pipeline now runs installer elevated via PowerShell Start-Process -Verb RunAs to handle admin-mode installers",
+        "Build Dashboard: Nuitka compilation no longer fails when the target project has no templates/ or static/ directories",
+        "Build Dashboard: security scan tube no longer false-positives on Nuitka's own output lines",
+        "Build Dashboard: bundle tube stage detection now triggers on Nuitka-Options: prefix so stage activates before any fatal errors are emitted",
+        "Build Dashboard: Code Signing card added to Installer Options page with PFX browse, password, and timestamp server fields",
+        "Build Dashboard: Installer Options labels updated to clarify user-level vs admin install behaviour",
+        "Documentation: Code Signing section added to builder_help.html with certificate type comparison table"
+      ]
+    },
+    {
       "version": "1.0.0",
       "date": "2026-03-05",
       "changes": [
