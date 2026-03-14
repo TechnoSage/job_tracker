@@ -233,6 +233,87 @@ html { scroll-behavior: smooth; }
     <strong>Keep it open:</strong> The Build Dashboard does not need to be relaunched between builds.
     You can start it once in the morning and leave it running all day.
   </div>
+
+  <h3>Dashboard Layout</h3>
+  <p>
+    The interface is split into a <strong>collapsible left sidebar</strong> and a <strong>main content area</strong>.
+    Click the <i class="bi bi-layout-sidebar"></i> toggle button in the top-left to collapse the sidebar to icon-only
+    mode (60 px) or expand it to full labels (220 px). Your preference is remembered across sessions.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Dashboard — expanded sidebar (220 px)</div>
+    <div style="display:flex;gap:0;border-radius:.6rem;overflow:hidden;border:1px solid rgba(255,255,255,.1);">
+      <!-- Sidebar -->
+      <div style="width:160px;flex-shrink:0;background:#1a1d22;border-right:1px solid rgba(255,255,255,.08);padding:.6rem .5rem;">
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6c757d;margin-bottom:.4rem;padding-left:.3rem;">Navigation</div>
+        <div style="background:#0d6efd;border-radius:7px;padding:.35rem .55rem;display:flex;align-items:center;gap:.5rem;margin-bottom:3px;font-size:.78rem;color:#fff;font-weight:600;">
+          <i class="bi bi-gear" style="color:#fff"></i><span>Build Configuration</span>
+        </div>
+        <div style="background:#22262c;border-radius:7px;padding:.35rem .55rem;display:flex;align-items:center;gap:.5rem;margin-bottom:3px;font-size:.78rem;color:#e2e8f0;">
+          <i class="bi bi-git" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.5)"></i><span>Git</span>
+        </div>
+        <div style="background:#22262c;border-radius:7px;padding:.35rem .55rem;display:flex;align-items:center;gap:.5rem;margin-bottom:3px;font-size:.78rem;color:#e2e8f0;">
+          <i class="bi bi-box-seam" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.5)"></i><span>Installer Options</span>
+        </div>
+        <div style="background:#22262c;border-radius:7px;padding:.35rem .55rem;display:flex;align-items:center;gap:.5rem;margin-bottom:3px;font-size:.78rem;color:#e2e8f0;">
+          <i class="bi bi-archive" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.5)"></i><span>Local Backup</span>
+        </div>
+        <div style="background:#22262c;border-radius:7px;padding:.35rem .55rem;display:flex;align-items:center;gap:.5rem;margin-bottom:3px;font-size:.78rem;color:#e2e8f0;">
+          <i class="bi bi-journal-text" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.5)"></i><span>Change Log</span>
+        </div>
+      </div>
+      <!-- Main area -->
+      <div style="flex:1;background:#212529;">
+        <!-- Topbar -->
+        <div style="background:#212529;border-bottom:1px solid rgba(255,255,255,.1);padding:.4rem .75rem;display:flex;align-items:center;gap:.5rem;">
+          <button class="btn btn-sm btn-outline-secondary py-0 px-1"><i class="bi bi-layout-sidebar" style="font-size:.8rem"></i></button>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:#22262c;border:1px solid rgba(255,255,255,.09);box-shadow:0 3px 8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07)">
+            <i class="bi bi-tools" style="color:#39ff14;font-size:.85rem;text-shadow:0 0 6px rgba(57,255,20,.5)"></i>
+          </span>
+          <span style="font-size:.85rem;font-weight:600;">Build Dashboard</span>
+          <span class="badge bg-secondary ms-auto" style="font-size:.7rem;">Idle</span>
+        </div>
+        <!-- Profile card -->
+        <div style="margin:.5rem;padding:.4rem .6rem;background:#1c1f24;border-radius:.6rem;border:1px solid rgba(255,255,255,.065);display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;font-size:.72rem;">
+          <i class="bi bi-folder2 text-secondary"></i>
+          <span class="text-muted fw-semibold">Project Profile:</span>
+          <select class="form-select form-select-sm" style="width:130px;font-size:.7rem;"><option>job_tracker</option></select>
+          <button class="btn btn-outline-warning" style="font-size:.7rem;padding:.1rem .3rem;"><i class="bi bi-file-earmark-plus me-1"></i>New App</button>
+          <button class="btn btn-outline-info" style="font-size:.7rem;padding:.1rem .3rem;"><i class="bi bi-box-arrow-in-down me-1"></i>Load</button>
+          <button class="btn btn-outline-success" style="font-size:.7rem;padding:.1rem .3rem;"><i class="bi bi-floppy me-1"></i>Save</button>
+          <button class="btn btn-outline-secondary ms-auto" style="font-size:.7rem;padding:.1rem .3rem;"><i class="bi bi-question-circle"></i></button>
+        </div>
+        <!-- Content placeholder -->
+        <div style="margin:.5rem;padding:.6rem;background:#1c1f24;border-radius:.6rem;border:1px solid rgba(255,255,255,.065);font-size:.72rem;color:#6c757d;text-align:center;">
+          Page content (Build Configuration, Git, Installer Options…)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-label">Sidebar — collapsed / icon-only mode (60 px)</div>
+    <div style="display:flex;gap:0;border-radius:.6rem;overflow:hidden;border:1px solid rgba(255,255,255,.1);">
+      <div style="width:54px;flex-shrink:0;background:#1a1d22;border-right:1px solid rgba(255,255,255,.08);padding:.6rem .35rem;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="background:#0d6efd;border-radius:7px;width:36px;height:30px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-gear" style="color:#fff;font-size:.95rem;"></i></div>
+        <div style="background:#22262c;border-radius:7px;width:36px;height:30px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-git" style="color:#39ff14;font-size:.95rem;text-shadow:0 0 6px rgba(57,255,20,.5)"></i></div>
+        <div style="background:#22262c;border-radius:7px;width:36px;height:30px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-box-seam" style="color:#39ff14;font-size:.95rem;text-shadow:0 0 6px rgba(57,255,20,.5)"></i></div>
+        <div style="background:#22262c;border-radius:7px;width:36px;height:30px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-archive" style="color:#39ff14;font-size:.95rem;text-shadow:0 0 6px rgba(57,255,20,.5)"></i></div>
+        <div style="background:#22262c;border-radius:7px;width:36px;height:30px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-journal-text" style="color:#39ff14;font-size:.95rem;text-shadow:0 0 6px rgba(57,255,20,.5)"></i></div>
+      </div>
+      <div style="flex:1;background:#212529;padding:.6rem;font-size:.72rem;color:#6c757d;">Main content area — hover an icon to see a tooltip label</div>
+    </div>
+  </div>
+
+  <h4>Pages</h4>
+  <ul>
+    <li><strong>Build Configuration</strong> <span class="badge bg-primary" style="font-size:.65rem;">default</span> — App Info, Code Protection, License, README, Build History, Pipeline Sounds, Build Actions, CI/CD Pipeline, Build Log, Test Pipeline.</li>
+    <li><strong>Git</strong> — Working tree path, GitHub remote URL &amp; validation, commit/push, branch merge, Pull Requests.</li>
+    <li><strong>Installer Options</strong> — Install directory, icon, checkboxes for admin/shortcut/README/LICENSE bundling.</li>
+    <li><strong>Local Backup</strong> — Robocopy backup source/destination, schedule selector, Build Dash Daemon (tray exe).</li>
+    <li><strong>Change Log</strong> — Per-project changelog editor, AI-draft, preview panel.</li>
+  </ul>
 </section>
 
 <!-- ══════════════════════════════════════════════════════ PROJECT PROFILES -->
@@ -245,23 +326,31 @@ html { scroll-behavior: smooth; }
   </p>
 
   <div class="mockup">
-    <div class="mockup-label">Profile selector bar (top of dashboard)</div>
-    <div class="mockup-topbar">
-      <span class="text-muted" style="font-size:.78rem">Profile:</span>
-      <select class="form-select form-select-sm" style="width:160px;font-size:.78rem">
-        <option>job_tracker v2.1</option>
-        <option>my_other_app</option>
-      </select>
-      <button class="btn btn-sm btn-outline-success" style="font-size:.75rem"><i class="bi bi-floppy me-1"></i>Save</button>
-      <button class="btn btn-sm btn-outline-primary" style="font-size:.75rem"><i class="bi bi-download me-1"></i>Load</button>
-      <button class="btn btn-sm btn-outline-danger" style="font-size:.75rem"><i class="bi bi-trash me-1"></i>Delete</button>
+    <div class="mockup-label">Profile bar — persistent card pinned below the top navbar</div>
+    <div class="mockup-card" style="font-size:.8rem;">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <i class="bi bi-folder2 text-secondary"></i>
+        <span class="text-muted fw-semibold" style="font-size:.78rem">Project Profile:</span>
+        <select class="form-select form-select-sm" style="width:180px;font-size:.75rem">
+          <option>job_tracker</option>
+          <option>my_other_app</option>
+        </select>
+        <button class="btn btn-sm btn-outline-warning" style="font-size:.75rem"><i class="bi bi-file-earmark-plus me-1"></i>New App</button>
+        <button class="btn btn-sm btn-outline-info" style="font-size:.75rem"><i class="bi bi-box-arrow-in-down me-1"></i>Load</button>
+        <button class="btn btn-sm btn-outline-success" style="font-size:.75rem"><i class="bi bi-floppy me-1"></i>Save Project</button>
+        <button class="btn btn-sm btn-outline-danger" style="font-size:.75rem"><i class="bi bi-trash3 me-1"></i>Delete</button>
+        <button class="btn btn-sm btn-outline-info ms-auto" style="font-size:.75rem"><i class="bi bi-journal-bookmark me-1"></i>What's New</button>
+        <button class="btn btn-sm btn-outline-secondary" style="font-size:.75rem"><i class="bi bi-question-circle"></i></button>
+        <button class="btn btn-sm btn-outline-secondary" style="font-size:.75rem"><i class="bi bi-sun-fill"></i></button>
+      </div>
     </div>
   </div>
 
   <h4>Actions</h4>
   <ul>
-    <li><strong>Save</strong> — Saves the current configuration under the App Name as the profile name. If a profile with that name already exists it is overwritten.</li>
+    <li><strong>New App</strong> — Clears the App Identity fields (App Name, EXE name, version, description, support email) so you can start configuring a new project. All other settings (paths, branches, protection) are kept.</li>
     <li><strong>Load</strong> — Restores all fields from the selected profile, including <code>GIT_REPO_DIR</code>, version settings, and git branches. The Change Log and Build History panels refresh automatically to show data for the loaded project.</li>
+    <li><strong>Save Project</strong> — Saves the current configuration under the App Name as the profile name. If a profile with that name already exists it is overwritten.</li>
     <li><strong>Delete</strong> — Permanently removes the selected profile. A confirmation dialog is shown first.</li>
   </ul>
 
@@ -587,10 +676,38 @@ html { scroll-behavior: smooth; }
 <section id="git-target">
   <h2><i class="bi bi-git me-2 text-danger"></i>Git — Target Project</h2>
   <p>
-    The <strong>Git</strong> card tells the Build Dashboard <em>which</em> repository to build.
+    The <strong>Git</strong> page tells the Build Dashboard <em>which</em> repository to build.
     It is separate from the Build Dashboard's own repository. All build pipeline steps operate
     on the project specified here.
   </p>
+
+  <div class="key-term"><i class="bi bi-layout-sidebar me-2"></i>
+    The Git page is accessed from the <strong><i class="bi bi-git me-1" style="color:#39ff14"></i>Git</strong>
+    tab in the left sidebar. Click the tab label (expanded) or the
+    <i class="bi bi-git" style="color:#39ff14"></i> icon (collapsed) to switch to it.
+    A tooltip appears on hover when the sidebar is in icon-only mode.
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-label">Git sidebar tab — how to navigate there</div>
+    <div style="display:flex;gap:0;border-radius:.6rem;overflow:hidden;border:1px solid rgba(255,255,255,.1);">
+      <div style="width:150px;flex-shrink:0;background:#1a1d22;padding:.5rem .45rem;">
+        <div style="background:#22262c;border-radius:7px;padding:.3rem .5rem;display:flex;align-items:center;gap:.45rem;margin-bottom:3px;font-size:.78rem;color:#e2e8f0;">
+          <i class="bi bi-gear" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.5)"></i><span>Build Configuration</span>
+        </div>
+        <div style="background:#0d6efd;border-radius:7px;padding:.3rem .5rem;display:flex;align-items:center;gap:.45rem;margin-bottom:3px;font-size:.78rem;color:#fff;font-weight:600;box-shadow:0 3px 10px rgba(13,110,253,.45)">
+          <i class="bi bi-git" style="color:#fff"></i><span>Git</span>
+          <span style="margin-left:auto;font-size:.6rem;background:rgba(255,255,255,.15);border-radius:3px;padding:0 4px;">active</span>
+        </div>
+        <div style="background:#22262c;border-radius:7px;padding:.3rem .5rem;display:flex;align-items:center;gap:.45rem;margin-bottom:3px;font-size:.78rem;color:#e2e8f0;">
+          <i class="bi bi-box-seam" style="color:#39ff14;text-shadow:0 0 6px rgba(57,255,20,.5)"></i><span>Installer Options</span>
+        </div>
+      </div>
+      <div style="flex:1;background:#212529;padding:.5rem;font-size:.75rem;color:#adb5bd;">
+        Git page content is shown here — Working Tree Path, GitHub Remote URL, branch info, Commit &amp; Push, Merge, Pull Requests…
+      </div>
+    </div>
+  </div>
 
   <div class="mockup">
     <div class="mockup-label">Git card</div>
@@ -832,17 +949,33 @@ html { scroll-behavior: smooth; }
 <!-- ══════════════════════════════════════════════════════ BUILD ACTIONS -->
 <section id="build-actions">
   <h2><i class="bi bi-play-circle me-2 text-success"></i>Build Actions</h2>
-  <p>Four action buttons control the build pipeline. They appear in a row above the pipeline strip.</p>
+  <p>
+    Five action buttons control the build pipeline and log management. They live in a dedicated
+    <strong>Build Actions</strong> card on the <strong>Build Configuration</strong> page, positioned
+    below the Pipeline Sounds card. The card has a subtle pulsing neon-green outline to make it
+    easy to spot at a glance.
+  </p>
 
   <div class="mockup">
-    <div class="mockup-label">Action buttons</div>
-    <div class="d-flex gap-2 flex-wrap">
-      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-trash me-1"></i>Clean Outputs</button>
-      <button class="btn btn-sm btn-outline-warning"><i class="bi bi-box me-1"></i>Bundle Only</button>
-      <button class="btn btn-sm btn-success"><i class="bi bi-rocket-takeoff me-1"></i>Full Build</button>
-      <button class="btn btn-sm btn-outline-info"><i class="bi bi-download me-1"></i>Install Dep</button>
+    <div class="mockup-label">Build Actions card — neon-green glowing border</div>
+    <div style="background:#1c1f24;border:1px solid rgba(57,255,100,.50);border-radius:1rem;padding:.75rem 1rem;box-shadow:0 0 0 1.5px rgba(57,255,100,.35),0 0 14px rgba(57,255,100,.18),0 8px 20px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.055);">
+      <div class="fw-bold mb-2" style="font-size:.82rem;color:#e2e8f0;"><i class="bi bi-play-circle me-1 text-secondary"></i>Build Actions</div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-floppy me-1"></i>Save Settings</button>
+        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-trash me-1"></i>Clean Outputs</button>
+        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-x me-1"></i>Clean Logs</button>
+        <button class="btn btn-sm btn-outline-warning"><i class="bi bi-box me-1"></i>Bundle Only</button>
+        <button class="btn btn-sm btn-success"><i class="bi bi-rocket-takeoff me-1"></i>Full Build</button>
+      </div>
     </div>
   </div>
+
+  <h4>Save Settings</h4>
+  <p>
+    Immediately writes all current field values to <code>build_settings.json</code>. Settings are also
+    auto-saved whenever individual fields change, so this button is useful as a manual confirmation
+    after making several changes at once.
+  </p>
 
   <h4>Clean Outputs</h4>
   <p>
@@ -853,6 +986,13 @@ html { scroll-behavior: smooth; }
     <li>The entire configured <strong>Output Dir</strong> tree (e.g. <code>D:\Compile Playground\job_tracker\</code>), which contains <code>Bundle Only\</code>, <code>Log\</code>, and any installer <code>.exe</code> files.</li>
   </ul>
   <p>Use this before a full rebuild to ensure no stale artefacts from previous builds are included. A confirmation dialog is shown because this action cannot be undone.</p>
+
+  <h4>Clean Logs</h4>
+  <p>
+    Clears the contents of the <strong>Build Log</strong> panel in the dashboard UI without deleting
+    any build artefacts. Useful for decluttering the log after a successful run or before starting
+    a new build session. The on-disk log files in <code>logs/</code> are not affected.
+  </p>
 
   <h4>Bundle Only</h4>
   <p>
@@ -884,14 +1024,6 @@ html { scroll-behavior: smooth; }
     Doing so may leave the repository checked out on <code>main</code> and require a manual
     <code>git checkout development</code> to recover.
   </div>
-
-  <h4>Install Dep</h4>
-  <p>
-    Installs the currently selected protection tool (PyArmor or Nuitka) into the project's
-    virtual environment via <code>pip install</code>. Run this once after selecting a new
-    protection strategy or after setting up the project on a new machine.
-    The button has no effect when <em>Plain</em> is selected.
-  </p>
 
   <h4>Auto-Kill Running App Before Build</h4>
   <p>
