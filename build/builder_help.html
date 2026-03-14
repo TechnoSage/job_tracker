@@ -168,6 +168,9 @@ html { scroll-behavior: smooth; }
   <a class="nav-link" href="#clean-outputs">Clean Outputs</a>
   <a class="nav-link" href="#changelog">Change Log</a>
   <a class="nav-link" href="#self-compile">Self-Compile</a>
+
+  <div class="toc-section">System</div>
+  <a class="nav-link" href="#app-lifecycle">App Lifecycle</a>
 </nav>
 
 <!-- ── Main content ────────────────────────────────────────────────────────── -->
@@ -310,7 +313,7 @@ html { scroll-behavior: smooth; }
   <ul>
     <li><strong>Build Configuration</strong> <span class="badge bg-primary" style="font-size:.65rem;">default</span> — App Info, Code Protection, License, README, Build History, Pipeline Sounds, Build Actions, CI/CD Pipeline, Build Log, Test Pipeline.</li>
     <li><strong>Git</strong> — Working tree path, GitHub remote URL &amp; validation, commit/push, branch merge, Pull Requests.</li>
-    <li><strong>Installer Options</strong> — Install directory, icon, checkboxes for admin/shortcut/README/LICENSE bundling, and the Code Signing card for configuring a PFX certificate to sign the compiled exe and installer.</li>
+    <li><strong>Installer Options</strong> — Install directory, two separate icon pickers (one for the installer .exe, one for the compiled app .exe), checkboxes for admin/shortcut/README/LICENSE bundling, and the Code Signing card for configuring a PFX certificate to sign the compiled exe and installer.</li>
     <li><strong>Local Backup</strong> — Robocopy backup source/destination, schedule selector, Build Dash Daemon (tray exe).</li>
     <li><strong>Change Log</strong> — Per-project changelog editor, AI-draft, preview panel.</li>
   </ul>
@@ -442,14 +445,38 @@ html { scroll-behavior: smooth; }
     <li><strong>Desktop Shortcut</strong> — Adds a shortcut to the user's Desktop after installation.</li>
     <li><strong>Start Menu Shortcut</strong> — Creates a Start Menu entry under <em>Publisher\App Name</em>.</li>
     <li><strong>Startup Shortcut</strong> — Adds a shortcut to the Windows Startup folder so the app launches on login.</li>
-    <li><strong>Icon File</strong> — Path to a <code>.ico</code> file used for the compiled executable and installer graphics. Must be a valid Windows icon file (multi-resolution recommended: 16, 32, 48, 256 px).</li>
+    <li><strong>Installer Icon</strong> — Path to a <code>.ico</code> file embedded in the setup <code>.exe</code> itself. This is the icon Windows Explorer shows on the installer file and that appears in the UAC elevation dialog. Passed to Inno Setup as <code>SetupIconFile=</code>.</li>
+    <li><strong>App Icon</strong> — Path to a <code>.ico</code> file compiled into the <em>application</em> executable. Passed to PyInstaller as <code>--icon</code> or to Nuitka as <code>--windows-icon-from-ico</code>. Leave blank to keep the target project's own icons unchanged.</li>
     <li><strong>Support Email</strong> — Contact email injected into the compiled app before each build via <code>build_meta.json</code>. The app reads this at startup and stores it in its settings database, so the support page shows the correct address without modifying any source files.</li>
   </ul>
+
+  <div class="mockup">
+    <div class="mockup-label">Installer Options — icon pickers</div>
+    <div class="mockup-card">
+      <div class="row g-2" style="font-size:.8rem">
+        <div class="col-6">
+          <div class="text-muted small mb-1">Installer Icon <span style="color:#6c757d">(.ico) — icon shown on the setup .exe</span></div>
+          <div class="input-group input-group-sm">
+            <input class="form-control form-control-sm" placeholder="icons/installer.ico" readonly>
+            <button class="btn btn-outline-secondary btn-sm" disabled><i class="bi bi-image"></i></button>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="text-muted small mb-1">App Icon <span style="color:#6c757d">(.ico) — leave blank to use app's own icon</span></div>
+          <div class="input-group input-group-sm">
+            <input class="form-control form-control-sm" placeholder="icons/app.ico" readonly>
+            <button class="btn btn-outline-secondary btn-sm" disabled><i class="bi bi-image"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="tip-box"><i class="bi bi-lightbulb me-2"></i>
     <strong>Icon tip:</strong> Convert a PNG to ICO using a free tool like <em>IcoFX</em> or the
     online converter at <a href="https://convertio.co/png-ico/" target="_blank">convertio.co</a>.
-    A multi-resolution ICO looks crisp at every Windows DPI setting.
+    Use a multi-resolution ICO (16, 32, 48, 256 px) so the icon looks crisp at every Windows DPI setting.
+    Both fields accept absolute paths or paths relative to the project root.
   </div>
 
   <h3 id="code-signing"><i class="bi bi-patch-check me-2 text-secondary"></i>Code Signing</h3>
@@ -1975,6 +2002,78 @@ html { scroll-behavior: smooth; }
     and <strong>Inno Setup</strong> to be installed before compiling any project.
     Run <em>Dep Check</em> in the Build Dashboard to verify all prerequisites.
   </div>
+
+  <div style="height:3rem"></div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════ APP LIFECYCLE -->
+<section id="app-lifecycle">
+  <h2><i class="bi bi-power me-2 text-secondary"></i>App Lifecycle &amp; Auto-Shutdown</h2>
+  <p>
+    Build Dashboard (and Job Tracker) run as a local Flask server started by the desktop shortcut.
+    Because they have no visible window, the server uses a <strong>tab-tracking heartbeat</strong>
+    to know when all browser tabs have been closed, and exits automatically — so Python never lingers
+    in Task Manager after you're done.
+  </p>
+
+  <h3><i class="bi bi-heart-pulse me-2 text-secondary"></i>How it works</h3>
+  <p>
+    Each browser tab generates a unique <strong>Tab ID</strong> stored in <code>sessionStorage</code>
+    when the page first loads. This ID is regenerated every time a new tab is opened, but persists
+    across page reloads within the same tab.
+  </p>
+
+  <div class="mockup">
+    <div class="mockup-label">Heartbeat lifecycle — one tab open, then closed</div>
+    <div style="font-size:.8rem;font-family:monospace;line-height:2">
+      <span style="color:#6ea8fe">Browser tab opens</span> →
+        JS generates <code>tabId = "a3f9…"</code>, stores in <code>sessionStorage</code><br>
+      <span style="color:#6ea8fe">Every 5 s</span> →
+        <code>sendBeacon("/api/heartbeat?tab=a3f9…")</code><br>
+      <span style="color:#adb5bd">Server</span> →
+        records <code>{ "a3f9…": &lt;timestamp&gt; }</code> in active-tab dict<br>
+      <span style="color:#f8d7da; color:#ea868f">Tab closes</span> →
+        <code>beforeunload</code> fires <code>sendBeacon("/api/tab-close?tab=a3f9…")</code><br>
+      <span style="color:#adb5bd">Server</span> →
+        removes <code>"a3f9…"</code> from dict — dict now empty → <strong>Python exits</strong>
+    </div>
+  </div>
+
+  <h4>Multiple tabs</h4>
+  <p>
+    If you open a second tab (e.g. duplicate the Build Dashboard tab), each tab registers its own
+    Tab ID. The server only exits when <em>every</em> registered tab has either sent a
+    <code>/api/tab-close</code> beacon or stopped heartbeating for more than <strong>30 seconds</strong>.
+    Closing one tab while another remains open has no effect on the server.
+  </p>
+
+  <h4>Crash recovery</h4>
+  <p>
+    If a tab crashes (no <code>beforeunload</code> fires), the watchdog thread prunes any Tab ID
+    whose last heartbeat is older than 30 seconds. Once all IDs are pruned the server exits. The
+    30-second window is intentional — it covers browser throttling of background timers and slow
+    machines. The <code>visibilitychange</code> event re-sends a heartbeat immediately whenever a
+    hidden tab becomes visible again, keeping the timer from expiring while the tab is merely
+    in the background.
+  </p>
+
+  <h4>Re-launch</h4>
+  <p>
+    Clicking the desktop shortcut starts a fresh Python process and opens a new browser tab.
+    If the server is already running (e.g. you clicked the shortcut while a tab was open), the
+    launcher detects the live server and brings the existing tab into focus instead of starting
+    a second instance.
+  </p>
+
+  <h4>API endpoints</h4>
+  <table class="table table-sm table-bordered small">
+    <thead><tr><th>Route</th><th>Method</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>/api/heartbeat?tab=&lt;id&gt;</code></td><td>POST</td><td>Refreshes the keep-alive timestamp for the given Tab ID. Called automatically by the page JS every 5 seconds.</td></tr>
+      <tr><td><code>/api/tab-close?tab=&lt;id&gt;</code></td><td>POST</td><td>Removes the Tab ID from the active-tab dict. Fired by <code>beforeunload</code> when the tab closes. If the dict becomes empty the server exits within ~0.4 s.</td></tr>
+      <tr><td><code>/favicon.ico</code></td><td>GET</td><td>Serves the app's icon file so the browser tab displays the correct icon instead of the browser default.</td></tr>
+    </tbody>
+  </table>
 
   <div style="height:3rem"></div>
 </section>

@@ -13,7 +13,7 @@ from io import BytesIO
 
 from flask import (
     Flask, Response, abort, flash, jsonify, redirect,
-    render_template, request, send_file, session, url_for,
+    render_template, request, send_file, send_from_directory, session, url_for,
 )
 
 from config import Config
@@ -3172,14 +3172,42 @@ def _register_routes(app):
         db.session.commit()
         return jsonify({"ok": True})
 
-    # ── Browser heartbeat (auto-shutdown when frozen exe / browser closes) ── #
+    # ── Favicon ───────────────────────────────────────────────────────────────
+    _ICONS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons")
 
+    @app.route("/favicon.ico")
+    def favicon():
+        return send_from_directory(_ICONS_DIR, "Logo_Transparent_Color.ico",
+                                   mimetype="image/x-icon")
+
+    # ── All-tabs watchdog ─────────────────────────────────────────────────────
+    # Every browser tab registers its own unique tabId via /api/heartbeat?tab=<id>.
+    # The server shuts down only when all known tabs have disconnected.
     import time as _hb_time
-    _LAST_HEARTBEAT: list[float] = [_hb_time.monotonic()]
+
+    _tabs: dict[str, float] = {}
+    _tabs_lock = threading.Lock()
+    _ever_had_tab: list[bool] = [False]
+    _BEAT_TIMEOUT = 30.0
 
     @app.route("/api/heartbeat", methods=["POST"])
     def api_heartbeat():
-        _LAST_HEARTBEAT[0] = _hb_time.monotonic()
+        tab_id = request.args.get("tab", "")
+        if tab_id:
+            with _tabs_lock:
+                _tabs[tab_id] = _hb_time.monotonic()
+                _ever_had_tab[0] = True
         return "", 204
 
-    app._last_heartbeat = _LAST_HEARTBEAT
+    @app.route("/api/tab-close", methods=["POST", "GET"])
+    def api_tab_close():
+        tab_id = request.args.get("tab", "")
+        if tab_id:
+            with _tabs_lock:
+                _tabs.pop(tab_id, None)
+        return "", 204
+
+    app._tabs         = _tabs
+    app._tabs_lock    = _tabs_lock
+    app._ever_had_tab = _ever_had_tab
+    app._beat_timeout = _BEAT_TIMEOUT

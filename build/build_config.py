@@ -46,8 +46,9 @@ _DEFAULTS: dict = {
     "ADD_TO_STARTUP":  False,
 
     # Optional asset paths (relative to project root; "" = skip)
-    "ICON_FILE":    "",
-    "LICENSE_FILE": "",
+    "ICON_FILE":     "",
+    "APP_ICON_FILE": "",
+    "LICENSE_FILE":  "",
     "README_FILE":  "",
 
     # Support contact email injected into the compiled app's build_meta.json
@@ -99,8 +100,9 @@ DESKTOP_ICON        = bool(_cfg["DESKTOP_ICON"])
 START_MENU_ICON     = bool(_cfg["START_MENU_ICON"])
 ADD_TO_STARTUP      = bool(_cfg["ADD_TO_STARTUP"])
 
-ICON_FILE           = _cfg["ICON_FILE"]    or None
-LICENSE_FILE        = _cfg["LICENSE_FILE"] or None
+ICON_FILE           = _cfg["ICON_FILE"]        or None
+APP_ICON_FILE       = _cfg.get("APP_ICON_FILE", "") or None
+LICENSE_FILE        = _cfg["LICENSE_FILE"]     or None
 README_FILE         = _cfg["README_FILE"]  or None
 
 USE_PYARMOR         = bool(_cfg["USE_PYARMOR"])

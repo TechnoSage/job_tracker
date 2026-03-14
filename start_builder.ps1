@@ -238,15 +238,14 @@ try {
                   -WorkingDirectory $AppDir `
                   -WindowStyle Minimized
 
-    # 5. Poll port 5001 until the server is ready (max 30 seconds).
+    # 5. Poll port 5001 until the server is listening (max 30 seconds).
     $maxSeconds = 30
     for ($i = 0; $i -lt $maxSeconds; $i++) {
         Start-Sleep -Seconds 1
         if (Test-PortListening 5001) { break }
     }
 
-    # Even if the poll timed out, try opening the browser.
-    # The server may still be initialising.
+    # 6. Open the browser once Flask is ready.
     Open-Or-Focus-Browser $AppUrl
     Start-Sleep -Seconds 2   # hold mutex so a concurrent double-click exits early
     exit 0

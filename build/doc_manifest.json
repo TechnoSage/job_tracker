@@ -1,7 +1,7 @@
 {
   "_comment": "Auto-maintained documentation manifest. Lists all features with their docs section IDs and last-updated timestamps.",
   "_version": "2",
-  "last_updated": "2026-03-13",
+  "last_updated": "2026-03-14",
   "builder_help": {
     "file": "build/builder_help.html",
     "sections": [
@@ -31,7 +31,8 @@
       { "id": "build-history",   "feature": "Build History",                    "routes": ["/api/build/history", "/api/build/history/restore"],                                               "updated": "2026-03-13" },
       { "id": "clean-outputs",   "feature": "Clean Outputs & Clean Logs",       "routes": ["/api/build/clean-logs"],                                                                          "updated": "2026-03-13" },
       { "id": "changelog",       "feature": "Per-project Change Log",           "routes": ["/api/changelog", "/api/changelog/draft", "/api/changelog/trigger", "/api/changelog/open-editor", "/api/changelog/reload-md", "/api/bd-changelog"], "updated": "2026-03-13" },
-      { "id": "self-compile",    "feature": "Multi-project Build / Self-Compile","routes": [],                                                                                                "updated": "2026-03-13" }
+      { "id": "self-compile",    "feature": "Multi-project Build / Self-Compile","routes": [],                                                                                                "updated": "2026-03-13" },
+      { "id": "app-lifecycle",   "feature": "App Lifecycle & Auto-Shutdown",    "routes": ["/api/heartbeat", "/api/tab-close", "/favicon.ico"],                                               "updated": "2026-03-14" }
     ]
   },
   "job_tracker_help": {

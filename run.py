@@ -100,39 +100,34 @@ def _open_browser():
     webbrowser.open(f"{scheme}://127.0.0.1:5000")
 
 
-# ── Heartbeat watchdog (frozen / compiled exe only) ───────────────────────────
-# The browser page sends POST /api/heartbeat every 30 s.  If we don't receive
-# one for 90 s the browser tab has been closed, so we shut the process down
-# cleanly.  This keeps the exe from living invisibly in Task Manager forever.
-_HEARTBEAT_TIMEOUT = 90   # seconds with no heartbeat before shutdown
-_HEARTBEAT_POLL    = 10   # how often the watchdog checks (seconds)
-
-
 def _heartbeat_watchdog():
-    """Daemon thread: exit the process when the browser disappears."""
-    _log = logging.getLogger("heartbeat_watchdog")
-    # Give the browser a generous window to load and send its first heartbeat.
-    time.sleep(_HEARTBEAT_TIMEOUT)
+    """Daemon thread: exit when all browser tabs have closed."""
+    _log     = logging.getLogger("heartbeat_watchdog")
+    ever     = getattr(flask_app, "_ever_had_tab", None)
+    tabs     = getattr(flask_app, "_tabs",         None)
+    lock     = getattr(flask_app, "_tabs_lock",    None)
+    timeout  = getattr(flask_app, "_beat_timeout", 30.0)
+    if ever is None or tabs is None:
+        return
+    while not ever[0]:
+        time.sleep(2)
     while True:
-        hb_list = getattr(flask_app, "_last_heartbeat", None)
-        if hb_list is not None:
-            elapsed = time.monotonic() - hb_list[0]
-            if elapsed > _HEARTBEAT_TIMEOUT:
-                _log.info(
-                    "No browser heartbeat for %.0f s — shutting down.", elapsed
-                )
-                os._exit(0)
-        time.sleep(_HEARTBEAT_POLL)
+        time.sleep(10)
+        now = time.monotonic()
+        with lock:
+            stale = [tid for tid, t in list(tabs.items()) if now - t > timeout]
+            for tid in stale:
+                tabs.pop(tid, None)
+            alive = bool(tabs)
+        if not alive:
+            _log.info("All tabs closed — shutting down.")
+            os._exit(0)
 
 
 if __name__ == "__main__":
     ssl = _ssl_context()
-    threading.Thread(target=_open_browser, daemon=True).start()
-
-    # Start watchdog only for compiled (frozen) exe — dev server restarts
-    # frequently and doesn't need auto-shutdown.
-    if getattr(sys, "frozen", False):
-        threading.Thread(target=_heartbeat_watchdog, daemon=True).start()
+    threading.Thread(target=_open_browser,       daemon=True).start()
+    threading.Thread(target=_heartbeat_watchdog, daemon=True).start()
 
     flask_app.run(
         host="127.0.0.1",

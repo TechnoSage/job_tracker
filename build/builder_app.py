@@ -25,7 +25,7 @@ import tempfile
 import threading
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 # ── Log output sanitisation ────────────────────────────────────────────────────
 # Many build tools (pip, Nuitka, PyArmor, ISCC) emit ANSI colour/cursor-control
@@ -443,6 +443,7 @@ _DEFAULTS: dict = {
     "START_MENU_ICON":     True,
     "ADD_TO_STARTUP":      False,
     "ICON_FILE":           "",
+    "APP_ICON_FILE":       "",
     "LICENSE_FILE":        "",
     "USE_PYARMOR":         False,
     "USE_NUITKA":          False,
@@ -3427,5 +3428,53 @@ def create_builder_app() -> Flask:
             "undocumented": undocumented,
             "sections":     sections,
         })
+
+    # ── Favicon ───────────────────────────────────────────────────────────────
+    @app.route("/favicon.ico")
+    def favicon():
+        return send_from_directory(BUILD_DIR, "builder_icon.ico", mimetype="image/x-icon")
+
+    # ── All-tabs watchdog ─────────────────────────────────────────────────────
+    # Every browser tab registers its own unique tabId via /api/heartbeat?tab=<id>.
+    # The server shuts down only when all known tabs have disconnected.
+    import time as _time
+
+    _tabs: dict[str, float] = {}          # tabId -> last beat timestamp
+    _tabs_lock = threading.Lock()
+    _ever_had_tab: list[bool] = [False]
+    _BEAT_TIMEOUT = 30.0
+
+    @app.route("/api/heartbeat", methods=["POST", "GET"])
+    def api_heartbeat():
+        tab_id = request.args.get("tab", "")
+        if tab_id:
+            with _tabs_lock:
+                _tabs[tab_id] = _time.monotonic()
+                _ever_had_tab[0] = True
+        return "", 204
+
+    @app.route("/api/tab-close", methods=["POST", "GET"])
+    def api_tab_close():
+        tab_id = request.args.get("tab", "")
+        if tab_id:
+            with _tabs_lock:
+                _tabs.pop(tab_id, None)
+        return "", 204
+
+    def _watchdog() -> None:
+        while not _ever_had_tab[0]:
+            _time.sleep(2)
+        while True:
+            _time.sleep(10)
+            now = _time.monotonic()
+            with _tabs_lock:
+                stale = [tid for tid, t in list(_tabs.items()) if now - t > _BEAT_TIMEOUT]
+                for tid in stale:
+                    _tabs.pop(tid, None)
+                alive = bool(_tabs)
+            if not alive:
+                os._exit(0)
+
+    threading.Thread(target=_watchdog, daemon=True, name="bd-watchdog").start()
 
     return app
