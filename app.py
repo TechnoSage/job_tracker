@@ -11,9 +11,10 @@ import uuid
 from datetime import datetime, timedelta
 from io import BytesIO
 
+import secrets as _secrets
 from flask import (
     Flask, Response, abort, flash, jsonify, redirect,
-    render_template, request, send_file, session, url_for,
+    render_template, request, send_file, send_from_directory, session, url_for,
 )
 
 from config import Config
@@ -3172,14 +3173,45 @@ def _register_routes(app):
         db.session.commit()
         return jsonify({"ok": True})
 
-    # ── Browser heartbeat (auto-shutdown when frozen exe / browser closes) ── #
+    # ── Favicon ───────────────────────────────────────────────────────────────
+    _ICONS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons")
 
+    @app.route("/favicon.ico")
+    def favicon():
+        return send_from_directory(_ICONS_DIR, "Logo_Transparent_Color.ico",
+                                   mimetype="image/x-icon")
+
+    # ── Primary-tab watchdog ──────────────────────────────────────────────────
+    # The launcher opens the browser with ?primary=<token>.  Only that tab is
+    # the "owner".  When it closes (beforeunload) it calls /api/tab-close and
+    # the server shuts down immediately.  The watchdog handles crash/kill cases.
     import time as _hb_time
+
+    _JT_PRIMARY_TOKEN: str       = _secrets.token_hex(16)
     _LAST_HEARTBEAT: list[float] = [_hb_time.monotonic()]
+    _primary_active: list[bool]  = [False]
+    _BEAT_TIMEOUT = 30.0
+
+    @app.route("/api/launch-token")
+    def api_launch_token():
+        return jsonify({"token": _JT_PRIMARY_TOKEN})
 
     @app.route("/api/heartbeat", methods=["POST"])
     def api_heartbeat():
-        _LAST_HEARTBEAT[0] = _hb_time.monotonic()
+        if request.args.get("primary") == _JT_PRIMARY_TOKEN:
+            _primary_active[0] = True
+            _LAST_HEARTBEAT[0] = _hb_time.monotonic()
         return "", 204
 
-    app._last_heartbeat = _LAST_HEARTBEAT
+    @app.route("/api/tab-close", methods=["POST", "GET"])
+    def api_tab_close():
+        if request.args.get("primary") == _JT_PRIMARY_TOKEN:
+            threading.Thread(
+                target=lambda: (_hb_time.sleep(0.4), os._exit(0)),
+                daemon=True,
+            ).start()
+        return "", 204
+
+    app._last_heartbeat  = _LAST_HEARTBEAT
+    app._primary_active  = _primary_active
+    app._beat_timeout    = _BEAT_TIMEOUT

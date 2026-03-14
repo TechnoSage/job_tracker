@@ -100,39 +100,28 @@ def _open_browser():
     webbrowser.open(f"{scheme}://127.0.0.1:5000")
 
 
-# ── Heartbeat watchdog (frozen / compiled exe only) ───────────────────────────
-# The browser page sends POST /api/heartbeat every 30 s.  If we don't receive
-# one for 90 s the browser tab has been closed, so we shut the process down
-# cleanly.  This keeps the exe from living invisibly in Task Manager forever.
-_HEARTBEAT_TIMEOUT = 90   # seconds with no heartbeat before shutdown
-_HEARTBEAT_POLL    = 10   # how often the watchdog checks (seconds)
-
-
 def _heartbeat_watchdog():
-    """Daemon thread: exit the process when the browser disappears."""
+    """Daemon thread: exit the process when the primary browser tab closes."""
     _log = logging.getLogger("heartbeat_watchdog")
-    # Give the browser a generous window to load and send its first heartbeat.
-    time.sleep(_HEARTBEAT_TIMEOUT)
+    # Wait until the primary tab has checked in at least once.
+    active = getattr(flask_app, "_primary_active", None)
+    while active is not None and not active[0]:
+        time.sleep(2)
+    timeout = getattr(flask_app, "_beat_timeout", 30.0)
     while True:
+        time.sleep(10)
         hb_list = getattr(flask_app, "_last_heartbeat", None)
         if hb_list is not None:
             elapsed = time.monotonic() - hb_list[0]
-            if elapsed > _HEARTBEAT_TIMEOUT:
-                _log.info(
-                    "No browser heartbeat for %.0f s — shutting down.", elapsed
-                )
+            if elapsed > timeout:
+                _log.info("No heartbeat for %.0f s — shutting down.", elapsed)
                 os._exit(0)
-        time.sleep(_HEARTBEAT_POLL)
 
 
 if __name__ == "__main__":
     ssl = _ssl_context()
     threading.Thread(target=_open_browser, daemon=True).start()
-
-    # Start watchdog only for compiled (frozen) exe — dev server restarts
-    # frequently and doesn't need auto-shutdown.
-    if getattr(sys, "frozen", False):
-        threading.Thread(target=_heartbeat_watchdog, daemon=True).start()
+    threading.Thread(target=_heartbeat_watchdog, daemon=True).start()
 
     flask_app.run(
         host="127.0.0.1",
