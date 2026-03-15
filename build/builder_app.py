@@ -2499,8 +2499,16 @@ def create_builder_app() -> Flask:
         except Exception:
             pass
 
+        # Terminate the test process so it doesn't linger on the test port.
+        try:
+            proc.terminate()
+            proc.wait(timeout=5)
+            V("CLEANUP", f"Test process (PID {proc.pid}) terminated.")
+        except Exception as ke:
+            V("WARN", f"Could not terminate test process: {ke}")
+
         if success:
-            V("VERIFY",  f"Port {port} verified responding.")
+            V("VERIFY",  f"Port {_test_port} verified responding.")
             V("REPORT",  f"PASS — bundle test completed. App online after {responded_at}s.")
             _flush(f"PASS  (responded in {responded_at}s)")
             return jsonify({"ok": True, "step": "running", "url": url,
@@ -2508,7 +2516,7 @@ def create_builder_app() -> Flask:
                             "pipeline_log": str(pipeline_log_path),
                             "message": f"App responded on {url} after {responded_at}s"})
 
-        V("ERROR",  f"TIMEOUT — port {port} did not respond within 20 s.")
+        V("ERROR",  f"TIMEOUT — port {_test_port} did not respond within 20 s.")
         V("REPORT", "FAIL — bundle test failed.")
         _flush("FAIL  (timeout after 20 s)")
         return jsonify({"ok": False, "step": "timeout", "log": log_lines[-30:],
@@ -2687,7 +2695,7 @@ def create_builder_app() -> Flask:
             _dir_ps = str(test_dir).replace("\\", "\\\\")
             ps_cmd = (
                 f"$p = Start-Process -FilePath '{_ins_ps}' "
-                f"-ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/DIR={_dir_ps}','/NORESTART' "
+                f"-ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/DIR={_dir_ps}','/NORESTART','/NOICONS' "
                 f"-Verb RunAs -Wait -PassThru; "
                 f"$ec = if ($null -eq $p.ExitCode) {{ 0 }} else {{ [int]$p.ExitCode }}; "
                 f"$ec | Out-File -FilePath '{_ec_ps}' -Encoding ascii -NoNewline"
@@ -2813,8 +2821,18 @@ def create_builder_app() -> Flask:
         except Exception:
             pass
 
+        # Terminate the test process — it has served its purpose.
+        # This prevents the compiled exe from lingering on the test port and
+        # stops it from having previously overwritten desktop shortcuts.
+        try:
+            proc.terminate()
+            proc.wait(timeout=5)
+            V("CLEANUP", f"Test process (PID {proc.pid}) terminated.")
+        except Exception as ke:
+            V("WARN", f"Could not terminate test process: {ke}")
+
         if success:
-            V("VERIFY",  f"Port {port} verified responding.")
+            V("VERIFY",  f"Port {_test_port} verified responding.")
             V("REPORT",  f"PASS — install test completed. App online after {responded_at}s.")
             _flush(f"PASS  (responded in {responded_at}s)")
             return jsonify({"ok": True, "step": "running", "url": url,
@@ -2822,7 +2840,7 @@ def create_builder_app() -> Flask:
                             "verbose_log": vlog, "pipeline_log": str(pipeline_log_path),
                             "message": f"Installed app responded on {url} after {responded_at}s"})
 
-        V("ERROR",  f"TIMEOUT — port {port} did not respond within 25 s.")
+        V("ERROR",  f"TIMEOUT — port {_test_port} did not respond within 25 s.")
         V("REPORT", "FAIL — install test failed.")
         _flush("FAIL  (timeout after 25 s)")
         return jsonify({"ok": False, "step": "timeout",
