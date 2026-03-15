@@ -2374,14 +2374,52 @@ def create_builder_app() -> Flask:
         V("LOCATE", f"Size     : {exe_path.stat().st_size:,} bytes")
         V("LOCATE", f"Modified : {datetime.datetime.fromtimestamp(exe_path.stat().st_mtime):%Y-%m-%d %H:%M:%S}")
 
-        # Kill any existing process on the port
-        V("PREP",   f"Clearing port {port}…")
+        # ── Port setup ────────────────────────────────────────────────────────
+        # Same conflict-avoidance as test-install: if APP_PORT == 5001 (the
+        # Build Dashboard's own port), launch on a free alternative port via
+        # BD_PORT env var so both servers coexist during the test.
+        _BD_OWN_PORT = 5001
+        _self_pid    = os.getpid()
+        _test_port   = port
+        _launch_env  = None
+
+        if port == _BD_OWN_PORT:
+            import socket as _sock
+            _free = None
+            for _tp in range(5100, 5200):
+                try:
+                    with _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM) as _s:
+                        _s.bind(("127.0.0.1", _tp))
+                        _free = _tp
+                        break
+                except OSError:
+                    continue
+            if _free:
+                _test_port  = _free
+                _launch_env = os.environ.copy()
+                _launch_env["BD_PORT"]     = str(_test_port)
+                _launch_env["BD_HEADLESS"] = "1"
+                _poll_url = f"{_scheme}://127.0.0.1:{_test_port}"
+                V("INFO",  f"APP_PORT {port} conflicts with the running Build Dashboard server.")
+                V("INFO",  f"Bundle exe will be launched on test port {_test_port} via BD_PORT env var.")
+                V("INFO",  f"BD_HEADLESS=1 — bundle exe will not open an extra browser tab.")
+                V("INFO",  f"Poll URL updated to {_poll_url}")
+            else:
+                V("WARN",  f"APP_PORT {port} conflicts with dev server and no free port found in 5100–5200.")
+                V("WARN",  "The bundle exe may fail to bind — poll will likely time out.")
+
+        # Kill any existing process on the test port — but never kill self.
+        V("PREP",   f"Clearing port {_test_port}…")
         try:
+            V("PREP",  f"Self PID : {_self_pid} (excluded from kill list)")
             kr = subprocess.run(
                 ["powershell", "-Command",
-                 f"$p = (Get-NetTCPConnection -LocalPort {port} -EA SilentlyContinue).OwningProcess; "
+                 f"$selfPid = {_self_pid}; "
+                 f"$p = (Get-NetTCPConnection -LocalPort {_test_port} -EA SilentlyContinue).OwningProcess "
+                 f"| Where-Object {{ $_ -ne $selfPid }}; "
                  f"if ($p) {{ $p | % {{ Stop-Process -Id $_ -Force -EA SilentlyContinue }}; "
-                 f"Write-Output \"Killed PID(s): $($p -join ', ')\" }} else {{ Write-Output 'Port already free.' }}"],
+                 f"Write-Output \"Killed PID(s): $($p -join ', ')\" }} "
+                 f"else {{ Write-Output 'Port already free (or only self).' }}"],
                 capture_output=True, text=True, timeout=10
             )
             V("PREP", kr.stdout.strip() or "Port cleared.")
@@ -2390,9 +2428,12 @@ def create_builder_app() -> Flask:
 
         # Launch
         V("LAUNCH", f"Spawning : {exe_path}")
+        if _launch_env:
+            V("LAUNCH", f"BD_PORT={_launch_env['BD_PORT']}  BD_HEADLESS=1  (test-port override)")
         try:
             proc = subprocess.Popen(
                 [str(exe_path)], cwd=str(bundle),
+                env=_launch_env,  # None = inherit env; set = custom env with BD_PORT override
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
             )
@@ -2577,17 +2618,50 @@ def create_builder_app() -> Flask:
         test_dir.mkdir(parents=True, exist_ok=True)
         V("PREP",   f"Test install dir : {test_dir}")
 
-        # Kill any process on the port — but never kill this server process itself.
-        # When Build Dashboard tests itself (both on port 5001) we must exclude our
-        # own PID so the running server is not killed mid-request.
-        V("PREP",   f"Clearing port {port}…")
+        # ── Port setup ────────────────────────────────────────────────────────
+        # When APP_PORT matches the Build Dashboard's own port (5001), the
+        # compiled app cannot bind the same port while this server is running.
+        # Fix: find a free alternative port in the 5100–5200 range and launch
+        # the compiled app with BD_PORT=<free> + BD_HEADLESS=1 via env vars,
+        # so both servers coexist during the test without a port conflict.
+        _BD_OWN_PORT = 5001
+        _self_pid    = os.getpid()
+        _test_port   = port        # actual port the compiled app will bind
+        _launch_env  = None        # None = inherit; set when using a test port
+
+        if port == _BD_OWN_PORT:
+            import socket as _sock
+            _free = None
+            for _tp in range(5100, 5200):
+                try:
+                    with _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM) as _s:
+                        _s.bind(("127.0.0.1", _tp))
+                        _free = _tp
+                        break
+                except OSError:
+                    continue
+            if _free:
+                _test_port  = _free
+                _launch_env = os.environ.copy()
+                _launch_env["BD_PORT"]     = str(_test_port)
+                _launch_env["BD_HEADLESS"] = "1"
+                _poll_url = f"{_scheme}://127.0.0.1:{_test_port}"
+                V("INFO",  f"APP_PORT {port} conflicts with the running Build Dashboard server.")
+                V("INFO",  f"Compiled app will be launched on test port {_test_port} via BD_PORT env var.")
+                V("INFO",  f"BD_HEADLESS=1 — compiled app will not open an extra browser tab.")
+                V("INFO",  f"Poll URL updated to {_poll_url}")
+            else:
+                V("WARN",  f"APP_PORT {port} conflicts with dev server and no free port found in 5100–5200.")
+                V("WARN",  "The compiled app may fail to bind — poll will likely time out.")
+
+        # Kill any existing process on the test port — but never kill self.
+        V("PREP",   f"Clearing port {_test_port}…")
         try:
-            _self_pid = os.getpid()
-            V("PREP",  f"Self PID : {_self_pid} (will not be killed)")
+            V("PREP",  f"Self PID : {_self_pid} (excluded from kill list)")
             kr = subprocess.run(
                 ["powershell", "-Command",
                  f"$selfPid = {_self_pid}; "
-                 f"$p = (Get-NetTCPConnection -LocalPort {port} -EA SilentlyContinue).OwningProcess "
+                 f"$p = (Get-NetTCPConnection -LocalPort {_test_port} -EA SilentlyContinue).OwningProcess "
                  f"| Where-Object {{ $_ -ne $selfPid }}; "
                  f"if ($p) {{ $p | % {{ Stop-Process -Id $_ -Force -EA SilentlyContinue }}; "
                  f"Write-Output \"Killed PID(s): $($p -join ', ')\" }} "
@@ -2597,16 +2671,6 @@ def create_builder_app() -> Flask:
             V("PREP", kr.stdout.strip() or "Port cleared.")
         except Exception as ex:
             V("WARN",  f"Port-clear non-fatal: {ex}")
-
-        # Warn if the app under test shares the same port as this Build Dashboard
-        # server (default 5001).  The compiled app will fail to bind and the poll
-        # will time out.  This is expected; the dev server stays alive.
-        _BD_PORT = 5001
-        if port == _BD_PORT:
-            V("WARN", f"Port {port} is also used by this Build Dashboard server.")
-            V("WARN", "The compiled app cannot bind to the same port while the dev server is running.")
-            V("WARN", "The install will run; the compiled app will fail to start; the poll will timeout.")
-            V("WARN", "To fully test the compiled Build Dashboard, stop this dev server first.")
 
         # Run installer silently — use PowerShell Start-Process -Verb RunAs so UAC
         # elevation is granted even when the installer requires admin privileges.
@@ -2676,9 +2740,12 @@ def create_builder_app() -> Flask:
 
         # Launch installed exe
         V("LAUNCH", f"Spawning : {installed_exe}")
+        if _launch_env:
+            V("LAUNCH", f"BD_PORT={_launch_env['BD_PORT']}  BD_HEADLESS=1  (test-port override)")
         try:
             proc = subprocess.Popen(
                 [str(installed_exe)], cwd=str(installed_exe.parent),
+                env=_launch_env,  # None = inherit env; set = custom env with BD_PORT override
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
             )
