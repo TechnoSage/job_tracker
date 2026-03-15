@@ -3130,7 +3130,6 @@ async function doTestInstall() {
     var _bti = document.getElementById('btnTestInstall'); if (_bti) _bti.disabled = false;
   });
 }
-}
 
 async function killTestApp() {
   try { await fetch('/api/build/kill-app', { method: 'POST' }); } catch (e) {}
