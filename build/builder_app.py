@@ -2577,19 +2577,36 @@ def create_builder_app() -> Flask:
         test_dir.mkdir(parents=True, exist_ok=True)
         V("PREP",   f"Test install dir : {test_dir}")
 
-        # Kill any process on the port
+        # Kill any process on the port — but never kill this server process itself.
+        # When Build Dashboard tests itself (both on port 5001) we must exclude our
+        # own PID so the running server is not killed mid-request.
         V("PREP",   f"Clearing port {port}…")
         try:
+            _self_pid = os.getpid()
+            V("PREP",  f"Self PID : {_self_pid} (will not be killed)")
             kr = subprocess.run(
                 ["powershell", "-Command",
-                 f"$p = (Get-NetTCPConnection -LocalPort {port} -EA SilentlyContinue).OwningProcess; "
+                 f"$selfPid = {_self_pid}; "
+                 f"$p = (Get-NetTCPConnection -LocalPort {port} -EA SilentlyContinue).OwningProcess "
+                 f"| Where-Object {{ $_ -ne $selfPid }}; "
                  f"if ($p) {{ $p | % {{ Stop-Process -Id $_ -Force -EA SilentlyContinue }}; "
-                 f"Write-Output \"Killed PID(s): $($p -join ', ')\" }} else {{ Write-Output 'Port already free.' }}"],
+                 f"Write-Output \"Killed PID(s): $($p -join ', ')\" }} "
+                 f"else {{ Write-Output 'Port already free (or only self).' }}"],
                 capture_output=True, text=True, timeout=10
             )
             V("PREP", kr.stdout.strip() or "Port cleared.")
         except Exception as ex:
             V("WARN",  f"Port-clear non-fatal: {ex}")
+
+        # Warn if the app under test shares the same port as this Build Dashboard
+        # server (default 5001).  The compiled app will fail to bind and the poll
+        # will time out.  This is expected; the dev server stays alive.
+        _BD_PORT = 5001
+        if port == _BD_PORT:
+            V("WARN", f"Port {port} is also used by this Build Dashboard server.")
+            V("WARN", "The compiled app cannot bind to the same port while the dev server is running.")
+            V("WARN", "The install will run; the compiled app will fail to start; the poll will timeout.")
+            V("WARN", "To fully test the compiled Build Dashboard, stop this dev server first.")
 
         # Run installer silently — use PowerShell Start-Process -Verb RunAs so UAC
         # elevation is granted even when the installer requires admin privileges.
