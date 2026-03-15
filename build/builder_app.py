@@ -528,6 +528,12 @@ _build_lock:   threading.Lock = threading.Lock()
 _build_log:    list[str]      = []
 _build_status: str            = "idle"   # idle | running | done | error
 
+# ── Test-pipeline job tracking ────────────────────────────────────────────────
+# Each test run (test-run / test-install) creates a job entry so the test can
+# execute in a background thread while the frontend polls for live log output.
+_test_jobs: dict      = {}               # job_id -> {"done": bool, "log": list[str], "result": dict|None}
+_test_jobs_lock: threading.Lock = threading.Lock()
+
 
 def _append(line: str) -> None:
     with _build_lock:
@@ -2253,12 +2259,48 @@ def create_builder_app() -> Flask:
             total  = len(_build_log)
         return jsonify({"lines": lines, "status": status, "total": total})
 
+    @app.route("/api/build/test-status")
+    def api_build_test_status():
+        """Poll a running test-pipeline job for new log lines and completion status."""
+        job_id = request.args.get("job", "")
+        offset = int(request.args.get("offset", "0") or "0")
+        with _test_jobs_lock:
+            job = _test_jobs.get(job_id)
+        if not job:
+            return jsonify({"ok": False, "error": "Unknown job ID"}), 404
+        log_slice = job["log"][offset:]
+        return jsonify({
+            "done":   job["done"],
+            "log":    log_slice,
+            "offset": offset + len(log_slice),
+            "result": job.get("result") if job["done"] else None,
+        })
+
     # ── Build test (run compiled exe, test-install) ───────────────────────────
 
     @app.route("/api/build/test-run", methods=["POST"])
     def api_build_test_run():
-        """Launch compiled exe from Bundle Only/ subdir, poll port — verbose log + pipeline log file."""
-        import time, urllib.request, datetime
+        """Start bundle-run test in a background thread; return job_id for polling."""
+        import uuid
+        job_id = uuid.uuid4().hex
+        with _test_jobs_lock:
+            _test_jobs[job_id] = {"done": False, "log": [], "result": None}
+        threading.Thread(
+            target=_bg_test_run, args=(job_id,),
+            daemon=True, name=f"test-run-{job_id[:8]}"
+        ).start()
+        return jsonify({"ok": True, "job_id": job_id})
+
+    def _bg_test_run(job_id: str) -> None:
+        """Background worker: launch Bundle Only exe, poll port, write pipeline log."""
+        import time, urllib.request, datetime, ssl as _ssl, socket as _sock
+
+        def _done(result: dict) -> None:
+            with _test_jobs_lock:
+                if job_id in _test_jobs:
+                    _test_jobs[job_id]["result"] = result
+                    _test_jobs[job_id]["done"]   = True
+
         settings   = _load_settings()
         exe_name   = settings.get("APP_EXE_NAME", "app").strip()
         port       = int(settings.get("APP_PORT", "5000") or "5000")
@@ -2268,15 +2310,20 @@ def create_builder_app() -> Flask:
         bundle     = output_dir / "Bundle Only" / exe_name
         exe_path   = bundle / f"{exe_name}.exe"
 
-        _now   = datetime.datetime.now
+        _now  = datetime.datetime.now
         def _ts(): return _now().strftime("%H:%M:%S.%f")[:-3]
-        vlog   = []
-        def V(tag, msg): vlog.append(f"[{_ts()}] [{tag:<7}]  {msg}")
+        vlog  = []
+        def V(tag: str, msg: str) -> None:
+            line = f"[{_ts()}] [{tag:<7}]  {msg}"
+            vlog.append(line)
+            with _test_jobs_lock:
+                if job_id in _test_jobs:
+                    _test_jobs[job_id]["log"].append(line)
 
         date_str          = _now().strftime("%Y-%m-%d_%H-%M-%S")
         pipeline_log_path = output_dir / "Log" / f"{exe_name}_Output_Pipeline_{date_str}.log"
 
-        def _flush(status_label):
+        def _flush(status_label: str) -> None:
             try:
                 pipeline_log_path.parent.mkdir(parents=True, exist_ok=True)
                 SEP    = "=" * 72
@@ -2290,8 +2337,7 @@ def create_builder_app() -> Flask:
                     f"  Result    : {status_label}",
                     f"  Timestamp : {_now().strftime('%Y-%m-%d %H:%M:%S')}",
                     f"  Log file  : {pipeline_log_path}",
-                    SEP,
-                    "",
+                    SEP, "",
                 ]
                 if errors or warns:
                     summary = ["--- SUMMARY ---"]
@@ -2313,8 +2359,7 @@ def create_builder_app() -> Flask:
             except Exception:
                 pass
 
-        # Build SSL context for polling — use mkcert CA if available
-        import ssl as _ssl
+        # ── SSL context ────────────────────────────────────────────────────────
         def _mk_ssl_ctx():
             ctx = _ssl.create_default_context()
             if _MKCERT_CA.is_file():
@@ -2325,17 +2370,12 @@ def create_builder_app() -> Flask:
             return ctx
         _ssl_ctx = _mk_ssl_ctx()
 
-        # Determine scheme: mirror what run.py does — HTTPS only if the bundle
-        # itself contains certs/localhost.pem next to the exe.
-        # Do NOT use _LOCAL_CERT (source-tree certs) — those are irrelevant to
-        # the compiled exe which has its own working directory.
         _bundle_has_certs = (bundle / "certs" / "localhost.pem").exists()
-        _scheme = "https" if _bundle_has_certs else "http"
+        _scheme   = "https" if _bundle_has_certs else "http"
         _poll_url = f"{_scheme}://127.0.0.1:{port}"
 
         V("START",  "=== Bundle Run Test Pipeline ===")
         V("INFO",   f"Exe      : {exe_path}")
-        V("INFO",   f"Poll URL : {_poll_url}")
         V("INFO",   f"Log file : {pipeline_log_path}")
 
         if not exe_path.exists():
@@ -2357,8 +2397,7 @@ def create_builder_app() -> Flask:
                     contents = [str(p) for p in bundle_only_dir.rglob("*.exe")]
                     if contents:
                         V("INFO", f"Other .exe files found in {bundle_only_dir}:")
-                        for c in contents[:10]:
-                            V("INFO", f"  {c}")
+                        for c in contents[:10]: V("INFO", f"  {c}")
                     else:
                         V("INFO", f"{bundle_only_dir} contains no .exe files.")
                 else:
@@ -2366,50 +2405,54 @@ def create_builder_app() -> Flask:
                 V("ERROR", f"Exe '{exe_name}.exe' not found in Bundle Only/")
                 V("HINT",  "Run a 'Bundle Only' build first.")
                 _flush("FAIL — exe not found")
-                return jsonify({"ok": False, "step": "locate",
-                                "error": f"Exe not found: {exe_path}. Run a Bundle build first.",
-                                "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+                _done({"ok": False, "step": "locate",
+                        "error": f"Exe not found: {exe_path}. Run a Bundle build first.",
+                        "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+                return
 
         V("LOCATE", f"Found    : {exe_path}")
         V("LOCATE", f"Size     : {exe_path.stat().st_size:,} bytes")
         V("LOCATE", f"Modified : {datetime.datetime.fromtimestamp(exe_path.stat().st_mtime):%Y-%m-%d %H:%M:%S}")
 
-        # ── Port setup ────────────────────────────────────────────────────────
-        # Same conflict-avoidance as test-install: if APP_PORT == 5001 (the
-        # Build Dashboard's own port), launch on a free alternative port via
-        # BD_PORT env var so both servers coexist during the test.
+        # ── Test-port setup ────────────────────────────────────────────────────
+        # Always run the compiled app on a separate free port (5100–5200) so the
+        # running Build Dashboard server is never disturbed.  BD_HEADLESS=1 is
+        # always set so no browser tab pops up during the test.
         _BD_OWN_PORT = 5001
         _self_pid    = os.getpid()
         _test_port   = port
-        _launch_env  = None
+        _launch_env  = os.environ.copy()
+        _launch_env["BD_HEADLESS"] = "1"
 
-        if port == _BD_OWN_PORT:
-            import socket as _sock
-            _free = None
-            for _tp in range(5100, 5200):
-                try:
-                    with _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM) as _s:
-                        _s.bind(("127.0.0.1", _tp))
-                        _free = _tp
-                        break
-                except OSError:
-                    continue
-            if _free:
-                _test_port  = _free
-                _launch_env = os.environ.copy()
-                _launch_env["BD_PORT"]     = str(_test_port)
-                _launch_env["BD_HEADLESS"] = "1"
-                _poll_url = f"{_scheme}://127.0.0.1:{_test_port}"
-                V("INFO",  f"APP_PORT {port} conflicts with the running Build Dashboard server.")
-                V("INFO",  f"Bundle exe will be launched on test port {_test_port} via BD_PORT env var.")
-                V("INFO",  f"BD_HEADLESS=1 — bundle exe will not open an extra browser tab.")
-                V("INFO",  f"Poll URL updated to {_poll_url}")
-            else:
-                V("WARN",  f"APP_PORT {port} conflicts with dev server and no free port found in 5100–5200.")
-                V("WARN",  "The bundle exe may fail to bind — poll will likely time out.")
+        _free = None
+        for _tp in range(5100, 5200):
+            if _tp == _BD_OWN_PORT:
+                continue
+            try:
+                with _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM) as _s:
+                    _s.bind(("127.0.0.1", _tp))
+                    _free = _tp
+                    break
+            except OSError:
+                continue
+
+        if _free:
+            _test_port = _free
+            _launch_env["BD_PORT"] = str(_test_port)
+            _poll_url = f"{_scheme}://127.0.0.1:{_test_port}"
+            V("INFO",  f"Test port : {_test_port}  (BD_PORT={_test_port})")
+            V("INFO",  f"Poll URL  : {_poll_url}")
+            V("INFO",  "BD_HEADLESS=1 — no browser tab will open during test.")
+            V("INFO",  "NOTE: Compiled app must read BD_PORT env var.")
+            V("INFO",  "      If test was compiled before 2026-03-14, rebuild first.")
+        else:
+            _launch_env["BD_PORT"] = str(port)
+            V("WARN",  "No free port in 5100–5200; falling back to configured port.")
+            if port == _BD_OWN_PORT:
+                V("WARN", f"APP_PORT {port} matches Build Dashboard port — conflict likely.")
 
         # Kill any existing process on the test port — but never kill self.
-        V("PREP",   f"Clearing port {_test_port}…")
+        V("PREP",   f"Clearing test port {_test_port}…")
         try:
             V("PREP",  f"Self PID : {_self_pid} (excluded from kill list)")
             kr = subprocess.run(
@@ -2428,12 +2471,11 @@ def create_builder_app() -> Flask:
 
         # Launch
         V("LAUNCH", f"Spawning : {exe_path}")
-        if _launch_env:
-            V("LAUNCH", f"BD_PORT={_launch_env['BD_PORT']}  BD_HEADLESS=1  (test-port override)")
+        V("LAUNCH", f"Env BD_PORT={_launch_env['BD_PORT']}  BD_HEADLESS=1")
         try:
             proc = subprocess.Popen(
                 [str(exe_path)], cwd=str(bundle),
-                env=_launch_env,  # None = inherit env; set = custom env with BD_PORT override
+                env=_launch_env,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
             )
@@ -2441,11 +2483,12 @@ def create_builder_app() -> Flask:
         except Exception as e:
             V("ERROR", f"Launch failed: {e}")
             _flush("FAIL — launch error")
-            return jsonify({"ok": False, "step": "launch", "error": str(e),
-                            "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+            _done({"ok": False, "step": "launch", "error": str(e),
+                    "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+            return
 
-        url         = _poll_url
-        success     = False
+        url          = _poll_url
+        success      = False
         responded_at = -1
         V("CONNECT", f"Polling {url} — up to 20 attempts (1 s interval)…")
         for i in range(20):
@@ -2460,8 +2503,8 @@ def create_builder_app() -> Flask:
             except Exception as pe:
                 V("POLL",   f"  [{i+1:02d}/20] No response — {type(pe).__name__}: {pe}")
 
-        # Collect full app log
-        V("LOG",    "Scanning bundle dir for app log files…")
+        # Collect app log
+        V("LOG", "Scanning bundle dir for app log files…")
         log_lines = []
         for log_name in [f"{exe_name.lower()}.log", "job_tracker.log", "app.log"]:
             lp = bundle / log_name
@@ -2477,19 +2520,17 @@ def create_builder_app() -> Flask:
             V("LOG", "No app log file found in bundle directory.")
         else:
             V("LOG", "--- app log (full) ---")
-            for ln in log_lines:
-                vlog.append(f"  {ln}")
+            for ln in log_lines: vlog.append(f"  {ln}")
             V("LOG", "--- end app log ---")
 
-        # Collect process stderr (non-blocking best-effort)
+        # Collect process stderr (non-blocking)
         try:
             proc.stdout.close()
             raw_err = b""
             import select as _sel
             if hasattr(_sel, "select"):
                 ready = _sel.select([proc.stderr], [], [], 0.5)[0]
-                if ready:
-                    raw_err = proc.stderr.read(65536)
+                if ready: raw_err = proc.stderr.read(65536)
             proc.stderr.close()
             if raw_err:
                 V("STDERR", "--- process stderr ---")
@@ -2499,7 +2540,7 @@ def create_builder_app() -> Flask:
         except Exception:
             pass
 
-        # Terminate the test process so it doesn't linger on the test port.
+        # Terminate the test process
         try:
             proc.terminate()
             proc.wait(timeout=5)
@@ -2511,22 +2552,42 @@ def create_builder_app() -> Flask:
             V("VERIFY",  f"Port {_test_port} verified responding.")
             V("REPORT",  f"PASS — bundle test completed. App online after {responded_at}s.")
             _flush(f"PASS  (responded in {responded_at}s)")
-            return jsonify({"ok": True, "step": "running", "url": url,
-                            "log": log_lines[-20:], "verbose_log": vlog,
-                            "pipeline_log": str(pipeline_log_path),
-                            "message": f"App responded on {url} after {responded_at}s"})
+            _done({"ok": True, "step": "running", "url": url,
+                   "log": log_lines[-20:], "verbose_log": vlog,
+                   "pipeline_log": str(pipeline_log_path),
+                   "message": f"App responded on {url} after {responded_at}s"})
+            return
 
         V("ERROR",  f"TIMEOUT — port {_test_port} did not respond within 20 s.")
         V("REPORT", "FAIL — bundle test failed.")
         _flush("FAIL  (timeout after 20 s)")
-        return jsonify({"ok": False, "step": "timeout", "log": log_lines[-30:],
-                        "verbose_log": vlog, "pipeline_log": str(pipeline_log_path),
-                        "error": f"App did not respond on {url} within 20 s"})
+        _done({"ok": False, "step": "timeout", "log": log_lines[-30:],
+               "verbose_log": vlog, "pipeline_log": str(pipeline_log_path),
+               "error": f"App did not respond on {url} within 20 s"})
 
     @app.route("/api/build/test-install", methods=["POST"])
     def api_build_test_install():
-        """Run the installer silently, launch installed exe, poll port — verbose log + pipeline log file."""
-        import glob, time, urllib.request, tempfile, datetime
+        """Start installer test in a background thread; return job_id for polling."""
+        import uuid
+        job_id = uuid.uuid4().hex
+        with _test_jobs_lock:
+            _test_jobs[job_id] = {"done": False, "log": [], "result": None}
+        threading.Thread(
+            target=_bg_test_install, args=(job_id,),
+            daemon=True, name=f"test-install-{job_id[:8]}"
+        ).start()
+        return jsonify({"ok": True, "job_id": job_id})
+
+    def _bg_test_install(job_id: str) -> None:
+        """Background worker: install exe silently, launch it, poll port, write pipeline log."""
+        import glob, time, urllib.request, tempfile, datetime, ssl as _ssl, socket as _sock
+
+        def _done(result: dict) -> None:
+            with _test_jobs_lock:
+                if job_id in _test_jobs:
+                    _test_jobs[job_id]["result"] = result
+                    _test_jobs[job_id]["done"]   = True
+
         settings   = _load_settings()
         exe_name   = settings.get("APP_EXE_NAME", "app").strip()
         version    = settings.get("APP_VERSION", "1.0.0").strip()
@@ -2538,12 +2599,17 @@ def create_builder_app() -> Flask:
         _now  = datetime.datetime.now
         def _ts(): return _now().strftime("%H:%M:%S.%f")[:-3]
         vlog  = []
-        def V(tag, msg): vlog.append(f"[{_ts()}] [{tag:<7}]  {msg}")
+        def V(tag: str, msg: str) -> None:
+            line = f"[{_ts()}] [{tag:<7}]  {msg}"
+            vlog.append(line)
+            with _test_jobs_lock:
+                if job_id in _test_jobs:
+                    _test_jobs[job_id]["log"].append(line)
 
         date_str          = _now().strftime("%Y-%m-%d_%H-%M-%S")
         pipeline_log_path = output_dir / "Log" / f"{exe_name}_Output_Pipeline_{date_str}.log"
 
-        def _flush(status_label):
+        def _flush(status_label: str) -> None:
             try:
                 pipeline_log_path.parent.mkdir(parents=True, exist_ok=True)
                 SEP    = "=" * 72
@@ -2557,8 +2623,7 @@ def create_builder_app() -> Flask:
                     f"  Result    : {status_label}",
                     f"  Timestamp : {_now().strftime('%Y-%m-%d %H:%M:%S')}",
                     f"  Log file  : {pipeline_log_path}",
-                    SEP,
-                    "",
+                    SEP, "",
                 ]
                 if errors or warns:
                     summary = ["--- SUMMARY ---"]
@@ -2580,8 +2645,7 @@ def create_builder_app() -> Flask:
             except Exception:
                 pass
 
-        # Build SSL context for polling
-        import ssl as _ssl
+        # ── SSL context ────────────────────────────────────────────────────────
         def _mk_ssl_ctx():
             ctx = _ssl.create_default_context()
             if _MKCERT_CA.is_file():
@@ -2591,9 +2655,8 @@ def create_builder_app() -> Flask:
                 ctx.verify_mode = _ssl.CERT_NONE
             return ctx
         _ssl_ctx = _mk_ssl_ctx()
-        # Mirror what run.py does: HTTPS only when the bundle contains certs.
-        # The bundle used to create the installer is in Bundle Only/<exe_name>/.
-        _inst_bundle = output_dir / "Bundle Only" / exe_name
+
+        _inst_bundle    = output_dir / "Bundle Only" / exe_name
         _inst_has_certs = (_inst_bundle / "certs" / "localhost.pem").exists()
         _scheme   = "https" if _inst_has_certs else "http"
         _poll_url = f"{_scheme}://127.0.0.1:{port}"
@@ -2601,7 +2664,6 @@ def create_builder_app() -> Flask:
         V("START",  "=== Full-Build Install Test Pipeline ===")
         V("INFO",   f"App      : {exe_name}  v{version}")
         V("INFO",   f"Out dir  : {output_dir}")
-        V("INFO",   f"Poll URL : {_poll_url}")
         V("INFO",   f"Log file : {pipeline_log_path}")
 
         # Find installer
@@ -2613,9 +2675,10 @@ def create_builder_app() -> Flask:
             V("ERROR", f"Installer not found in: {output_dir}")
             V("HINT",  "Run a 'Full Build' first.")
             _flush("FAIL — installer not found")
-            return jsonify({"ok": False, "step": "locate",
-                            "error": f"Installer not found in {output_dir}. Run a Full Build first.",
-                            "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+            _done({"ok": False, "step": "locate",
+                   "error": f"Installer not found in {output_dir}. Run a Full Build first.",
+                   "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+            return
 
         V("LOCATE", f"Found    : {installer}")
         V("LOCATE", f"Size     : {installer.stat().st_size:,} bytes")
@@ -2626,44 +2689,44 @@ def create_builder_app() -> Flask:
         test_dir.mkdir(parents=True, exist_ok=True)
         V("PREP",   f"Test install dir : {test_dir}")
 
-        # ── Port setup ────────────────────────────────────────────────────────
-        # When APP_PORT matches the Build Dashboard's own port (5001), the
-        # compiled app cannot bind the same port while this server is running.
-        # Fix: find a free alternative port in the 5100–5200 range and launch
-        # the compiled app with BD_PORT=<free> + BD_HEADLESS=1 via env vars,
-        # so both servers coexist during the test without a port conflict.
+        # ── Test-port setup ────────────────────────────────────────────────────
+        # Always run the compiled app on a separate free port (5100–5200) and
+        # always suppress the auto-open browser tab with BD_HEADLESS=1.
         _BD_OWN_PORT = 5001
         _self_pid    = os.getpid()
-        _test_port   = port        # actual port the compiled app will bind
-        _launch_env  = None        # None = inherit; set when using a test port
+        _test_port   = port
+        _launch_env  = os.environ.copy()
+        _launch_env["BD_HEADLESS"] = "1"
 
-        if port == _BD_OWN_PORT:
-            import socket as _sock
-            _free = None
-            for _tp in range(5100, 5200):
-                try:
-                    with _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM) as _s:
-                        _s.bind(("127.0.0.1", _tp))
-                        _free = _tp
-                        break
-                except OSError:
-                    continue
-            if _free:
-                _test_port  = _free
-                _launch_env = os.environ.copy()
-                _launch_env["BD_PORT"]     = str(_test_port)
-                _launch_env["BD_HEADLESS"] = "1"
-                _poll_url = f"{_scheme}://127.0.0.1:{_test_port}"
-                V("INFO",  f"APP_PORT {port} conflicts with the running Build Dashboard server.")
-                V("INFO",  f"Compiled app will be launched on test port {_test_port} via BD_PORT env var.")
-                V("INFO",  f"BD_HEADLESS=1 — compiled app will not open an extra browser tab.")
-                V("INFO",  f"Poll URL updated to {_poll_url}")
-            else:
-                V("WARN",  f"APP_PORT {port} conflicts with dev server and no free port found in 5100–5200.")
-                V("WARN",  "The compiled app may fail to bind — poll will likely time out.")
+        _free = None
+        for _tp in range(5100, 5200):
+            if _tp == _BD_OWN_PORT:
+                continue
+            try:
+                with _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM) as _s:
+                    _s.bind(("127.0.0.1", _tp))
+                    _free = _tp
+                    break
+            except OSError:
+                continue
+
+        if _free:
+            _test_port = _free
+            _launch_env["BD_PORT"] = str(_test_port)
+            _poll_url = f"{_scheme}://127.0.0.1:{_test_port}"
+            V("INFO",  f"Test port : {_test_port}  (BD_PORT={_test_port})")
+            V("INFO",  f"Poll URL  : {_poll_url}")
+            V("INFO",  "BD_HEADLESS=1 — no browser tab will open during test.")
+            V("INFO",  "NOTE: Compiled app must read BD_PORT env var.")
+            V("INFO",  "      If installer was compiled before 2026-03-14, rebuild first.")
+        else:
+            _launch_env["BD_PORT"] = str(port)
+            V("WARN",  "No free port in 5100–5200; falling back to configured port.")
+            if port == _BD_OWN_PORT:
+                V("WARN", f"APP_PORT {port} matches Build Dashboard port — conflict likely.")
 
         # Kill any existing process on the test port — but never kill self.
-        V("PREP",   f"Clearing port {_test_port}…")
+        V("PREP",   f"Clearing test port {_test_port}…")
         try:
             V("PREP",  f"Self PID : {_self_pid} (excluded from kill list)")
             kr = subprocess.run(
@@ -2680,14 +2743,12 @@ def create_builder_app() -> Flask:
         except Exception as ex:
             V("WARN",  f"Port-clear non-fatal: {ex}")
 
-        # Run installer silently — use PowerShell Start-Process -Verb RunAs so UAC
-        # elevation is granted even when the installer requires admin privileges.
-        V("INSTALL", f"Running installer (elevated): /VERYSILENT /DIR={test_dir}")
+        # Run installer silently — /TASKS="" suppresses all optional tasks
+        # (desktop icon, Start Menu entries) without showing the wizard.
+        V("INSTALL", f"Running installer (elevated): /VERYSILENT /TASKS=\"\" /DIR={test_dir}")
         V("INSTALL", "A UAC prompt will appear — please approve to continue the test.")
         install_start = _now()
         try:
-            # Write exit code to a temp file because Start-Process -Verb RunAs
-            # spawns an elevated child that subprocess cannot capture directly.
             import tempfile as _tf
             ec_file = Path(_tf.mktemp(suffix=".txt"))
             _ec_ps  = str(ec_file).replace("\\", "\\\\")
@@ -2695,7 +2756,7 @@ def create_builder_app() -> Flask:
             _dir_ps = str(test_dir).replace("\\", "\\\\")
             ps_cmd = (
                 f"$p = Start-Process -FilePath '{_ins_ps}' "
-                f"-ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/DIR={_dir_ps}','/NORESTART','/NOICONS' "
+                f"-ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/DIR={_dir_ps}','/NORESTART','/TASKS=\"\"' "
                 f"-Verb RunAs -Wait -PassThru; "
                 f"$ec = if ($null -eq $p.ExitCode) {{ 0 }} else {{ [int]$p.ExitCode }}; "
                 f"$ec | Out-File -FilePath '{_ec_ps}' -Encoding ascii -NoNewline"
@@ -2704,8 +2765,7 @@ def create_builder_app() -> Flask:
                 ["powershell", "-NoProfile", "-Command", ps_cmd],
                 capture_output=True, text=True, timeout=180
             )
-            # Read exit code written by the elevated process
-            exit_code = ir.returncode  # fallback
+            exit_code = ir.returncode
             if ec_file.exists():
                 try:
                     exit_code = int(ec_file.read_text(encoding="ascii").strip())
@@ -2714,46 +2774,45 @@ def create_builder_app() -> Flask:
                 ec_file.unlink(missing_ok=True)
             elapsed = (_now() - install_start).total_seconds()
             V("INSTALL", f"Installer exited in {elapsed:.1f}s — return code: {exit_code}")
-            if ir.stdout.strip():
-                V("INSTALL", f"stdout: {ir.stdout.strip()[:500]}")
-            if ir.stderr.strip():
-                V("INSTALL", f"stderr: {ir.stderr.strip()[:500]}")
-            if exit_code not in (0, 1):   # Inno Setup: 0=ok, 1=success with reboot
+            if ir.stdout.strip(): V("INSTALL", f"stdout: {ir.stdout.strip()[:500]}")
+            if ir.stderr.strip(): V("INSTALL", f"stderr: {ir.stderr.strip()[:500]}")
+            if exit_code not in (0, 1):
                 V("WARN",   f"Non-zero exit code: {exit_code} (may still have installed)")
         except subprocess.TimeoutExpired:
             V("ERROR", "Installer timed out after 180 s.")
             _flush("FAIL — installer timeout")
-            return jsonify({"ok": False, "step": "install", "error": "Installer timed out after 180 s",
-                            "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+            _done({"ok": False, "step": "install", "error": "Installer timed out after 180 s",
+                   "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+            return
         except Exception as e:
             V("ERROR", f"Installer error: {e}")
             _flush("FAIL — installer error")
-            return jsonify({"ok": False, "step": "install", "error": str(e),
-                            "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+            _done({"ok": False, "step": "install", "error": str(e),
+                   "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+            return
 
         installed_exe = test_dir / f"{exe_name}.exe"
         if not installed_exe.exists():
-            # Try one level deeper
             found = list(test_dir.rglob(f"{exe_name}.exe"))
             installed_exe = found[0] if found else installed_exe
         if not installed_exe.exists():
             V("ERROR", f"Installed exe not found at: {installed_exe}")
             V("INFO",  f"Contents of {test_dir}: {list(test_dir.iterdir())[:20]}")
             _flush("FAIL — installed exe not found")
-            return jsonify({"ok": False, "step": "install",
-                            "error": f"Installer finished but exe not found at {installed_exe}",
-                            "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+            _done({"ok": False, "step": "install",
+                   "error": f"Installer finished but exe not found at {installed_exe}",
+                   "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+            return
 
         V("INSTALL", f"Installed exe : {installed_exe}")
 
         # Launch installed exe
         V("LAUNCH", f"Spawning : {installed_exe}")
-        if _launch_env:
-            V("LAUNCH", f"BD_PORT={_launch_env['BD_PORT']}  BD_HEADLESS=1  (test-port override)")
+        V("LAUNCH", f"Env BD_PORT={_launch_env['BD_PORT']}  BD_HEADLESS=1")
         try:
             proc = subprocess.Popen(
                 [str(installed_exe)], cwd=str(installed_exe.parent),
-                env=_launch_env,  # None = inherit env; set = custom env with BD_PORT override
+                env=_launch_env,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
             )
@@ -2761,11 +2820,12 @@ def create_builder_app() -> Flask:
         except Exception as e:
             V("ERROR", f"Launch failed: {e}")
             _flush("FAIL — launch error")
-            return jsonify({"ok": False, "step": "launch", "error": str(e),
-                            "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+            _done({"ok": False, "step": "launch", "error": str(e),
+                   "verbose_log": vlog, "pipeline_log": str(pipeline_log_path)})
+            return
 
-        url         = _poll_url
-        success     = False
+        url          = _poll_url
+        success      = False
         responded_at = -1
         V("CONNECT", f"Polling {url} — up to 25 attempts (1 s interval)…")
         for i in range(25):
@@ -2780,13 +2840,12 @@ def create_builder_app() -> Flask:
             except Exception as pe:
                 V("POLL",   f"  [{i+1:02d}/25] No response — {type(pe).__name__}: {pe}")
 
-        # Collect full app log from test_dir
+        # Collect app log
         V("LOG",    f"Scanning install dir for app log files: {test_dir}")
         log_lines = []
         for log_name in [f"{exe_name.lower()}.log", "job_tracker.log", "app.log"]:
             lp = test_dir / log_name
-            if not lp.exists():
-                lp = installed_exe.parent / log_name
+            if not lp.exists(): lp = installed_exe.parent / log_name
             if lp.exists():
                 try:
                     content   = lp.read_text(errors="replace")
@@ -2799,19 +2858,17 @@ def create_builder_app() -> Flask:
             V("LOG", "No app log found in install directory.")
         else:
             V("LOG", "--- app log (full) ---")
-            for ln in log_lines:
-                vlog.append(f"  {ln}")
+            for ln in log_lines: vlog.append(f"  {ln}")
             V("LOG", "--- end app log ---")
 
-        # Collect process stderr (best-effort)
+        # Collect process stderr
         try:
             proc.stdout.close()
             raw_err = b""
             import select as _sel
             if hasattr(_sel, "select"):
                 ready = _sel.select([proc.stderr], [], [], 0.5)[0]
-                if ready:
-                    raw_err = proc.stderr.read(65536)
+                if ready: raw_err = proc.stderr.read(65536)
             proc.stderr.close()
             if raw_err:
                 V("STDERR", "--- process stderr ---")
@@ -2821,9 +2878,7 @@ def create_builder_app() -> Flask:
         except Exception:
             pass
 
-        # Terminate the test process — it has served its purpose.
-        # This prevents the compiled exe from lingering on the test port and
-        # stops it from having previously overwritten desktop shortcuts.
+        # Terminate the test process
         try:
             proc.terminate()
             proc.wait(timeout=5)
@@ -2835,18 +2890,19 @@ def create_builder_app() -> Flask:
             V("VERIFY",  f"Port {_test_port} verified responding.")
             V("REPORT",  f"PASS — install test completed. App online after {responded_at}s.")
             _flush(f"PASS  (responded in {responded_at}s)")
-            return jsonify({"ok": True, "step": "running", "url": url,
-                            "install_dir": str(test_dir), "log": log_lines[-20:],
-                            "verbose_log": vlog, "pipeline_log": str(pipeline_log_path),
-                            "message": f"Installed app responded on {url} after {responded_at}s"})
+            _done({"ok": True, "step": "running", "url": url,
+                   "install_dir": str(test_dir), "log": log_lines[-20:],
+                   "verbose_log": vlog, "pipeline_log": str(pipeline_log_path),
+                   "message": f"Installed app responded on {url} after {responded_at}s"})
+            return
 
         V("ERROR",  f"TIMEOUT — port {_test_port} did not respond within 25 s.")
         V("REPORT", "FAIL — install test failed.")
         _flush("FAIL  (timeout after 25 s)")
-        return jsonify({"ok": False, "step": "timeout",
-                        "install_dir": str(test_dir), "log": log_lines[-30:],
-                        "verbose_log": vlog, "pipeline_log": str(pipeline_log_path),
-                        "error": f"Installed app did not respond on {url} within 25 s"})
+        _done({"ok": False, "step": "timeout",
+               "install_dir": str(test_dir), "log": log_lines[-30:],
+               "verbose_log": vlog, "pipeline_log": str(pipeline_log_path),
+               "error": f"Installed app did not respond on {url} within 25 s"})
 
     @app.route("/api/build/kill-app", methods=["POST"])
     def api_build_kill_app():

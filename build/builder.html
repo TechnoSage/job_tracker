@@ -2998,44 +2998,52 @@ function _setTestState(running, label) {
   res.style.display = '';
 }
 
-function _showTestResult(d) {
+/* ── Test-result helpers ─────────────────────────────────────────────────── */
+
+/* Finalise the testResult panel after a poll-based test completes.
+   The log is already displayed line-by-line; we only update the badge
+   and append the pipeline-log footer + open the log folder. */
+function _showTestResult(d, liveMode) {
   var res   = document.getElementById('testResult');
   var badge = document.getElementById('testBadge');
   badge.className   = 'badge ' + (d.ok ? 'bg-success' : 'bg-danger') + ' small';
   badge.textContent = d.ok ? 'OK' : 'Failed';
 
-  // Use verbose_log if available, otherwise build a basic summary
-  var lines = [];
-  if (d.verbose_log && d.verbose_log.length) {
-    lines = d.verbose_log.slice();
+  if (liveMode) {
+    // Log already streamed — just append footer
     if (d.pipeline_log) {
-      lines.push('');
-      lines.push('\u2192 Pipeline log written to: ' + d.pipeline_log);
+      var cur = res.textContent;
+      res.textContent = cur + (cur ? '\n' : '') + '\u2192 Pipeline log: ' + d.pipeline_log;
     }
+    res.style.display = '';
+    res.scrollTop = res.scrollHeight;
   } else {
-    if (d.ok) {
-      lines.push('[OK] ' + (d.message || 'App started successfully'));
-      lines.push('[URL] ' + (d.url || ''));
-      if (d.install_dir) lines.push('[DIR] ' + d.install_dir);
+    // Legacy / simulation mode — build full display from result object
+    var lines = [];
+    if (d.verbose_log && d.verbose_log.length) {
+      lines = d.verbose_log.slice();
+      if (d.pipeline_log) { lines.push(''); lines.push('\u2192 Pipeline log: ' + d.pipeline_log); }
     } else {
-      lines.push('[FAIL] step=' + (d.step || '?') + '  ' + (d.error || ''));
-      if (d.install_dir) lines.push('[DIR] ' + d.install_dir);
+      if (d.ok) {
+        lines.push('[OK] ' + (d.message || 'App started successfully'));
+        lines.push('[URL] ' + (d.url || ''));
+        if (d.install_dir) lines.push('[DIR] ' + d.install_dir);
+      } else {
+        lines.push('[FAIL] step=' + (d.step || '?') + '  ' + (d.error || ''));
+        if (d.install_dir) lines.push('[DIR] ' + d.install_dir);
+      }
+      if (d.log && d.log.length) {
+        lines.push(''); lines.push('\u2500\u2500 app log (last lines) \u2500\u2500');
+        lines = lines.concat(d.log);
+      }
+      if (d.pipeline_log) { lines.push(''); lines.push('\u2192 Pipeline log: ' + d.pipeline_log); }
     }
-    if (d.log && d.log.length) {
-      lines.push('');
-      lines.push('\u2500\u2500 app log (last lines) \u2500\u2500');
-      lines = lines.concat(d.log);
-    }
-    if (d.pipeline_log) {
-      lines.push('');
-      lines.push('\u2192 Pipeline log: ' + d.pipeline_log);
-    }
+    res.textContent = lines.join('\n');
+    res.style.display = '';
+    res.scrollTop = res.scrollHeight;
   }
-  res.textContent = lines.join('\n');
-  res.style.display = '';
-  res.scrollTop = res.scrollHeight;
 
-  // Store log dir for the folder button, open Explorer on real runs
+  // Store log dir for the folder button; open Explorer on real runs
   if (d.pipeline_log) {
     _lastTestLogDir = d.pipeline_log.replace(/[^\\\/]+$/, '');
     if (!_tpSimMode) {
@@ -3048,36 +3056,80 @@ function _showTestResult(d) {
   }
 }
 
-async function doTestRun() {
-  _setTestState(true, 'Testing run…');
-  document.getElementById('testResult').textContent = 'Launching exe and waiting for response…';
-  document.getElementById('testResult').style.display = '';
+/* Poll a running test job, streaming log lines into the testResult panel.
+   Calls onDone(result) when the job completes.
+   Returns a cancel function. */
+function _pollTestJob(jobId, onDone) {
+  var offset = 0;
+  var res    = document.getElementById('testResult');
+  if (res) { res.textContent = ''; res.style.display = ''; }
+
+  var iv = setInterval(function () {
+    fetch('/api/build/test-status?job=' + jobId + '&offset=' + offset)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.log && d.log.length) {
+          var cur = res ? res.textContent : '';
+          res.textContent = cur + (cur ? '\n' : '') + d.log.join('\n');
+          res.scrollTop = res.scrollHeight;
+          offset = d.offset;
+        }
+        if (d.done) {
+          clearInterval(iv);
+          onDone(d.result || {});
+        }
+      })
+      .catch(function () { /* server temporarily busy — retry next tick */ });
+  }, 1000);
+
+  return function () { clearInterval(iv); };
+}
+
+/* Start a test API call, get back a job_id, then poll for updates.
+   onDone(result) is called when the job finishes. */
+async function _startTestJob(api, onDone) {
   try {
-    var r = await fetch('/api/build/test-run', { method: 'POST' });
-    _showTestResult(await r.json());
+    var r = await fetch(api, { method: 'POST' });
+    var d = await r.json();
+    if (!d.job_id) throw new Error(d.error || 'No job_id returned');
+    return _pollTestJob(d.job_id, onDone);
   } catch (e) {
-    document.getElementById('testBadge').className = 'badge bg-danger small';
-    document.getElementById('testBadge').textContent = 'Error';
-    document.getElementById('testResult').textContent = 'Request error: ' + e;
-    var _btr = document.getElementById('btnTestRun'); if (_btr) _btr.disabled = false;
-    var _bti = document.getElementById('btnTestInstall'); if (_bti) _bti.disabled = false;
+    onDone({ ok: false, error: String(e) });
+    return function () {};
   }
 }
 
-async function doTestInstall() {
-  _setTestState(true, 'Installing…');
-  document.getElementById('testResult').textContent = 'Running installer silently, please wait…';
-  document.getElementById('testResult').style.display = '';
-  try {
-    var r = await fetch('/api/build/test-install', { method: 'POST' });
-    _showTestResult(await r.json());
-  } catch (e) {
-    document.getElementById('testBadge').className = 'badge bg-danger small';
-    document.getElementById('testBadge').textContent = 'Error';
-    document.getElementById('testResult').textContent = 'Request error: ' + e;
-    var _btr = document.getElementById('btnTestRun'); if (_btr) _btr.disabled = false;
+async function doTestRun() {
+  _setTestState(true, 'Testing run\u2026');
+  var res = document.getElementById('testResult');
+  if (res) { res.textContent = 'Starting bundle run test\u2026'; res.style.display = ''; }
+  await _startTestJob('/api/build/test-run', function (result) {
+    _showTestResult(result, true);
+    var badge = document.getElementById('testBadge');
+    if (badge) {
+      badge.className   = 'badge ' + (result.ok ? 'bg-success' : 'bg-danger') + ' small';
+      badge.textContent = result.ok ? 'OK' : 'Failed';
+    }
+    var _btr = document.getElementById('btnTestRun');   if (_btr) _btr.disabled = false;
     var _bti = document.getElementById('btnTestInstall'); if (_bti) _bti.disabled = false;
-  }
+  });
+}
+
+async function doTestInstall() {
+  _setTestState(true, 'Installing\u2026');
+  var res = document.getElementById('testResult');
+  if (res) { res.textContent = 'Starting install test\u2026'; res.style.display = ''; }
+  await _startTestJob('/api/build/test-install', function (result) {
+    _showTestResult(result, true);
+    var badge = document.getElementById('testBadge');
+    if (badge) {
+      badge.className   = 'badge ' + (result.ok ? 'bg-success' : 'bg-danger') + ' small';
+      badge.textContent = result.ok ? 'OK' : 'Failed';
+    }
+    var _btr = document.getElementById('btnTestRun');   if (_btr) _btr.disabled = false;
+    var _bti = document.getElementById('btnTestInstall'); if (_bti) _bti.disabled = false;
+  });
+}
 }
 
 async function killTestApp() {
@@ -5020,49 +5072,45 @@ async function _runTestPipeline(mode) {
   var badge = document.getElementById('tpBadge');
   if (badge) { badge.className = 'badge bg-info small'; badge.textContent = 'Running\u2026'; }
 
-  // Log panel
-  var res = document.getElementById('testResult');
-  if (res) { res.textContent = mode === 'full'
-    ? 'Running installer silently and launching installed app\u2026'
-    : 'Launching bundled exe and waiting for HTTP response\u2026'; }
   var tbadge = document.getElementById('testBadge');
-  if (tbadge) { tbadge.className = 'badge bg-info small'; tbadge.textContent = mode === 'full' ? 'Installing\u2026' : 'Testing run\u2026'; }
+  if (tbadge) { tbadge.className = 'badge bg-info small'; tbadge.textContent = mode === 'full' ? 'Installing\u2026' : 'Testing\u2026'; }
 
   // Stage 0: Launch — start immediately
   tpActivate(0);
-  // Stage 1: Connect — after ~2 s
+  // Stage timers advance the UI while the background job runs
   _tpPendingTimers.push(setTimeout(function () { if (tpStates[0] !== 'error') { tpComplete(0); tpActivate(1); } }, 2200));
-  // Stage 2: Verify — after ~9 s
   _tpPendingTimers.push(setTimeout(function () { if (tpStates[1] !== 'error') { tpComplete(1); tpActivate(2); } }, 9000));
-  // Stage 3: Report — after ~17 s
   _tpPendingTimers.push(setTimeout(function () { if (tpStates[2] !== 'error') { tpComplete(2); tpActivate(3); } }, 17000));
 
   var api = (mode === 'full') ? '/api/build/test-install' : '/api/build/test-run';
+
+  // Start the job (returns immediately with job_id), then poll for live log
   try {
     var r = await fetch(api, { method: 'POST' });
-    var d = await r.json();
-    // Cancel pending stage timers — result is in
-    _tpPendingTimers.forEach(clearTimeout);
-    _tpPendingTimers = [];
+    var startData = await r.json();
+    if (!startData.job_id) throw new Error(startData.error || 'No job_id returned');
 
-    // Show result in Test Output Log
-    _showTestResult(d);
+    _pollTestJob(startData.job_id, function (result) {
+      // Job finished — cancel stage timers and finalise the pipeline UI
+      _tpPendingTimers.forEach(clearTimeout);
+      _tpPendingTimers = [];
 
-    if (d.ok) {
-      // Snap all remaining stages to done
-      for (var i = 0; i < TP_STAGES.length; i++) {
-        if (tpStates[i] !== 'done') tpComplete(i);
+      _showTestResult(result, true);   // append footer only (log already streamed)
+
+      if (result.ok) {
+        for (var i = 0; i < TP_STAGES.length; i++) {
+          if (tpStates[i] !== 'done') tpComplete(i);
+        }
+        setTimeout(function () { tpFinish('done'); }, 300);
+      } else {
+        setTimeout(function () { tpFinish('error'); }, 300);
       }
-      setTimeout(function () { tpFinish('done'); }, 300);
-    } else {
-      // Fail at the currently active stage
-      setTimeout(function () { tpFinish('error'); }, 300);
-    }
+    });
   } catch (e) {
     _tpPendingTimers.forEach(clearTimeout);
     _tpPendingTimers = [];
     var res2 = document.getElementById('testResult');
-    if (res2) res2.textContent = 'Test request error: ' + e;
+    if (res2) res2.textContent = 'Could not start test: ' + e;
     setTimeout(function () { tpFinish('error'); }, 300);
   }
 }
